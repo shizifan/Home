@@ -1,0 +1,61 @@
+{
+  "version": "0.1.0",
+  "_doc": "Pass 1 — create_new 类示例（PRD §15.9.1 最小集 = 3 条，覆盖人物/地点/食物）",
+  "examples": [
+    {
+      "id": "p1_cn_001_place",
+      "input": {
+        "input_type": "photo",
+        "input_content": "(无文字)",
+        "vision_tags": ["bed", "blue blanket", "indoor", "bedroom"],
+        "memory_bank": []
+      },
+      "expected_output": {
+        "action": "create_new",
+        "concept_name": "你的床",
+        "concept_category": "place",
+        "target_concept_id": null,
+        "evidence_text": "你拍了一张床的照片，蓝色的毯子。",
+        "ai_reasoning": "我刚才看到了你的床。这是个新地方，我先记下来。",
+        "confidence": 0.85
+      },
+      "notes": "新地点 + Vision 标签清晰；高 confidence 是合理的。"
+    },
+    {
+      "id": "p1_cn_002_person",
+      "input": {
+        "input_type": "text",
+        "input_content": "这是我妈妈，她最爱做饺子",
+        "memory_bank": []
+      },
+      "expected_output": {
+        "action": "create_new",
+        "concept_name": "妈妈",
+        "concept_category": "person",
+        "target_concept_id": null,
+        "evidence_text": "你说'这是我妈妈，她最爱做饺子'。",
+        "ai_reasoning": "你跟我介绍了妈妈，还说了她爱做饺子。我记下来了。",
+        "confidence": 0.95
+      },
+      "notes": "明确的家人介绍，confidence 应高；不要顺手合并出'饺子'概念，那应在下一次饺子被独立提起时建。"
+    },
+    {
+      "id": "p1_cn_003_food",
+      "input": {
+        "input_type": "text",
+        "input_content": "今天吃了披萨，超好吃",
+        "memory_bank": []
+      },
+      "expected_output": {
+        "action": "create_new",
+        "concept_name": "披萨",
+        "concept_category": "food",
+        "target_concept_id": null,
+        "evidence_text": "你说'今天吃了披萨，超好吃'。",
+        "ai_reasoning": "披萨是新食物，你说超好吃，我记下来。",
+        "confidence": 0.9
+      },
+      "notes": "食物类概念；'超好吃'的情绪不另开 emotion 概念，融入证据描述。"
+    }
+  ]
+}

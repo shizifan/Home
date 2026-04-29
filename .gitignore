@@ -1,0 +1,45 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+.env
+
+# vercel
+.vercel
+
+# 用户上传图片（P2 阶段本地存储）
+/public/uploads
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# supabase local
+supabase/.branches
+supabase/.temp
+
+# prompt eval artifacts
+/scripts/.eval-output/

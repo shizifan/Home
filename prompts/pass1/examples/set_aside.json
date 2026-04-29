@@ -1,0 +1,62 @@
+{
+  "version": "0.1.0",
+  "_doc": "Pass 1 — set_aside 类示例（PRD §15.9.1 最小集 = 3 条，覆盖玩笑/稀疏/跳过）",
+  "examples": [
+    {
+      "id": "p1_sa_001_joke",
+      "input": {
+        "input_type": "text",
+        "input_content": "我家有一只大象",
+        "memory_bank": []
+      },
+      "expected_output": {
+        "action": "set_aside",
+        "concept_name": "大象",
+        "concept_category": "other",
+        "target_concept_id": null,
+        "evidence_text": "你说'我家有一只大象'。",
+        "ai_reasoning": "我觉得你可能在开玩笑。如果是真的，你可以告诉我，我会重新记起来。",
+        "confidence": 0.3
+      },
+      "notes": "玩笑型；理由要中性温和（PRD §11.5 放下理由模板）。"
+    },
+    {
+      "id": "p1_sa_002_blurry_photo",
+      "input": {
+        "input_type": "photo",
+        "input_content": "(无文字)",
+        "vision_tags": ["blurry", "low_confidence", "indoor"],
+        "memory_bank": []
+      },
+      "expected_output": {
+        "action": "set_aside",
+        "concept_name": "看不清的那张照片",
+        "concept_category": "other",
+        "target_concept_id": null,
+        "evidence_text": "你拍的照片有点模糊，我看不太清。",
+        "ai_reasoning": "我看不太清，没法理解。",
+        "confidence": 0.95
+      },
+      "notes": "模糊照片；ai_reasoning 用 PRD §11.5 模板原文。"
+    },
+    {
+      "id": "p1_sa_003_skipped",
+      "input": {
+        "input_type": "skipped",
+        "input_content": "(孩子在 Day 4 选择跳过任务)",
+        "task_id": "day4_what_i_like",
+        "memory_bank": []
+      },
+      "expected_output": {
+        "action": "set_aside",
+        "concept_name": "你今天没告诉我的事",
+        "concept_category": "other",
+        "target_concept_id": null,
+        "evidence_text": "你今天选择不告诉我",
+        "ai_reasoning": "这是你的选择，我尊重。你可以以后告诉我，也可以一直不说。",
+        "confidence": 1.0
+      },
+      "notes": "跳过事件；confidence=1.0 因为这是确定的事实，不是判断。"
+    }
+  ]
+}

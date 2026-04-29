@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Home · 视觉设计稿</title>
+<link rel="stylesheet" href="styles.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="parts.jsx"></script>
+<script type="text/babel" src="artboard-graduation.jsx"></script>
+<script type="text/babel" src="artboard-character.jsx"></script>
+<script type="text/babel" src="artboard-home.jsx"></script>
+<script type="text/babel" src="artboard-memory.jsx"></script>
+<script type="text/babel" src="artboard-task.jsx"></script>
+
+<script type="text/babel">
+// Wrapper: clickable home <-> memory <-> task overlays
+function HomeWithFlow() {
+  const [overlay, setOverlay] = React.useState(null); // 'memory' | 'task-photo' | 'task-text' | null
+  return (
+    <div style={{ width: 390, height: 844, position: 'relative' }}>
+      {!overlay || overlay === 'task-photo' || overlay === 'task-text' ? (
+        <HomeScreen
+          onOpenTask={() => setOverlay('task-photo')}
+          onOpenMemory={() => setOverlay('memory')}
+        />
+      ) : null}
+      {overlay === 'memory' && (
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <MemoryPanel onClose={() => setOverlay(null)} />
+        </div>
+      )}
+      {(overlay === 'task-photo' || overlay === 'task-text') && (
+        <div style={{ position: 'absolute', inset: 0 }}>
+          <TaskOverlay variant={overlay === 'task-photo' ? 'photo' : 'text'} onClose={() => setOverlay(null)} />
+        </div>
+      )}
+      {/* small switcher for live demo */}
+      <div style={{ position: 'absolute', top: 8, left: 8, display: 'flex', gap: 4, zIndex: 50 }}>
+        <Mini onClick={() => setOverlay(null)} active={!overlay}>主页</Mini>
+        <Mini onClick={() => setOverlay('memory')} active={overlay==='memory'}>脑袋</Mini>
+        <Mini onClick={() => setOverlay('task-photo')} active={overlay==='task-photo'}>任务·拍照</Mini>
+        <Mini onClick={() => setOverlay('task-text')} active={overlay==='task-text'}>任务·文字</Mini>
+      </div>
+    </div>
+  );
+}
+function Mini({ children, onClick, active }) {
+  return <button onClick={onClick} style={{
+    background: active ? '#2C2C2A' : 'rgba(255,255,255,0.85)',
+    color: active ? '#FAEEDA' : '#5F5E5A',
+    border: '1px solid rgba(95,94,90,0.25)',
+    borderRadius: 999, padding: '4px 10px',
+    fontFamily: 'var(--f-title)', fontSize: 10, cursor: 'pointer'
+  }}>{children}</button>;
+}
+
+function Note({ children }) {
+  return <div style={{ position: 'absolute', bottom: -64, left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--f-title)', fontSize: 12, color: '#5F5E5A', lineHeight: 1.6, padding: '0 8px' }}>{children}</div>;
+}
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="hero" title="毕业卡 · DAY 7" subtitle="先定下视觉系统的完成态 — 等距小屋 + 纸片伙伴 + 6 项档案 + 4 栏数据。其余 4 张顺着这张做。">
+        <DCArtboard id="grad-1" label="A · 毕业卡（含第 6 项金色）" width={1080} height={1920}>
+          <GraduationCard />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="char" title="纸片立绘 · 小青龙" subtitle="基于真实毛绒玩具：浅米灰 + 深灰角 + 圆头大、四肢短、长尾巴。Paper Mario 抽象 — 单层色块 + 2px 米白纸边。">
+        <DCArtboard id="ch-1" label="B · 三视图：站 / 坐 / 躺" width={1080} height={720}>
+          <CharacterSheet />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="screens" title="移动端三屏 · 可点击活原型" subtitle="左：主页·小家。中：「它的脑袋」记忆面板（4 区块色板分区）。右：任务卡浮层（拍照型 / 文字型）。点击左上角小切片或主页底部按钮可直接走动线。">
+        <DCArtboard id="sc-1" label="C · 主页 + 活原型（4 屏切换）" width={390} height={844}>
+          <HomeWithFlow />
+        </DCArtboard>
+        <DCArtboard id="sc-2" label="D · 记忆面板（独立查看）" width={390} height={844}>
+          <MemoryPanel onClose={() => {}} />
+        </DCArtboard>
+        <DCArtboard id="sc-3" label="E · 任务卡 · 拍照（Day 1）" width={390} height={844}>
+          <TaskOverlay variant="photo" onClose={() => {}} />
+        </DCArtboard>
+        <DCArtboard id="sc-4" label="F · 任务卡 · 文字（Day 4）" width={390} height={844}>
+          <TaskOverlay variant="text" onClose={() => {}} />
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="rationale" title="设计取舍 · 5 句话" subtitle="为什么这样画 — 每张稿一句决策。">
+        <DCArtboard id="r-1" label="备忘" width={900} height={520}>
+          <RationaleCard />
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+function RationaleCard() {
+  const items = [
+    { t: '毕业卡', body: '把数据统计 (12/18/3/7) 放在档案下面而不是上面 — 因为孩子的眼睛会先抓住「妈妈呀，是妈妈」这种叙述，数字是注脚不是主角。第 6 项用整行金色背景（25% 透明）+ ★ 而不是只换字色，让"曾经差点忘了的事"在视觉上比第 5 项「不知道的」分量更重——它是孩子参与塑造过的产物。' },
+    { t: '小青龙立绘', body: '不画毛茸纹理 — Paper Mario 的核心是"被压扁后的剪纸"。豆豆眼 + 一笔嘴 + 整体姿态传情绪，眼睛眨动比表情夸张更可爱。腹部 #E8E6DD 比主色亮一阶，让扁平也有层次。' },
+    { t: '主页·小家', body: '伙伴对话框用尖角矩形 + 1.2px 描边而不是圆角云朵——和纸片角色的纸边语言一致。底部 4 个 Tab，「它的脑袋」放第二位，红点代表 AI 刚整理完一轮记忆。' },
+    { t: '记忆面板', body: '顶部小青龙脑袋的"剖面图"是产品最重要的视觉锚——它告诉孩子"你不是在看一个列表，你正站在它脑袋里"。剖面里 4 种颜色的小圆点正对下方 4 个区块的色板。' },
+    { t: '任务卡', body: '从底部上滑 + 顶部圆角 24px + 背后 35% 黑遮罩 — iOS sheet 标准手势。两种状态下伙伴姿态不同：拍照型站着（在期待你给它看），文字型坐下（在听你慢慢说）。这是隐性的状态信号。' },
+  ];
+  return (
+    <div style={{ width: 900, height: 520, background: '#FFF8EA', padding: 32, fontFamily: 'var(--f-body)', overflowY: 'auto' }}>
+      <div style={{ fontFamily: 'var(--f-title)', fontSize: 22, color: '#2C2C2A', marginBottom: 18, fontWeight: 500 }}>设计取舍备忘 · 待确认推断</div>
+      {items.map((it, i) => (
+        <div key={i} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 18, marginBottom: 14, paddingBottom: 14, borderBottom: '1px dashed rgba(95,94,90,0.2)' }}>
+          <div style={{ fontFamily: 'var(--f-title)', fontSize: 15, color: '#BA7517', fontWeight: 500 }}>{it.t}</div>
+          <div style={{ fontFamily: 'var(--f-title)', fontSize: 13, color: '#2C2C2A', lineHeight: 1.7 }}>{it.body}</div>
+        </div>
+      ))}
+      <div style={{ marginTop: 16, padding: 14, background: 'rgba(186,117,23,0.08)', borderRadius: 6, fontFamily: 'var(--f-title)', fontSize: 12, color: '#BA7517', lineHeight: 1.7 }}>
+        <strong>设计推断（待确认）：</strong>
+        ① 纸片伙伴脚下加 8% 黑色椭圆软影，让扁平角色"落"在 3D 地板上 —— Paper Mario 同款处理；
+        ② 等距房间用"中央折角双facet"做背墙（左半 #F5DEB3 / 右半 #EFD4A0），加强纵深，PRD 只规定了背墙单色；
+        ③ 拍照贴纸的"纸边白框"沿用墙体的 skewY，让贴纸真实"贴"在斜墙上而不是浮空。
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>

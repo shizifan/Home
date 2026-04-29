@@ -1,0 +1,68 @@
+/**
+ * 7 天任务定义（PRD §11.3 文案库）
+ * P1 用静态数据；P4 阶段如果要做 A/B 文案则改成 server-driven。
+ */
+
+import type { TaskDef } from '@/types';
+
+export const TASKS: TaskDef[] = [
+  {
+    id: 'day1_safe_place',
+    day: 1,
+    kind: 'photo',
+    title: '你最常呆的地方',
+    description: '拍一张你和它最常呆的地方吧——这样它就知道哪里最有安全感了。',
+  },
+  {
+    id: 'day2_family',
+    day: 2,
+    kind: 'photo_text',
+    title: '介绍一个家里人',
+    description: '拍一张照片或者画一张，告诉它这是谁、是什么样的人。',
+    inputPlaceholder: '比如：这是我妈妈，她最爱做饺子。',
+    charLimit: 200,
+  },
+  {
+    id: 'day3_place',
+    day: 3,
+    kind: 'photo_text',
+    title: '去过的地方',
+    description: '拍一张那个地方的照片，或者从相册里找一张。然后告诉它当时发生了什么。',
+    inputPlaceholder: '在那里发生了什么？',
+    charLimit: 200,
+  },
+  {
+    id: 'day4_what_i_like',
+    day: 4,
+    kind: 'text',
+    title: '我喜欢的事',
+    description: '写一段话告诉它吧。多写点也没关系。',
+    inputPlaceholder: '我最喜欢的是……',
+    charLimit: 300,
+  },
+  {
+    id: 'day5_questions',
+    day: 5,
+    kind: 'choice',
+    title: '它问你的问题',
+    description: '它想看看自己理解得对不对。',
+  },
+  {
+    id: 'day6_review',
+    day: 6,
+    kind: 'memory_review',
+    title: '打开它的脑袋',
+    description: '它最近一直在整理记忆。进去看看吧——它有些事情拿不准，有些事情可能记错了。',
+  },
+  {
+    id: 'day7_worldview',
+    day: 7,
+    kind: 'memory_review',
+    title: '它眼中的世界',
+    description: '它住满 7 天了，想给你看看它眼中的世界。',
+  },
+];
+
+export function getTaskByDay(day: number): TaskDef | undefined {
+  return TASKS.find((t) => t.day === day);
+}

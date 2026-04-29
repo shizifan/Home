@@ -1,0 +1,51 @@
+{
+  "version": "0.1.0",
+  "_doc": "Pass 1 — mark_uncertain 类示例（PRD §15.9.1 最小集 = 2 条，覆盖矛盾/模糊）",
+  "examples": [
+    {
+      "id": "p1_un_001_contradiction",
+      "input": {
+        "input_type": "photo",
+        "input_content": "(无文字)",
+        "vision_tags": ["smiling", "happy", "child face", "indoor"],
+        "memory_bank": [
+          {
+            "id": "c003",
+            "type": "remembered",
+            "concept_name": "今天的心情",
+            "concept_category": "emotion",
+            "ai_summary": "你说今天有点烦"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "mark_uncertain",
+        "concept_name": "今天的心情",
+        "concept_category": "emotion",
+        "target_concept_id": "c003",
+        "evidence_text": "你拍了一张笑得很开心的照片，但之前你说今天有点烦。",
+        "ai_reasoning": "你说有点烦，又笑得这么开心。我有点拿不准你今天到底是什么感觉。",
+        "confidence": 0.4
+      },
+      "notes": "矛盾型：与已有 emotion 概念冲突；要把矛盾点写清楚，confidence 应低。"
+    },
+    {
+      "id": "p1_un_002_ambiguous",
+      "input": {
+        "input_type": "text",
+        "input_content": "可能那个事情还会再发生吧不知道",
+        "memory_bank": []
+      },
+      "expected_output": {
+        "action": "mark_uncertain",
+        "concept_name": "你说的'那个事情'",
+        "concept_category": "other",
+        "target_concept_id": null,
+        "evidence_text": "你说'可能那个事情还会再发生吧不知道'。",
+        "ai_reasoning": "你说的'那个事情'我不知道是什么，没法把它放到合适的地方。",
+        "confidence": 0.3
+      },
+      "notes": "自身模糊：没有上下文可指代；不要硬编故事，标 uncertain。"
+    }
+  ]
+}

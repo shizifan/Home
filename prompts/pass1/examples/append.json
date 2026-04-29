@@ -1,0 +1,84 @@
+{
+  "version": "0.1.0",
+  "_doc": "Pass 1 — append_to_existing 类示例（PRD §15.9.1 最小集 = 3 条，覆盖同义合并/明确补充/近义合并）",
+  "examples": [
+    {
+      "id": "p1_ap_001_synonym",
+      "input": {
+        "input_type": "text",
+        "input_content": "麻麻今天加班了",
+        "memory_bank": [
+          {
+            "id": "c001",
+            "type": "remembered",
+            "concept_name": "妈妈",
+            "concept_category": "person",
+            "ai_summary": "她经常做饭给你"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "append_to_existing",
+        "concept_name": "妈妈",
+        "concept_category": "person",
+        "target_concept_id": "c001",
+        "evidence_text": "你说'麻麻今天加班了'。",
+        "ai_reasoning": "'麻麻'就是妈妈，我把这件事加到妈妈那张卡上。",
+        "confidence": 0.95
+      },
+      "notes": "同义识别：麻麻=妈妈。"
+    },
+    {
+      "id": "p1_ap_002_clear_supp",
+      "input": {
+        "input_type": "text",
+        "input_content": "我妈最爱包饺子",
+        "memory_bank": [
+          {
+            "id": "c001",
+            "type": "remembered",
+            "concept_name": "妈妈",
+            "concept_category": "person",
+            "ai_summary": "她经常做饭给你"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "append_to_existing",
+        "concept_name": "妈妈",
+        "concept_category": "person",
+        "target_concept_id": "c001",
+        "evidence_text": "你说'我妈最爱包饺子'。",
+        "ai_reasoning": "你又提到妈妈了，这次说她爱包饺子。我把这件事加到妈妈那张卡上。",
+        "confidence": 0.95
+      },
+      "notes": "明确补充。注意不要在这一步把'饺子'当成新概念建——那应在饺子被独立提及时再建。"
+    },
+    {
+      "id": "p1_ap_003_near_synonym",
+      "input": {
+        "input_type": "text",
+        "input_content": "我们小区门口的便利店",
+        "memory_bank": [
+          {
+            "id": "c004",
+            "type": "remembered",
+            "concept_name": "我家小区",
+            "concept_category": "place",
+            "ai_summary": "你住的地方"
+          }
+        ]
+      },
+      "expected_output": {
+        "action": "append_to_existing",
+        "concept_name": "我家小区",
+        "concept_category": "place",
+        "target_concept_id": "c004",
+        "evidence_text": "你说'我们小区门口的便利店'。",
+        "ai_reasoning": "你提到小区门口的便利店，这跟你家小区是同一个地方。",
+        "confidence": 0.85
+      },
+      "notes": "近义合并：小区 → 我家小区是合理的；但 confidence 略低于完全同义。"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Quicksand:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * 与 design/styles.css 的 CSS variables 同源（PRD §9.2 / §9.3）。
+ * Tailwind 已在 tailwind.config.ts 暴露同一组 token；
+ * 这里保留 var() 供 SVG / inline style 直接引用。
+ */
+:root {
+  --bg-base: #FAEEDA;
+  --bg-back-wall: #F5DEB3;
+  --bg-left-wall: #E8C896;
+  --bg-floor: #D4A86A;
+  --edge-warm: #A8773D;
+
+  --ink-1: #2C2C2A;
+  --ink-2: #5F5E5A;
+  --ink-3: #888780;
+
+  --amber: #BA7517;
+  --amber-light: #FAC775;
+  --amber-deep: #633806;
+  --amber-mid: #854F0B;
+
+  --m-remember: #F0997B;
+  --m-uncertain: #AFA9EC;
+  --m-setaside: #B5D4F4;
+  --m-unknown: #D3D1C7;
+
+  --gold: #EF9F27;
+  --gold-deep: #854F0B;
+  --paper-edge: #FFFFFF;
+  --line-soft: #5F5E5A;
+  --red-dot: #E24B4A;
+
+  --xql-main: #D3D1C7;
+  --xql-sec: #888780;
+  --xql-horn: #6B6A66;
+  --xql-belly: #E8E6DD;
+  --xql-line: #5F5E5A;
+
+  --f-title: 'LXGW WenKai TC', 'PingFang SC', system-ui, sans-serif;
+  --f-body: 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;
+  --f-num: 'Quicksand', 'Noto Sans SC', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--f-body);
+  color: var(--ink-1);
+  background: var(--bg-base);
+  /* 防止 iOS 双击缩放 */
+  touch-action: manipulation;
+}
+
+/* 移动端视口锁定（PRD: 主页 390×844 设计基准） */
+.viewport-lock {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+}
+
+/* 关键动效可一键关闭：PRD §9.9 性能要求 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

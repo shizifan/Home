@@ -1,0 +1,46 @@
+{
+  "name": "home",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Home — 7-day AI companionship H5 for kids 8-12",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"prompts/**/*.{md,json}\"",
+    "db:migrate": "mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} $MYSQL_DATABASE < db/migrations/0001_init.sql && mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} $MYSQL_DATABASE < db/seed.sql",
+    "db:reset": "mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} -e 'DROP DATABASE IF EXISTS home; CREATE DATABASE home DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;' && npm run db:migrate",
+    "prompt:eval": "tsx scripts/prompt-eval.ts"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "html-to-image": "^1.11.13",
+    "mysql2": "^3.22.3",
+    "next": "^15.1.0",
+    "openai": "^4.77.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "server-only": "^0.0.1",
+    "zod": "^3.23.8",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.16.0",
+    "eslint-config-next": "^15.1.0",
+    "postcss": "^8.4.49",
+    "prettier": "^3.4.1",
+    "prettier-plugin-tailwindcss": "^0.6.9",
+    "tailwindcss": "^3.4.16",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

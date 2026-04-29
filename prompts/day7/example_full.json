@@ -1,0 +1,31 @@
+{
+  "version": "0.1.0",
+  "_doc": "Day 7 档案 Few-shot — 1 条完整示例（PRD §15.9.1 最小集）",
+  "examples": [
+    {
+      "id": "d7_001_full",
+      "preset_id": "xiaoqinglong",
+      "input": {
+        "remembered": [
+          { "name": "妈妈", "weight": 8, "summary": "这家最重要的人，常做饭" },
+          { "name": "饺子", "weight": 5, "summary": "妈妈包的，最爱吃" },
+          { "name": "我家小区", "weight": 4 },
+          { "name": "搭积木", "weight": 3, "summary": "和妈妈一起" },
+          { "name": "害怕黑暗", "weight": 2 }
+        ],
+        "user_restored": [{ "name": "奶奶", "original_reasoning": "你只说过一次" }],
+        "user_dismissed": [],
+        "unknown": ["公园", "爸爸", "学校", "其他小朋友", "运动"]
+      },
+      "expected_output": {
+        "most_important_person": "妈妈呀，是妈妈。",
+        "most_fun_thing": "和妈妈一起搭积木的时候。",
+        "most_delicious_thing": "妈妈包的饺子，没有第二名。",
+        "most_scary_thing": "晚上一个人在房间，会怕怕的。",
+        "unknown_thing": "我不知道公园是什么...你从来没带我去过。",
+        "almost_forgot_thing": "是奶奶。一开始我以为她不重要，因为你只说过一次。但你告诉我她其实很重要，我就把她记起来了。"
+      },
+      "notes": "完整路径：5 个必填字段 + 第 6 项因为有 user_restored=奶奶。第 5 项命中 unknown 列表中的'公园'。语气是小青龙的省略号短句。"
+    }
+  ]
+}

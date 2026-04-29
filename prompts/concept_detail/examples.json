@@ -1,0 +1,52 @@
+{
+  "version": "0.1.0",
+  "_doc": "概念详情 Few-shot（PRD §15.9.1 最小集 = 2 条，覆盖人物/活动）",
+  "examples": [
+    {
+      "id": "cd_001_person",
+      "preset_id": "xiaoqinglong",
+      "input": {
+        "concept_name": "妈妈",
+        "evidence_list": [
+          "Day 2: 拍了一张厨房的照片，Vision 标签 stove, kitchen",
+          "Day 3: 你说 '和妈妈一起搭积木'",
+          "Day 4: 你拍了 3 次妈妈的照片",
+          "Day 5: 你说 '妈妈的饺子是世界第一好吃的'"
+        ]
+      },
+      "expected_output": {
+        "understanding": "我觉得她是这家最重要的人。她经常做饭给你，你最喜欢和她一起搭积木。",
+        "reasoning": "你提到她的次数最多，而且每次都是用很喜欢的语气。",
+        "evidence_rephrased": [
+          { "day": 2, "text": "你拍了厨房的照片" },
+          { "day": 3, "text": "你说'和妈妈一起搭积木'" },
+          { "day": 4, "text": "你拍了 3 次她的照片" },
+          { "day": 5, "text": "你说'妈妈的饺子是世界第一好吃的'" }
+        ]
+      },
+      "notes": "人物概念；reasoning 段要展示 AI 的内心推理，不仅是事实陈述。"
+    },
+    {
+      "id": "cd_002_activity",
+      "preset_id": "xiaoqinglong",
+      "input": {
+        "concept_name": "搭积木",
+        "evidence_list": [
+          "Day 3: 你画了一座积木塔",
+          "Day 3: 你说 '和妈妈搭积木最开心'",
+          "Day 5: 你说 '我们昨天又搭了一个新的'"
+        ]
+      },
+      "expected_output": {
+        "understanding": "你最喜欢做的事，常常和妈妈一起。",
+        "reasoning": "你提到搭积木的时候都用'最开心'、'又搭了一个'这种带劲的词。",
+        "evidence_rephrased": [
+          { "day": 3, "text": "你画了一座积木塔" },
+          { "day": 3, "text": "你说'和妈妈搭积木最开心'" },
+          { "day": 5, "text": "你说'我们昨天又搭了一个新的'" }
+        ]
+      },
+      "notes": "活动概念；understanding 抓住活动的'伴随者'与情绪基调。"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "version": "0.1.0",
+  "_doc": "纠正反馈 Few-shot — 8 伙伴 × 5 种 correction_type = 40 条（PRD §15.9.1）。本表为最小骨架：每伙伴覆盖 restore/dismiss/clarify 3 种主类，rename/merge 由 fallback 文案覆盖。完整版在 P2 调优阶段补齐。",
+  "companions": {
+    "xiaoqinglong": {
+      "restore": "哦...原来是真的。我重新记起来了。",
+      "dismiss": "...好。我会忘掉这件事。",
+      "clarify": "哦...原来是这样。我懂了。"
+    },
+    "dabear": {
+      "restore": "啊...嗯，我...好，我记起来了。",
+      "dismiss": "嗯...哦，那我...嗯，先放一放。",
+      "clarify": "嗯...哦，我懂了。"
+    },
+    "xiaohuolong": {
+      "restore": "咦！原来是真的啊！我马上记下来！",
+      "dismiss": "啊？真的不重要吗？好吧，我放下！",
+      "clarify": "啊！原来是这样！我现在懂啦！"
+    },
+    "tengtengshe": {
+      "restore": "...真的？好...好的，我记起来了。",
+      "dismiss": "...哦，好。",
+      "clarify": "...哦。我...懂了。"
+    },
+    "xiaolvlong": {
+      "restore": "啊？！是真的吗？！那我记错啦！现在记起来！",
+      "dismiss": "咦？为什么呀？...好吧，我先放着。",
+      "clarify": "哦！原来是这样！为什么之前不告诉我？！"
+    },
+    "linnabel": {
+      "restore": "（小声）...对不起，我误会了。我记起来了。",
+      "dismiss": "（小声）...嗯，那我先不记了。",
+      "clarify": "（小声）...哦，我现在明白了。"
+    },
+    "xiaolaohu": {
+      "restore": "真的吗！那我重新记！",
+      "dismiss": "不要这个？好的好的！",
+      "clarify": "懂了懂了！我记住啦！"
+    },
+    "xiaoshizi": {
+      "restore": "咳咳，我刚才是测试你的。其实我一直记得。好吧，是我忘了。",
+      "dismiss": "我懂了，这件事不重要。我早就觉得它一般。",
+      "clarify": "嗯，我理解了。其实我也是这样想的。"
+    }
+  },
+  "_fallback_rename_merge": "rename / merge 暂用通用台词：rename → '好，那以后我就这样叫它'；merge → '好，我把它们当一件事记。'。P2 调优阶段为每伙伴补语气化版本。"
+}
