@@ -8,7 +8,7 @@
 
 ```bash
 npm install
-cp .env.example .env.local   # 填入 Supabase + DeepSeek + MiniMax 凭据
+cp .env.example .env.local   # 填入 MySQL + DeepSeek + DashScope 凭据
 npm run dev
 ```
 
@@ -16,9 +16,9 @@ npm run dev
 
 - `src/app/` — Next.js App Router 页面与 API
 - `src/components/` — 房间、伙伴立绘、记忆面板卡片等
-- `src/lib/llm/` — DeepSeek 5 个调用点 + 降级；`src/lib/vision/` — MiniMax 拍照分析
+- `src/lib/llm/` — DeepSeek 5 个调用点 + 降级；`src/lib/vision/` — DashScope Qwen-VL 拍照分析
 - `prompts/` — Prompt 模板与 Few-shot 资产
-- `supabase/migrations/` — 数据库 schema
+- `db/migrations/` — 数据库 schema（MySQL 8）
 - `design/` — 视觉原型（仅参考，不进 build）
 - `spec/` — PRD 与实施计划
 
@@ -29,5 +29,5 @@ npm run dev
 | `npm run dev` | 本地开发 |
 | `npm run build` | 生产构建 |
 | `npm run type-check` | TS 类型检查 |
-| `npm run db:types` | 从 Supabase 重新生成类型 |
+| `npm run db:migrate` | 初始化 / 迁移数据库 |
 | `npm run prompt:eval` | 跑 Pass 1 调优样本（PRD §15.8.1）|

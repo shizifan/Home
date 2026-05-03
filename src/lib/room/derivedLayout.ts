@@ -29,6 +29,8 @@ interface Photo {
   id: string;
   url: string;
   day: number;
+  /** 点击触发——home 把它指到打开 CardViewModal */
+  onClick?: () => void;
 }
 
 const FOOD_KEYWORDS: Array<{ test: RegExp; kind: FloorItemKind }> = [
@@ -134,6 +136,8 @@ export function deriveRoomLayout(args: {
       ...PHOTO_SLOTS[i],
       label: `D${p.day}`,
       tone: '#E8C896',
+      imageUrl: p.url || undefined,
+      onClick: p.onClick,
     }));
 
   // 2. 地上物品（最多 4，按概念顺序）

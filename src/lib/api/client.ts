@@ -18,6 +18,16 @@ export interface CompanionStateResponse {
   can_advance?: boolean;
   can_view_worldview?: boolean;
   photos: Array<{ id: string; url: string; day: number }>;
+  /** V0.6.1：纸片插画卡片（已确认的）*/
+  cards?: Array<{
+    id: string;
+    memory_id: string;
+    image_url: string | null;
+    is_fallback_text_card: boolean;
+    day: number;
+    /** 孩子描述时说的原话 */
+    description: string;
+  }>;
   has_unread_memory: boolean;
   memory_bank_summary: { remembered: number; uncertain: number; set_aside: number };
   remembered_concepts?: Array<{
@@ -25,6 +35,31 @@ export interface CompanionStateResponse {
     concept_category?: string;
     ai_summary?: string;
   }>;
+}
+
+export async function askChat(
+  question: string,
+): Promise<{ reply: string; source: 'free_chat' | 'safety_filter' }> {
+  const r = await fetch('/api/chat/ask', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ question }),
+  });
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error ?? `chat ask ${r.status}`);
+  }
+  return r.json();
+}
+
+export async function deleteCard(cardId: string): Promise<void> {
+  const r = await fetch(`/api/cards/${encodeURIComponent(cardId)}/delete`, {
+    method: 'POST',
+  });
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error ?? `delete card ${r.status}`);
+  }
 }
 
 export async function advanceDay(): Promise<{ ok: boolean; new_day: number; opening: string | null }> {
@@ -344,5 +379,138 @@ export async function getDay5Questions(): Promise<{
 }> {
   const r = await fetch('/api/task/day5-questions', { cache: 'no-store' });
   if (!r.ok) throw new Error(`day5 ${r.status}`);
+  return r.json();
+}
+
+// ──────────────────── V0.6.1: 语音 + 描述卡片 ────────────────────
+
+export interface VoiceUploadResponse {
+  transcription: string;
+  confidence: number;
+  duration_seconds: number;
+  voice_audio_url: string;
+}
+
+export class VoiceUploadError extends Error {
+  reason: 'asr_empty' | 'asr_unavailable' | 'asr_safety_block' | 'asr_unsupported' | 'audio_too_large' | 'http';
+  voiceAudioUrl?: string;
+  constructor(reason: VoiceUploadError['reason'], message: string, voiceAudioUrl?: string) {
+    super(message);
+    this.reason = reason;
+    this.voiceAudioUrl = voiceAudioUrl;
+  }
+}
+
+export async function uploadVoice(args: {
+  companionId: string;
+  blob: Blob;
+  ext?: string;
+}): Promise<VoiceUploadResponse> {
+  const fd = new FormData();
+  fd.append('companion_id', args.companionId);
+  const ext = args.ext ?? (args.blob.type.includes('mp4') ? 'mp4' : 'webm');
+  fd.append('audio', args.blob, `voice.${ext}`);
+  const r = await fetch('/api/voice/upload', { method: 'POST', body: fd });
+  const body = (await r.json().catch(() => ({}))) as {
+    error?: VoiceUploadError['reason'];
+    message?: string;
+    voice_audio_url?: string;
+  } & Partial<VoiceUploadResponse>;
+  if (!r.ok) {
+    throw new VoiceUploadError(
+      body.error ?? 'http',
+      body.message ?? `voice upload ${r.status}`,
+      body.voice_audio_url,
+    );
+  }
+  return body as VoiceUploadResponse;
+}
+
+export type ImageGenSource = 'dashscope' | 'minimax';
+
+export interface DescribeSubmitResponse {
+  memory_id: string;
+  card_id: string;
+  image_url: string | null;
+  image_source: ImageGenSource | null;
+  alt_image_url: string | null;
+  alt_image_source: ImageGenSource | null;
+  is_fallback_text_card: boolean;
+  style_check: {
+    passed: boolean | null;
+    severity: 'ok' | 'minor' | 'major' | null;
+    regenerate_count: number;
+    issues: string[];
+  };
+  memory_update: { action: string; concept: string; reasoning?: string; memory_bank_id?: string };
+  companion_response: string;
+  response_source: 'llm' | 'fallback';
+}
+
+export async function submitDescribe(args: {
+  companion_id: string;
+  task_id: string;
+  description_text: string;
+  input_method: 'voice' | 'text';
+  voice_audio_url?: string;
+  asr_transcription?: string;
+  edited_text?: string;
+}): Promise<DescribeSubmitResponse> {
+  const r = await fetch('/api/describe/submit', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(args),
+  });
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error ?? `submit describe ${r.status}`);
+  }
+  return r.json();
+}
+
+export interface DescribeReviseResponse {
+  memory_id: string;
+  card_id: string;
+  image_url: string | null;
+  image_source: ImageGenSource | null;
+  alt_image_url: string | null;
+  alt_image_source: ImageGenSource | null;
+  is_fallback_text_card: boolean;
+  attempt: number;
+  is_exhausted: boolean;
+  style_check: DescribeSubmitResponse['style_check'];
+}
+
+export async function reviseDescribe(args: {
+  card_id: string;
+  revision_type: 'color' | 'missing' | 'complete_redo';
+  revision_text: string;
+}): Promise<DescribeReviseResponse> {
+  const r = await fetch('/api/describe/revise', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(args),
+  });
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error ?? `revise ${r.status}`);
+  }
+  return r.json();
+}
+
+export async function confirmDescribe(args: {
+  card_id: string;
+  auto_timeout?: boolean;
+  chosen_source?: ImageGenSource;
+}): Promise<{ companion_final_response: string; memory_bank_updated: boolean; already_confirmed?: boolean }> {
+  const r = await fetch('/api/describe/confirm', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(args),
+  });
+  if (!r.ok) {
+    const err = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err.error ?? `confirm ${r.status}`);
+  }
   return r.json();
 }

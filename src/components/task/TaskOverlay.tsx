@@ -1,25 +1,24 @@
 /**
- * 任务卡浮层（PRD §10.3 + §4.3）
+ * 任务卡浮层（PRD §10.3 + V0.6.1 §4）
  *
- * P2 阶段三种交互：
- *   - photo / photo_text：拍照 / 相册 / dev jpg picker（三种来源）
- *   - text：文字输入
- *   - memory_review：直接跳转 /memory
+ * V0.6.1 改造后的交互：
+ *   - describe：跳转 /describe/voice 或 /describe/text（按 inputPreference）
+ *   - text：浮层内文字输入（仅 Day 4 纯文字任务）
+ *   - choice：Day 5 选择题
+ *   - memory_review：跳转 /memory
  *
- * 提交后串行调 Vision → Pass1 → Pass2，等回应展示在主页对话框。
+ * 旧的 photo / photo_text 分支已删除（V0.5 拍照流程废弃）。
  */
 
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import { Button } from '@/components/ui/Button';
 import {
   getDay5Questions,
-  listJpgFiles,
   skipTask,
-  submitPhoto,
   submitText,
   type Day5Question,
 } from '@/lib/api/client';
@@ -34,22 +33,19 @@ interface Props {
 }
 
 type Stage = 'input' | 'submitting' | 'reply';
-type PhotoSource = { kind: 'file'; file: File } | { kind: 'jpg'; name: string } | null;
 
 export function TaskOverlay({ task, companionId, companionName, onClose }: Props) {
   const router = useRouter();
-  const { hasSkippedOnce, markSkippedOnce } = useCompanionStore();
+  const { hasSkippedOnce, markSkippedOnce, inputPreference } = useCompanionStore();
   const [stage, setStage] = useState<Stage>('input');
   const [text, setText] = useState('');
-  const [photoSource, setPhotoSource] = useState<PhotoSource>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [reply, setReply] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [skipWarning, setSkipWarning] = useState<'first' | 'day5' | null>(null);
 
-  const needsPhoto = task.kind === 'photo' || task.kind === 'photo_text';
-  const needsText = task.kind === 'text' || task.kind === 'photo_text';
+  const isText = task.kind === 'text';
   const isChoice = task.kind === 'choice';
+  const isDescribe = task.kind === 'describe';
 
   // memory_review 直接跳记忆面板
   if (task.kind === 'memory_review') {
@@ -72,44 +68,7 @@ export function TaskOverlay({ task, companionId, companionName, onClose }: Props
     );
   }
 
-  const canSubmit =
-    (needsPhoto ? !!photoSource : true) && (needsText ? text.trim().length > 0 : true);
-
-  const onSubmit = async () => {
-    if (stage !== 'input' || !canSubmit) return;
-    setStage('submitting');
-    setError(null);
-    try {
-      let res;
-      if (needsPhoto && photoSource) {
-        res = await submitPhoto({
-          companion_id: companionId,
-          task_id: task.id,
-          file: photoSource.kind === 'file' ? photoSource.file : undefined,
-          jpg_filename: photoSource.kind === 'jpg' ? photoSource.name : undefined,
-          user_text: needsText ? text.trim() : undefined,
-        });
-      } else {
-        res = await submitText({
-          companion_id: companionId,
-          task_id: task.id,
-          user_text: text.trim(),
-        });
-      }
-      setReply(res.companion_response);
-      setStage('reply');
-    } catch (e) {
-      setError((e as Error)?.message ?? '出了点问题，再试一次');
-      setStage('input');
-    }
-  };
-
-  /**
-   * 跳过流程（PRD §13.2）
-   * - 首次跳过 → 'first' 浮层（3s 自动消失，按"我知道了"也可关）
-   * - Day 5 跳过 → 'day5' 二次确认对话框
-   * - 已跳过过 + 非 Day 5 → 直接提交
-   */
+  // 跳过流程（PRD §13.2）— 提前定义，因为 describe 分支也引用
   const onSkipClicked = () => {
     if (stage !== 'input') return;
     if (task.day === 5) {
@@ -133,6 +92,80 @@ export function TaskOverlay({ task, companionId, companionName, onClose }: Props
       setStage('reply');
     } catch {
       onClose();
+    }
+  };
+
+  // describe 任务 — 跳转到独立流程（V0.6.1 §4.5）
+  if (isDescribe) {
+    // 离开 home 前先关掉浮层，否则用户回 home 时浮层还在
+    const goVoice = () => {
+      onClose();
+      router.push(`/describe/voice?task_id=${task.id}`);
+    };
+    const goText = () => {
+      onClose();
+      router.push(`/describe/text?task_id=${task.id}`);
+    };
+    const primary = inputPreference === 'text' ? goText : goVoice;
+    const secondary = inputPreference === 'text' ? goVoice : goText;
+    const primaryLabel = inputPreference === 'text' ? '用打字' : '🎤 说一说';
+    const secondaryLabel = inputPreference === 'text' ? '🎤 改用说话' : '⌨️ 用打字代替';
+
+    return (
+      <div className="absolute inset-0 z-40">
+        <div className="absolute inset-0 bg-black/35" onClick={onClose} aria-hidden />
+        <div className="absolute left-0 right-0 bottom-0 bg-bg-base rounded-t-sheet shadow-sheet px-6 pt-3 pb-7">
+          <div className="flex justify-center mb-1.5">
+            <button onClick={onClose} className="bg-transparent border-0 p-2 cursor-pointer">
+              <span className="block w-11 h-[5px] bg-[rgba(95,94,90,0.35)] rounded-full" />
+            </button>
+          </div>
+          <div className="flex items-center gap-3 mb-3">
+            <TaskIcon kind={task.kind} />
+            <div>
+              <p className="font-num text-mini text-ink-3 tracking-[0.16em]">
+                DAY {task.day} · {DAY_THEME[task.day - 1]}
+              </p>
+              <h2 className="font-title text-h2 text-ink-1 mt-0.5">{task.title}</h2>
+            </div>
+          </div>
+          <div className="bg-white border-[1.2px] border-ink-2 rounded-[12px] px-3.5 py-3 mb-5">
+            <p className="font-title text-mini text-ink-3 mb-1">{companionName}问你：</p>
+            <p className="font-title text-h3 text-ink-1 leading-[1.5]">「{task.description}」</p>
+          </div>
+          <Button size="lg" fullWidth onClick={primary}>
+            {primaryLabel}
+          </Button>
+          <div className="flex gap-3 mt-3">
+            <Button variant="ghost" fullWidth onClick={secondary}>
+              {secondaryLabel}
+            </Button>
+            <Button variant="ghost" fullWidth onClick={onSkipClicked}>
+              跳过
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const canSubmit = isText ? text.trim().length > 0 : true;
+
+  const onSubmit = async () => {
+    if (stage !== 'input' || !canSubmit) return;
+    setStage('submitting');
+    setError(null);
+    try {
+      const res = await submitText({
+        companion_id: companionId,
+        task_id: task.id,
+        user_text: text.trim(),
+      });
+      setReply(res.companion_response);
+      setStage('reply');
+    } catch (e) {
+      setError((e as Error)?.message ?? '出了点问题，再试一次');
+      setStage('input');
     }
   };
 
@@ -167,36 +200,14 @@ export function TaskOverlay({ task, companionId, companionName, onClose }: Props
           <p className="font-title text-h3 text-ink-1 leading-[1.5]">「{task.description}」</p>
         </div>
 
-        {stage === 'input' && !isChoice && (
+        {stage === 'input' && isText && (
           <>
-            {needsPhoto && (
-              <PhotoZone
-                source={photoSource}
-                preview={previewUrl}
-                onPickFile={(f) => {
-                  setPhotoSource({ kind: 'file', file: f });
-                  if (previewUrl) URL.revokeObjectURL(previewUrl);
-                  setPreviewUrl(URL.createObjectURL(f));
-                }}
-                onPickJpg={(name) => {
-                  setPhotoSource({ kind: 'jpg', name });
-                  setPreviewUrl(`/api/dev/jpg/${encodeURIComponent(name)}`);
-                }}
-                onClear={() => {
-                  if (previewUrl?.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
-                  setPreviewUrl(null);
-                  setPhotoSource(null);
-                }}
-              />
-            )}
-            {needsText && (
-              <TextZone
-                value={text}
-                onChange={setText}
-                placeholder={task.inputPlaceholder ?? '说点什么吧……'}
-                charLimit={task.charLimit ?? 300}
-              />
-            )}
+            <TextZone
+              value={text}
+              onChange={setText}
+              placeholder={task.inputPlaceholder ?? '说点什么吧……'}
+              charLimit={task.charLimit ?? 300}
+            />
 
             {error && <p className="font-title text-small text-[#E24B4A] mt-2">{error}</p>}
 
@@ -305,180 +316,6 @@ function SkipWarningDay5({
 }
 
 const DAY_THEME = ['搬家日', '这是我们家', '我们去过的地方', '我喜欢的事', '它问你的问题', '整理与补充', '它眼中的世界'] as const;
-
-// ──────────── PhotoZone：3 来源 ────────────
-function PhotoZone({
-  source,
-  preview,
-  onPickFile,
-  onPickJpg,
-  onClear,
-}: {
-  source: PhotoSource;
-  preview: string | null;
-  onPickFile: (file: File) => void;
-  onPickJpg: (name: string) => void;
-  onClear: () => void;
-}) {
-  const cameraRef = useRef<HTMLInputElement>(null);
-  const albumRef = useRef<HTMLInputElement>(null);
-  const [showJpgPicker, setShowJpgPicker] = useState(false);
-
-  if (source && preview) {
-    return (
-      <div className="relative">
-        <img
-          src={preview}
-          alt="预览"
-          className="w-full h-52 rounded-[14px] object-cover border border-[rgba(95,94,90,0.2)]"
-        />
-        <button
-          onClick={onClear}
-          className="absolute top-2 right-2 bg-white/90 rounded-full px-3 py-1 font-title text-small text-ink-2 cursor-pointer border border-[rgba(95,94,90,0.3)]"
-        >
-          重选
-        </button>
-        <p className="font-title text-mini text-ink-3 mt-1.5 text-center">
-          {source.kind === 'jpg' ? `从 jpg/${source.name}` : '从设备'}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div className="rounded-[14px] h-52 flex flex-col items-center justify-center gap-2 border-[1.5px] border-dashed border-[rgba(95,94,90,0.35)]"
-           style={{
-             backgroundImage:
-               'repeating-linear-gradient(45deg, #FFF8EA, #FFF8EA 10px, #F5DEB3 10px, #F5DEB3 11px)',
-           }}>
-        <button
-          onClick={() => cameraRef.current?.click()}
-          className="w-14 h-14 bg-amber-light rounded-full border-2 border-white shadow-paper flex items-center justify-center cursor-pointer"
-          aria-label="拍照"
-        >
-          <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden>
-            <circle cx="12" cy="13" r="5" fill="none" stroke="#5F5E5A" strokeWidth="2" />
-            <circle cx="12" cy="13" r="2" fill="#5F5E5A" />
-          </svg>
-        </button>
-        <p className="font-title text-sub text-ink-2">点这里拍一张</p>
-      </div>
-
-      <input
-        ref={cameraRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onPickFile(f);
-          e.target.value = '';
-        }}
-      />
-      <input
-        ref={albumRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) onPickFile(f);
-          e.target.value = '';
-        }}
-      />
-
-      <div className="flex gap-2 mt-2.5 justify-center flex-wrap">
-        <button
-          onClick={() => albumRef.current?.click()}
-          className="bg-white border border-[rgba(95,94,90,0.25)] rounded-full px-3.5 py-2 font-title text-small text-ink-2 cursor-pointer"
-        >
-          📁 上传图片
-        </button>
-        <button
-          onClick={() => setShowJpgPicker(true)}
-          className="bg-white border border-[rgba(95,94,90,0.25)] rounded-full px-3.5 py-2 font-title text-small text-ink-2 cursor-pointer"
-        >
-          🗂 从测试图库选 (dev)
-        </button>
-      </div>
-
-      {showJpgPicker && (
-        <JpgPicker
-          onPick={(name) => {
-            onPickJpg(name);
-            setShowJpgPicker(false);
-          }}
-          onClose={() => setShowJpgPicker(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-// ──────────── JpgPicker：列出 /jpg 目录 ────────────
-function JpgPicker({
-  onPick,
-  onClose,
-}: {
-  onPick: (name: string) => void;
-  onClose: () => void;
-}) {
-  const [files, setFiles] = useState<Array<{ name: string; size: number }>>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    listJpgFiles()
-      .then((r) => setFiles(r.files))
-      .finally(() => setLoading(false));
-  }, []);
-
-  return (
-    <div className="absolute inset-0 z-50 flex items-end">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
-      <div className="relative w-full bg-bg-base rounded-t-sheet px-5 pt-3 pb-7 max-h-[80vh] flex flex-col">
-        <div className="flex justify-center mb-2">
-          <button onClick={onClose} className="bg-transparent border-0 p-2 cursor-pointer">
-            <span className="block w-11 h-[5px] bg-[rgba(95,94,90,0.35)] rounded-full" />
-          </button>
-        </div>
-        <h3 className="font-title text-h2 text-ink-1 mb-1">从 /jpg/ 选一张</h3>
-        <p className="font-title text-mini text-ink-3 mb-3">
-          dev 模式专用 · 把你准备的图片放进 /jpg/ 后刷新
-        </p>
-        {loading ? (
-          <p className="font-title text-small text-ink-3 text-center py-8">加载中…</p>
-        ) : files.length === 0 ? (
-          <p className="font-title text-small text-ink-3 text-center py-8">
-            /jpg/ 目录是空的或不可读
-          </p>
-        ) : (
-          <div className="grid grid-cols-3 gap-2 overflow-y-auto pb-2">
-            {files.map((f) => (
-              <button
-                key={f.name}
-                onClick={() => onPick(f.name)}
-                className="bg-white rounded-card border border-[rgba(95,94,90,0.18)] overflow-hidden cursor-pointer flex flex-col"
-              >
-                <div className="aspect-square bg-bg-base">
-                  <img
-                    src={`/api/dev/jpg/${encodeURIComponent(f.name)}`}
-                    alt={f.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <span className="font-title text-mini text-ink-2 px-1 py-1 truncate">
-                  {f.name}
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ──────────── TextZone ────────────
 function TextZone({

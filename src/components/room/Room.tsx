@@ -15,8 +15,12 @@ export interface PhotoStickerProps {
   y: number;
   rot?: number;
   label?: string;
-  tone?: string; // 内层照片色块色
+  tone?: string; // 内层照片色块色（imageUrl 缺失时回退用）
   wall?: 'back' | 'left' | 'right';
+  /** 真实贴图 URL（来自卡片 image_url）；缺失时画占位色块 */
+  imageUrl?: string;
+  /** 点击触发 — home 上用来打开查看浮层 */
+  onClick?: () => void;
 }
 
 export interface FrameStickerProps {
@@ -188,16 +192,53 @@ export function Room({
 }
 
 /** 墙上贴纸（PRD §9.6 照片贴纸） */
-export function PhotoSticker({ x, y, rot = -4, label = '', tone = '#E8C896', wall = 'back' }: PhotoStickerProps) {
+export function PhotoSticker({
+  x,
+  y,
+  rot = -4,
+  label = '',
+  tone = '#E8C896',
+  wall = 'back',
+  imageUrl,
+  onClick,
+}: PhotoStickerProps) {
   const skew = wall === 'left' ? -18 : wall === 'right' ? 18 : 0;
+  // 给每张贴纸生成一个稳定 clipPath id，避免 SVG <image> 画到边框外
+  const clipId = `ps-clip-${Math.round(x)}-${Math.round(y)}`;
   return (
-    <g transform={`translate(${x},${y}) rotate(${rot}) skewY(${skew})`}>
+    <g
+      transform={`translate(${x},${y}) rotate(${rot}) skewY(${skew})`}
+      onClick={onClick}
+      style={onClick ? { cursor: 'pointer' } : undefined}
+      role={onClick ? 'button' : undefined}
+    >
       <rect x="-22" y="-26" width="44" height="52" fill="#FFF" stroke="#5F5E5A" strokeWidth="0.8" />
-      <rect x="-18" y="-22" width="36" height="36" fill={tone} />
-      <line x1="-18" y1="-14" x2="18" y2="-14" stroke="rgba(95,94,90,0.25)" strokeWidth="0.6" />
-      <line x1="-18" y1="-6" x2="18" y2="-6" stroke="rgba(95,94,90,0.25)" strokeWidth="0.6" />
-      <line x1="-18" y1="2" x2="18" y2="2" stroke="rgba(95,94,90,0.25)" strokeWidth="0.6" />
-      <line x1="-18" y1="10" x2="18" y2="10" stroke="rgba(95,94,90,0.25)" strokeWidth="0.6" />
+      {imageUrl ? (
+        <>
+          <defs>
+            <clipPath id={clipId}>
+              <rect x="-18" y="-22" width="36" height="36" />
+            </clipPath>
+          </defs>
+          <image
+            href={imageUrl}
+            x="-18"
+            y="-22"
+            width="36"
+            height="36"
+            preserveAspectRatio="xMidYMid slice"
+            clipPath={`url(#${clipId})`}
+          />
+        </>
+      ) : (
+        <>
+          <rect x="-18" y="-22" width="36" height="36" fill={tone} />
+          <line x1="-18" y1="-14" x2="18" y2="-14" stroke="rgba(95,94,90,0.25)" strokeWidth="0.6" />
+          <line x1="-18" y1="-6" x2="18" y2="-6" stroke="rgba(95,94,90,0.25)" strokeWidth="0.6" />
+          <line x1="-18" y1="2" x2="18" y2="2" stroke="rgba(95,94,90,0.25)" strokeWidth="0.6" />
+          <line x1="-18" y1="10" x2="18" y2="10" stroke="rgba(95,94,90,0.25)" strokeWidth="0.6" />
+        </>
+      )}
       {label && (
         <text x="0" y="22" textAnchor="middle" fontSize="6" fill="#5F5E5A" fontFamily="var(--f-num)">
           {label}

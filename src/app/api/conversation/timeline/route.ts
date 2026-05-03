@@ -33,6 +33,7 @@ const DAY_THEME: Record<number, string> = Object.fromEntries(
 interface ConvRow {
   id: string;
   day: number;
+  role: 'companion' | 'child' | 'system';
   content: string;
   source: string | null;
   created_at: string;
@@ -65,9 +66,9 @@ export async function GET(req: Request) {
   // 拉两侧
   const [convRows, memRows] = await Promise.all([
     query<ConvRow>(
-      `select id, day, content, source, created_at
+      `select id, day, role, content, source, created_at
          from conversations
-         where companion_id = :cid and role = 'companion'
+         where companion_id = :cid and role in ('companion', 'child')
          order by created_at asc`,
       { cid: companion.id },
     ),
@@ -186,14 +187,25 @@ export async function GET(req: Request) {
 
     if (pickConv && c) {
       emitDayBreak(c.day);
-      items.push({
-        kind: 'companion',
-        id: c.id,
-        content: c.content,
-        source: c.source ?? '',
-        day: c.day,
-        at: c.created_at,
-      });
+      if (c.role === 'child') {
+        // Free Chat 写入的孩子问句 — 当作普通 child_text 渲染
+        items.push({
+          kind: 'child_text',
+          id: c.id,
+          text: c.content,
+          day: c.day,
+          at: c.created_at,
+        });
+      } else {
+        items.push({
+          kind: 'companion',
+          id: c.id,
+          content: c.content,
+          source: c.source ?? '',
+          day: c.day,
+          at: c.created_at,
+        });
+      }
       i++;
     } else if (m) {
       emitDayBreak(m.day);

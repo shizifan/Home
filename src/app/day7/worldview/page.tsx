@@ -189,6 +189,16 @@ export default function WorldviewPage() {
             <span className="font-num text-mini text-ink-3 tracking-[0.16em]">DAY 7</span>
           </div>
 
+          {/* opening 阶段的思考占位 — 避免空白卡片像坏掉了 */}
+          {stage.kind === 'opening' && (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
+              <span className="block w-9 h-9 rounded-full border-[2.5px] border-amber-light border-t-transparent animate-spin" />
+              <p className="font-title text-small text-ink-3">
+                它在心里想<span className="inline-block animate-pulse">…</span>
+              </p>
+            </div>
+          )}
+
           {/* 第 1–4 项 */}
           {ITEMS_BASE.slice(0, 4).map((it, idx) => {
             const visible =

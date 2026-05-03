@@ -1,0 +1,74 @@
+{
+  "examples": [
+    {
+      "input": {
+        "description_text": "我的卧室，有一张蓝色的床，窗户能看到楼下的大树。床头有一个小台灯。",
+        "task_topic": "你最常呆的地方"
+      },
+      "expected_output": {
+        "scene_type": "indoor_room",
+        "main_subjects": ["蓝色的床", "窗户外的大树", "小台灯"],
+        "visual_attributes": ["蓝色", "木质"],
+        "atmosphere": "温馨",
+        "prompt_content": "一间温馨的卧室，一张蓝色的床，床头放着小台灯，窗外能看到楼下的大树",
+        "excluded_details": []
+      }
+    },
+    {
+      "input": {
+        "description_text": "厨房里妈妈在包饺子，桌子上有面粉，旁边放着一碗馅。",
+        "task_topic": "介绍一个家里人"
+      },
+      "expected_output": {
+        "scene_type": "people_with_env",
+        "main_subjects": ["包饺子的妈妈", "桌上的面粉", "一碗馅"],
+        "visual_attributes": ["白色", "木质"],
+        "atmosphere": "温馨",
+        "prompt_content": "厨房里，妈妈正在包饺子，桌上撒着面粉，旁边一碗馅",
+        "excluded_details": []
+      }
+    },
+    {
+      "input": {
+        "description_text": "公园，有一个秋千，旁边是绿色的草地，几个小朋友在跑。",
+        "task_topic": "我们去过的地方"
+      },
+      "expected_output": {
+        "scene_type": "outdoor_place",
+        "main_subjects": ["秋千", "草地", "奔跑的小朋友"],
+        "visual_attributes": ["绿色"],
+        "atmosphere": "热闹",
+        "prompt_content": "一个公园，有一个秋千和绿色草地，几个小朋友在草地上奔跑",
+        "excluded_details": []
+      }
+    },
+    {
+      "input": {
+        "description_text": "一只橘色的猫睡在沙发上",
+        "task_topic": "你最喜欢的"
+      },
+      "expected_output": {
+        "scene_type": "object_focus",
+        "main_subjects": ["橘色的猫", "沙发"],
+        "visual_attributes": ["橘色"],
+        "atmosphere": "安静",
+        "prompt_content": "一只橘色的猫睡在沙发上",
+        "excluded_details": []
+      }
+    },
+    {
+      "input": {
+        "description_text": "我家是这样的，进门是一个鞋柜，鞋柜上面有一只小熊。然后右边是客厅，客厅有一个绿色的沙发，沙发是奶奶送的，可以坐三个人，我经常坐在中间。沙发对面是电视，电视一般是爸爸在看，他喜欢看新闻。然后客厅旁边是厨房，厨房里妈妈经常在做饭，最常做饺子。卫生间在最里面，房间里我和姐姐住一间。",
+        "task_topic": "你最常呆的地方"
+      },
+      "expected_output": {
+        "scene_type": "indoor_room",
+        "main_subjects": ["绿色的沙发", "电视", "鞋柜上的小熊"],
+        "visual_attributes": ["绿色"],
+        "atmosphere": "温馨",
+        "prompt_content": "客厅有一张绿色沙发，对面是电视，进门处的鞋柜上坐着一只小熊",
+        "excluded_details": ["厨房", "卫生间", "和姐姐住的房间"]
+      }
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 /**
  * 统一 LLM 客户端 — 通过 OpenAI 兼容协议调 DeepSeek
  *
- * 5 个调用点（pass1 / pass2 / concept_detail / correction / day7）
- * 都走这一个客户端，按 callType 路由模型 / 温度 / max_tokens / timeout（PRD §14.3 表）。
+ * 7 个调用点（pass1 / pass2 / concept_detail / correction / day7 / keyword_extract / style_audit）
+ * 都走这一个客户端，按 callType 路由模型 / 温度 / max_tokens / timeout（PRD §14.3 表 + V0.6.1 §16）。
  *
  * 失败行为：本层只做 1 次重试 + 透传错误；降级（备用文案 / set_aside 写入）由调用方处理。
  */
@@ -17,7 +17,11 @@ export type LLMCallType =
   | 'pass2'
   | 'concept_detail'
   | 'correction'
-  | 'day7';
+  | 'day7'
+  | 'keyword_extract'  // V0.6.1：从描述提取图像 prompt 内容
+  | 'free_chat';       // V0.6.1+：ChatOverlay 开放问答
+// 注：style_audit 走通义千问-VL（DashScope），不走 DeepSeek，
+// 在 src/lib/imagegen/styleAudit.ts 独立实现。
 
 interface ParamSet {
   model: string;
@@ -26,13 +30,15 @@ interface ParamSet {
   timeoutMs: number;
 }
 
-// PRD §14.3 LLM 调用参数总览
+// PRD §14.3 LLM 调用参数总览 + V0.6.1 §16
 const PARAMS: Record<LLMCallType, ParamSet> = {
   pass1: { model: '', max_tokens: 300, temperature: 0.3, timeoutMs: 6000 },
   pass2: { model: '', max_tokens: 200, temperature: 0.7, timeoutMs: 8000 },
   concept_detail: { model: '', max_tokens: 400, temperature: 0.5, timeoutMs: 10000 },
   correction: { model: '', max_tokens: 100, temperature: 0.6, timeoutMs: 3000 },
   day7: { model: '', max_tokens: 500, temperature: 0.5, timeoutMs: 15000 },
+  keyword_extract: { model: '', max_tokens: 400, temperature: 0.2, timeoutMs: 6000 },
+  free_chat: { model: '', max_tokens: 120, temperature: 0.6, timeoutMs: 8000 },
 };
 
 let _client: OpenAI | null = null;

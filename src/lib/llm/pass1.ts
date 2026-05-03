@@ -16,7 +16,7 @@ import type { MemoryBankEntry, VisionTags } from '@/types';
 interface Pass1Input {
   companion: CompanionPresetMeta;
   day: number;
-  inputType: 'photo' | 'text' | 'choice' | 'skipped';
+  inputType: 'photo' | 'text' | 'choice' | 'skipped' | 'voice' | 'describe';
   inputContent: string;
   visionTags?: VisionTags;
   memoryBank: MemoryBankEntry[];

@@ -6,6 +6,12 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
+# MiniMax 生成的测试图片（运行 npm run test:gen-fixtures 后生成）
+/tests/fixtures/images/*.jpg
+/tests/fixtures/images/*.png
+/tests/fixtures/images/*.webp
 
 # next.js
 /.next/

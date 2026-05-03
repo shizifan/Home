@@ -9,6 +9,7 @@ import { mkdir, writeFile, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const UPLOAD_BASE = path.join(process.cwd(), 'public', 'uploads');
+const VOICE_BASE = path.join(process.cwd(), 'public', 'uploads_voice');
 
 export async function saveUploadedBuffer(args: {
   companionId: string;
@@ -44,6 +45,28 @@ export async function copyJpgToUploads(args: {
 
 export function uploadAbsPath(url: string): string {
   // /uploads/xxx/yyy/zzz.jpg → public/uploads/xxx/yyy/zzz.jpg
-  if (!url.startsWith('/uploads/')) throw new Error('not an uploads url');
+  // /uploads_voice/xxx/yyy/zzz.webm → public/uploads_voice/xxx/yyy/zzz.webm
+  if (!url.startsWith('/uploads/') && !url.startsWith('/uploads_voice/')) {
+    throw new Error('not an uploads url');
+  }
   return path.join(process.cwd(), 'public', url);
+}
+
+/**
+ * V0.6.1：保存语音文件到 public/uploads_voice/{companion_id}/...
+ */
+export async function saveUploadedAudio(args: {
+  companionId: string;
+  buf: Buffer;
+  ext: string; // 'webm' | 'mp4' | 'wav' | 'm4a'
+}): Promise<{ url: string; absPath: string }> {
+  const dir = path.join(VOICE_BASE, args.companionId);
+  await mkdir(dir, { recursive: true });
+  const filename = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${args.ext}`;
+  const fullPath = path.join(dir, filename);
+  await writeFile(fullPath, args.buf);
+  return {
+    url: `/uploads_voice/${args.companionId}/${filename}`,
+    absPath: fullPath,
+  };
 }

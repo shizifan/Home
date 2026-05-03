@@ -20,7 +20,7 @@ import type { Pass1Output } from './validators';
 interface Pass2Input {
   companion: CompanionPresetMeta;
   day: number;
-  inputType: 'photo' | 'text' | 'choice' | 'skipped';
+  inputType: 'photo' | 'text' | 'choice' | 'skipped' | 'voice' | 'describe';
   inputContent: string;
   pass1: Pass1Output;
   memoryBank: MemoryBankEntry[];
@@ -97,13 +97,17 @@ export async function runPass2(input: Pass2Input, companionId?: string) {
 }
 
 /** Pass 2 全部失败时取备用文案 */
-export function pass2Fallback(inputType: 'photo' | 'text' | 'choice' | 'skipped'): string {
-  if (inputType === 'photo') return pickFallbackPass2AfterPhoto();
+export function pass2Fallback(
+  inputType: 'photo' | 'text' | 'choice' | 'skipped' | 'voice' | 'describe',
+): string {
+  if (inputType === 'photo' || inputType === 'describe') return pickFallbackPass2AfterPhoto();
   return pickFallbackPass2AfterText();
 }
 
 function describeInput(input: Pass2Input): string {
   if (input.inputType === 'photo') return `孩子刚拍了一张照片`;
+  if (input.inputType === 'describe') return `孩子刚描述完一个场景：${input.inputContent.slice(0, 200)}`;
+  if (input.inputType === 'voice') return `孩子用语音说：${input.inputContent.slice(0, 200)}`;
   if (input.inputType === 'text') return `孩子写了：${input.inputContent.slice(0, 200)}`;
   if (input.inputType === 'choice') return `孩子选了：${input.inputContent}`;
   return `孩子今天跳过了任务。`;

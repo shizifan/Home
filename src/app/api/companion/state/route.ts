@@ -12,6 +12,8 @@ import {
   listRecentMemories,
   getMemoryBank,
 } from '@/lib/db/repos';
+import { listCardsForCompanion } from '@/lib/db/cardsRepo';
+import { query } from '@/lib/db/client';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import { getTaskByDay } from '@/lib/tasks';
 import type { DayNumber } from '@/types';
@@ -28,7 +30,7 @@ export async function GET() {
   const recentMemories = await listRecentMemories(companion.id, 10);
   const memoryBank = await getMemoryBank(companion.id);
 
-  // 房间元素：最多 6 张最近照片
+  // 房间元素：最多 6 张最近照片（V0.5 兼容）
   const photos = recentMemories
     .filter((m) => m.type === 'photo' && m.photo_url)
     .slice(0, 6)
@@ -37,6 +39,31 @@ export async function GET() {
       url: m.photo_url!,
       day: m.day,
     }));
+
+  // V0.6.1：纸片卡片（仅取已确认的）
+  const allCards = await listCardsForCompanion(companion.id, 12);
+  const visibleCards = allCards.slice(0, 6);
+  // 一次性把这些 card 对应的 memory.user_text + day 拉回来（避免 N 次查询）
+  const memoryRows = visibleCards.length
+    ? await query<{ id: string; day: number; user_text: string | null }>(
+        `select id, day, user_text from memories where id in (${visibleCards
+          .map((_, i) => `:m${i}`)
+          .join(',')})`,
+        Object.fromEntries(visibleCards.map((c, i) => [`m${i}`, c.memory_id])),
+      )
+    : [];
+  const memoryDescMap = new Map(memoryRows.map((m) => [m.id, m]));
+  const cards = visibleCards.map((c) => {
+    const m = memoryDescMap.get(c.memory_id);
+    return {
+      id: c.id,
+      memory_id: c.memory_id,
+      image_url: c.image_url,
+      is_fallback_text_card: c.is_fallback_text_card,
+      day: m?.day ?? 0,
+      description: m?.user_text ?? '',
+    };
+  });
 
   const today = getTaskByDay(companion.current_day);
   const todayDone = today
@@ -74,6 +101,7 @@ export async function GET() {
     can_advance: todayDone && companion.current_day < 7,
     can_view_worldview: todayDone && companion.current_day >= 7,
     photos,
+    cards,
     has_unread_memory: hasUnreadMemory,
     memory_bank_summary: {
       remembered: memoryBank.filter((m) => m.type === 'remembered').length,

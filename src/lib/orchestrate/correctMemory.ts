@@ -13,7 +13,7 @@ import 'server-only';
 import {
   appendCorrectionHistory,
   appendEvidenceToMemoryBank,
-  createMemoryBankEntry,
+  upsertMemoryBankEntry,
   deleteMemoryBankEntry,
   findMemoryBankById,
   getCompanionById,
@@ -147,7 +147,7 @@ export async function correctMemory(req: CorrectionRequest): Promise<CorrectionR
         taskQuestion: `关于"${conceptName}"，孩子主动告诉伙伴的事。`,
       });
       // 2. 创建 remembered 概念
-      const remembered = await createMemoryBankEntry({
+      const remembered = await upsertMemoryBankEntry({
         companionId: entry.companion_id,
         type: 'remembered',
         conceptName,

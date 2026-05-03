@@ -10,11 +10,11 @@ import { runPass1, pass1FallbackSetAside } from '@/lib/llm/pass1';
 import { runPass2, pass2Fallback } from '@/lib/llm/pass2';
 import {
   appendEvidenceToMemoryBank,
-  createMemoryBankEntry,
   getCompanionById,
   getMemoryBank,
   insertCompanionLine,
   insertMemory,
+  upsertMemoryBankEntry,
 } from '@/lib/db/repos';
 import {
   filterChildInput,
@@ -70,7 +70,7 @@ export async function processInput(
         taskQuestion: input.taskQuestion,
       });
       const rejection = getInputRejectionLine(ck.reason ?? 'other');
-      const fallbackEntry = await createMemoryBankEntry({
+      const fallbackEntry = await upsertMemoryBankEntry({
         companionId: companion.id,
         type: 'set_aside',
         conceptName: '我先放一放的话',
@@ -170,41 +170,19 @@ export async function processInput(
         : pass1Data.action === 'mark_uncertain'
           ? 'uncertain'
           : 'set_aside';
-    try {
-      const entry = await createMemoryBankEntry({
-        companionId: companion.id,
-        type,
-        conceptName: pass1Data.concept_name,
-        conceptCategory: pass1Data.concept_category,
-        aiSummary: pass1Data.evidence_text,
-        aiReasoning: pass1Data.ai_reasoning,
-        evidence: [
-          { memory_id: memory.id, day, excerpt: pass1Data.evidence_text },
-        ],
-        confidence: pass1Data.confidence,
-      });
-      memoryBankId = entry.id;
-    } catch (err) {
-      // 唯一键冲突（同名概念已存在）→ 当 append 处理
-      if (
-        type === 'remembered' &&
-        (err as { code?: string })?.code === 'ER_DUP_ENTRY'
-      ) {
-        const existing = memoryBank.find(
-          (m) => m.concept_name === pass1Data.concept_name && m.type === 'remembered',
-        );
-        if (existing) {
-          await appendEvidenceToMemoryBank(existing.id, {
-            memory_id: memory.id,
-            day,
-            excerpt: pass1Data.evidence_text,
-          });
-          memoryBankId = existing.id;
-        }
-      } else {
-        throw err;
-      }
-    }
+    const entry = await upsertMemoryBankEntry({
+      companionId: companion.id,
+      type,
+      conceptName: pass1Data.concept_name,
+      conceptCategory: pass1Data.concept_category,
+      aiSummary: pass1Data.evidence_text,
+      aiReasoning: pass1Data.ai_reasoning,
+      evidence: [
+        { memory_id: memory.id, day, excerpt: pass1Data.evidence_text },
+      ],
+      confidence: pass1Data.confidence,
+    });
+    memoryBankId = entry.id;
   }
 
   // 4. Pass 2

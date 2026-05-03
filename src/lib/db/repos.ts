@@ -95,13 +95,23 @@ export async function insertMemory(args: {
   photoUrl?: string;
   visionTags?: VisionTags;
   userText?: string;
+  /** V0.6.1：用户实际输入方式（与 type 区分）*/
+  inputMethod?: string;
+  /** V0.6.1：语音文件 URL（如有）*/
+  voiceAudioUrl?: string;
+  /** V0.6.1：ASR 原始结果 */
+  asrTranscription?: string;
+  /** V0.6.1：孩子在中转页编辑后的最终文字 */
+  editedText?: string;
 }): Promise<Memory> {
   const id = uuid();
   await execute(
     `insert into memories
-       (id, companion_id, day, type, photo_url, vision_tags, user_text, task_id, task_question)
+       (id, companion_id, day, type, photo_url, vision_tags, user_text, task_id, task_question,
+        input_method, voice_audio_url, asr_transcription, edited_text)
      values
-       (:id, :cid, :day, :type, :photo, cast(:tags as json), :text, :task_id, :tq)`,
+       (:id, :cid, :day, :type, :photo, cast(:tags as json), :text, :task_id, :tq,
+        :im, :va, :asr, :et)`,
     {
       id,
       cid: args.companionId,
@@ -112,11 +122,16 @@ export async function insertMemory(args: {
       text: args.userText ?? null,
       task_id: args.taskId,
       tq: args.taskQuestion ?? null,
+      im: args.inputMethod ?? args.type,
+      va: args.voiceAudioUrl ?? null,
+      asr: args.asrTranscription ?? null,
+      et: args.editedText ?? null,
     },
   );
   const row = await queryOne<Memory>(
     `select id, companion_id, day, type, photo_url, vision_tags, user_text,
-            task_id, task_question, created_at
+            task_id, task_question, created_at,
+            input_method, voice_audio_url, asr_transcription, edited_text, regenerate_count
        from memories where id = :id`,
     { id },
   );
@@ -183,6 +198,24 @@ export async function findMemoryBankById(id: string): Promise<MemoryBankEntry | 
   );
 }
 
+/** 按 (companion_id, type, concept_name) 精确查回 —— ER_DUP_ENTRY 后用 */
+export async function findMemoryBankByConcept(
+  companionId: string,
+  type: MemoryBankType,
+  conceptName: string,
+): Promise<MemoryBankEntry | null> {
+  return await queryOne<MemoryBankEntry>(
+    `select id, companion_id, type, concept_name, concept_category,
+            ai_summary, ai_reasoning, evidence, confidence,
+            user_corrected, user_correction_history, cached_detail, cache_dirty,
+            display_order, last_updated, created_at
+       from memory_bank
+       where companion_id = :cid and type = :type and concept_name = :cn
+       limit 1`,
+    { cid: companionId, type, cn: conceptName },
+  );
+}
+
 export interface CreateMemoryBankInput {
   companionId: string;
   type: MemoryBankType;
@@ -222,6 +255,34 @@ export async function createMemoryBankEntry(
   const row = await findMemoryBankById(id);
   if (!row) throw new Error('createMemoryBankEntry: row not found');
   return row;
+}
+
+/**
+ * Upsert：试图新建 memory_bank entry；若 (companion_id, type, concept_name)
+ * 已有同行（ER_DUP_ENTRY），改为给已有行 append evidence 并返回它。
+ *
+ * 防御项：
+ *   - LLM 输出 concept_name 与 DB 之间存在不可见 unicode 差异
+ *   - 多请求并发命中同一 fixed concept（安全过滤兜底、Pass1 兜底等）
+ */
+export async function upsertMemoryBankEntry(
+  input: CreateMemoryBankInput,
+): Promise<MemoryBankEntry> {
+  try {
+    return await createMemoryBankEntry(input);
+  } catch (err) {
+    if ((err as { code?: string })?.code !== 'ER_DUP_ENTRY') throw err;
+    const existing = await findMemoryBankByConcept(
+      input.companionId,
+      input.type,
+      input.conceptName,
+    );
+    if (!existing) throw err;
+    for (const ev of input.evidence) {
+      await appendEvidenceToMemoryBank(existing.id, ev);
+    }
+    return existing;
+  }
 }
 
 export async function appendEvidenceToMemoryBank(
@@ -280,17 +341,11 @@ export async function bulkInsertUnknown(
   companionId: string,
   items: string[],
 ): Promise<void> {
-  // 跳过已经存在的同名 unknown，避免重复
+  // upsertMemoryBankEntry：已存在的同名 unknown 直接走 append（evidence 空，无副作用）
   for (const name of items) {
     const trimmed = name.trim().slice(0, 60);
     if (!trimmed) continue;
-    const exists = await queryOne(
-      `select id from memory_bank
-       where companion_id = :cid and concept_name = :name and type = 'unknown' limit 1`,
-      { cid: companionId, name: trimmed },
-    );
-    if (exists) continue;
-    await createMemoryBankEntry({
+    await upsertMemoryBankEntry({
       companionId,
       type: 'unknown',
       conceptName: trimmed,
@@ -336,6 +391,61 @@ export async function insertCompanionLine(args: {
   );
   if (!row) throw new Error('insertCompanionLine: row not found');
   return row;
+}
+
+/**
+ * 写一条 role='child' 的对话行。Free Chat 流程用：孩子主动问问题时落库。
+ */
+export async function insertChildLine(args: {
+  companionId: string;
+  day: DayNumber;
+  content: string;
+  source: string;
+}): Promise<ConversationLine> {
+  const id = uuid();
+  await execute(
+    `insert into conversations
+      (id, companion_id, day, role, content, source)
+     values
+      (:id, :cid, :day, 'child', :content, :source)`,
+    {
+      id,
+      cid: args.companionId,
+      day: args.day,
+      content: args.content,
+      source: args.source,
+    },
+  );
+  const row = await queryOne<ConversationLine>(
+    `select id, companion_id, day, role, content, source, created_at
+       from conversations where id = :id`,
+    { id },
+  );
+  if (!row) throw new Error('insertChildLine: row not found');
+  return row;
+}
+
+/**
+ * 取最近 N 条对话（含 child / companion / system），时间正序（最旧 → 最新）。
+ * 用于 Free Chat 给 LLM 注入上下文。
+ */
+export async function listRecentConversations(
+  companionId: string,
+  limit: number,
+): Promise<ConversationLine[]> {
+  const lim = Math.max(1, Math.min(100, Math.floor(limit)));
+  // mysql2 ? 不允许在 LIMIT 用绑定参数；这里钳制后字面拼接
+  const rows = await query<ConversationLine>(
+    `select * from (
+       select id, companion_id, day, role, content, source, created_at
+         from conversations
+         where companion_id = :cid
+         order by created_at desc
+         limit ${lim}
+     ) t order by created_at asc`,
+    { cid: companionId },
+  );
+  return rows;
 }
 
 export async function getRecentCompanionLine(

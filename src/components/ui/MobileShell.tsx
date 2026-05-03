@@ -14,7 +14,7 @@ interface MobileShellProps {
 export function MobileShell({ children, showStatusBar = true }: MobileShellProps) {
   return (
     <div className="min-h-dvh bg-bg-base flex justify-center">
-      <div className="viewport-lock w-full max-w-[430px] min-h-dvh bg-bg-base relative overflow-hidden">
+      <div className="viewport-lock w-full max-w-[430px] min-h-dvh bg-bg-base relative overflow-x-hidden overflow-y-auto">
         {showStatusBar && <IOSStatusBar />}
         {children}
       </div>

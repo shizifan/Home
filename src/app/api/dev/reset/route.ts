@@ -21,16 +21,18 @@ export async function POST() {
     { uid: SINGLE_USER_ID },
   );
   for (const r of rows) {
-    // 顺序删（外键 cascade 会带走 memories / memory_bank / conversations / worldview）
+    // 顺序删（外键 cascade 会带走 memories / memory_bank / conversations / worldview / cards）
     await execute(`delete from companions where id = :id`, { id: r.id });
-    // 删 uploads
-    try {
-      await rm(path.join(process.cwd(), 'public', 'uploads', r.id), {
-        recursive: true,
-        force: true,
-      });
-    } catch {
-      /* ignore */
+    // 删 uploads（V0.5 photo + V0.6.1 voice）
+    for (const dir of ['uploads', 'uploads_voice']) {
+      try {
+        await rm(path.join(process.cwd(), 'public', dir, r.id), {
+          recursive: true,
+          force: true,
+        });
+      } catch {
+        /* ignore */
+      }
     }
   }
   return NextResponse.json({ ok: true, deleted: rows.length });

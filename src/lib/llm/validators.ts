@@ -47,6 +47,25 @@ export const Day7Schema = z.object({
 });
 export type Day7Output = z.infer<typeof Day7Schema>;
 
+/** V0.6.1：关键词提取（Plan §5.5） */
+export const KeywordExtractSchema = z.object({
+  scene_type: z.enum(['indoor_room', 'outdoor_place', 'people_with_env', 'object_focus']),
+  main_subjects: z.array(z.string().min(1)).min(1).max(3),
+  visual_attributes: z.array(z.string()).max(5),
+  atmosphere: z.string().min(1).max(20),
+  prompt_content: z.string().min(1).max(120),
+  excluded_details: z.array(z.string()),
+});
+export type KeywordExtractOutput = z.infer<typeof KeywordExtractSchema>;
+
+/** V0.6.1：风格审核（Plan §5.4 / PRD §16.1） */
+export const StyleAuditSchema = z.object({
+  style_match: z.boolean(),
+  issues: z.array(z.string()),
+  severity: z.enum(['ok', 'minor', 'major']),
+});
+export type StyleAuditOutput = z.infer<typeof StyleAuditSchema>;
+
 /**
  * 兜底解析：先尝试整体 JSON.parse，失败再用宽松的"代码块抽取"。
  * 用 zod 做最终校验 + 钳制（confidence 0..1）。
