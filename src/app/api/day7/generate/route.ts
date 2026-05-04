@@ -3,6 +3,8 @@
  * 触发 Day 7 档案生成。命中缓存（worldview_cards 已存在）→ 直接返回。
  *
  * 失败处理（PRD §15.6.4）：3 次重试都失败 → 返回 503，不允许预设替代。
+ *
+ * V1.0：新增 skipCount 用于 skipMode 三档处理（Plan_04 §1.3）。
  */
 
 import { NextResponse } from 'next/server';
@@ -16,6 +18,8 @@ import {
 } from '@/lib/db/repos';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import { hasRestoredItems, runDay7 } from '@/lib/llm/day7';
+import { query } from '@/lib/db/client';
+import { filterCompanionOutput } from '@/lib/safety/filters';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -39,9 +43,11 @@ export async function POST(req: Request) {
   // 命中缓存
   const cached = await findWorldview(companion.id);
   if (cached) {
+    const skipCount = await countSkippedMemories(companion.id);
     return NextResponse.json({
       worldview: serialize(cached),
       from_cache: true,
+      skipCount,
     });
   }
 
@@ -56,7 +62,11 @@ export async function POST(req: Request) {
   if (!preset) return NextResponse.json({ error: 'preset not found' }, { status: 500 });
 
   const bank = await getMemoryBank(companion.id);
-  const result = await runDay7({ companion: preset, memoryBank: bank }, companion.id);
+  const skipCount = await countSkippedMemories(companion.id);
+  const result = await runDay7(
+    { companion: preset, memoryBank: bank, skipCount },
+    companion.id,
+  );
 
   if (!result.success) {
     return NextResponse.json(
@@ -80,9 +90,10 @@ export async function POST(req: Request) {
     companionId: companion.id,
     data,
     stats: {
-      photos: stats.photos,
-      conversations: stats.conversations,
-      corrections: stats.corrections,
+      cards_count: stats.photos,
+      conversations_count: stats.conversations,
+      corrections_count: stats.corrections,
+      days_count: stats.current_day,
     },
     rawLLMOutput: result.data,
   });
@@ -90,6 +101,7 @@ export async function POST(req: Request) {
   return NextResponse.json({
     worldview: serialize(row),
     from_cache: false,
+    skipCount,
   });
 }
 
@@ -99,7 +111,20 @@ export async function GET() {
   if (!companion) return NextResponse.json({ error: 'no companion' }, { status: 404 });
   const cached = await findWorldview(companion.id);
   if (!cached) return NextResponse.json({ error: 'not generated yet' }, { status: 404 });
-  return NextResponse.json({ worldview: serialize(cached), from_cache: true });
+  const skipCount = await countSkippedMemories(companion.id);
+  return NextResponse.json({ worldview: serialize(cached), from_cache: true, skipCount });
+}
+
+async function countSkippedMemories(companionId: string): Promise<number> {
+  try {
+    const rows = await query<{ cnt: string }>(
+      `SELECT COUNT(*)::text AS cnt FROM memories WHERE companion_id = $1 AND type = 'skipped'`,
+      [companionId],
+    );
+    return parseInt(rows[0]?.cnt ?? '0', 10);
+  } catch {
+    return 0;
+  }
 }
 
 function serialize(row: {
@@ -109,16 +134,21 @@ function serialize(row: {
   most_scary_thing: string | null;
   unknown_thing: string | null;
   almost_forgot_thing: string | null;
-  stats: { photos: number; conversations: number; corrections: number } | null;
+  stats: Record<string, number> | null;
   generated_at: string;
 }) {
+  const safe = (val: string | null) => {
+    if (!val) return val;
+    const result = filterCompanionOutput(val);
+    return result.ok ? val : '这件事先放一放，我们下次再聊。';
+  };
   return {
-    most_important_person: row.most_important_person,
-    most_fun_thing: row.most_fun_thing,
-    most_delicious_thing: row.most_delicious_thing,
-    most_scary_thing: row.most_scary_thing,
-    unknown_thing: row.unknown_thing,
-    almost_forgot_thing: row.almost_forgot_thing,
+    most_important_person: safe(row.most_important_person),
+    most_fun_thing: safe(row.most_fun_thing),
+    most_delicious_thing: safe(row.most_delicious_thing),
+    most_scary_thing: safe(row.most_scary_thing),
+    unknown_thing: safe(row.unknown_thing),
+    almost_forgot_thing: safe(row.almost_forgot_thing),
     stats: row.stats,
     generated_at: row.generated_at,
   };

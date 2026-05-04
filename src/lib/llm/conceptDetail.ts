@@ -23,7 +23,7 @@ export async function runConceptDetail(
 ) {
   // 把 evidence 列表渲染成 prompt 文本
   const evidenceLines = (Array.isArray(input.entry.evidence) ? input.entry.evidence : [])
-    .map((e) => `- Day ${e.day}: ${e.excerpt}`)
+    .map((e) => `- Day ${e.day}: ${e.quote}`)
     .join('\n');
 
   const fewShot = loadFewShotJSON('concept_detail/examples.json');

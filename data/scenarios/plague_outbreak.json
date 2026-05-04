@@ -1,0 +1,38 @@
+{
+  "id": "plague_outbreak",
+  "title": "瘟疫记",
+  "synopsis": "边城爆发瘟疫，消息传到朝堂。时间紧迫，每一刻都有人倒下。",
+  "roles": ["丞相", "太医", "百姓代表", "将军"],
+  "companion_role_map": {
+    "xiaoqinglong": "丞相",
+    "tengtengshe": "太医"
+  },
+  "acts": [
+    {
+      "act": 1,
+      "title": "瘟疫来袭",
+      "setting": "边城急报——瘟疫爆发，已有数百人倒下。太医面色凝重，百姓代表急得落泪。",
+      "dilemma": "朝廷的第一道命令应该是什么？",
+      "choices": ["knowledge", "object", "gift", "ability"]
+    },
+    {
+      "act": 2,
+      "title": "药物短缺",
+      "setting": "太医说药方中缺少一味关键药材，需要派人去深山采集——非常危险。",
+      "dilemma": "如何确保采药任务成功？",
+      "choices": ["knowledge", "object", "ability"]
+    },
+    {
+      "act": 3,
+      "title": "封城之决",
+      "setting": "瘟疫在蔓延。将军建议封城，但百姓代表哭诉封城意味着里面的人只能听天由命。",
+      "dilemma": "封城还是不封城？",
+      "choices": ["knowledge", "object", "gift", "ability"]
+    }
+  ],
+  "endings": {
+    "perfect": { "condition": "三幕均有 clever 道具使用", "narrative_template": "瘟疫被控制住了！你调配药物得当，派兵护药，设置了隔离区而非封城。百姓感恩戴德，太医对你敬佩不已。你获得了一本《医方备要》。" },
+    "good": { "condition": "至少一幕 clever", "narrative_template": "瘟疫最终平息。虽然过程艰难，但大多数百姓得到了救治。你学到了应对危机的经验。" },
+    "barely": { "condition": "无 clever 使用", "narrative_template": "瘟疫造成了不小的伤亡。百姓们在废墟中重建家园，你也因此明白了危机处理需要智慧。" }
+  }
+}

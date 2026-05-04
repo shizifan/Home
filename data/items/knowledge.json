@@ -1,0 +1,38 @@
+[
+  {
+    "item_id": "flood_control_map",
+    "item_name": "《治水图》",
+    "item_category": "knowledge",
+    "item_subcategory": "engineering",
+    "item_description": "一张古老的水利工程图",
+    "item_detailed_description": "详细记载了上游开渠分流、下游加固堤坝的方法。对于水患治理有奇效。",
+    "acquirable_from": ["plaza_water_disaster"]
+  },
+  {
+    "item_id": "art_of_speech",
+    "item_name": "《说话之术》",
+    "item_category": "knowledge",
+    "item_subcategory": "communication",
+    "item_description": "一本讲沟通技巧的古籍",
+    "item_detailed_description": "教你如何用礼貌打动对方，用智慧说服他人。使节和外交场合特别有用。",
+    "acquirable_from": ["plaza_envoy_visit", "initial"]
+  },
+  {
+    "item_id": "war_strategy",
+    "item_name": "《兵法要诀》",
+    "item_category": "knowledge",
+    "item_subcategory": "military",
+    "item_description": "一本讲战争智慧的古书",
+    "item_detailed_description": "三十六计与阵法详解。带兵打仗时能帮助判断局势，找到敌人弱点。",
+    "acquirable_from": ["plaza_border_alarm", "initial"]
+  },
+  {
+    "item_id": "investigation_manual",
+    "item_name": "《查案手记》",
+    "item_category": "knowledge",
+    "item_subcategory": "investigation",
+    "item_description": "前朝名探的办案笔记",
+    "item_detailed_description": "记录了如何从细节中发现破绽，如何让谎言无所遁形。查案侦破必备。",
+    "acquirable_from": ["plaza_court_intrigue", "initial"]
+  }
+]

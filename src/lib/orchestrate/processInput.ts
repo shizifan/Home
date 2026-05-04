@@ -77,7 +77,12 @@ export async function processInput(
         conceptCategory: 'other',
         aiSummary: '一些不太适合记下的话，先放着。',
         aiReasoning: '这次的内容我先放一放。',
-        evidence: [{ memory_id: memory.id, day, excerpt: '(过滤)' }],
+        evidence: [{
+          quote: '(过滤)',
+          day,
+          source: memory.id,
+          at: memory.created_at,
+        }],
         confidence: 1.0,
       });
       await insertCompanionLine({
@@ -158,9 +163,10 @@ export async function processInput(
   let memoryBankId: string | undefined;
   if (pass1Data.action === 'append_to_existing' && pass1Data.target_concept_id) {
     await appendEvidenceToMemoryBank(pass1Data.target_concept_id, {
-      memory_id: memory.id,
+      quote: pass1Data.evidence_text,
       day,
-      excerpt: pass1Data.evidence_text,
+      source: memory.id,
+      at: memory.created_at,
     });
     memoryBankId = pass1Data.target_concept_id;
   } else {
@@ -178,7 +184,7 @@ export async function processInput(
       aiSummary: pass1Data.evidence_text,
       aiReasoning: pass1Data.ai_reasoning,
       evidence: [
-        { memory_id: memory.id, day, excerpt: pass1Data.evidence_text },
+        { quote: pass1Data.evidence_text, day, source: memory.id, at: memory.created_at },
       ],
       confidence: pass1Data.confidence,
     });

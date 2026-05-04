@@ -1,45 +1,38 @@
 /**
- * CardConfirm — 卡片确认页主体（V0.6.1 §4.6）
+ * CardConfirm — 卡片确认页主体（V1.0 简化）
  *
  * 显示生成的卡片 + 静态问句 + 两个按钮：「不太对」/「就是这样」
  *
- * 双图测试期：两张图都展示，孩子主动点选其中一张作为入墙图。
+ * V1.0 变更：
+ *   - 移除双图测试期选择器（单图模式）
+ *   - 卡片右下角加 ✏️ 标识（暗示是描述生成的）
+ *   - onConfirm 不再需要 chosenSource 参数
  *
- * 等待行为（决议 B3：默认实装 5 分钟自动确认）：
+ * 等待行为：
  *   - 30s 无操作：伙伴气泡「看起来对吗？告诉我一声。」
  *   - 90s 无操作：伙伴再说「不点没关系，我等你。」
- *   - 5min 无操作：自动调 onConfirm({autoTimeout: true, chosenSource: null})
+ *   - 5min 无操作：自动调 onConfirm({autoTimeout: true})
  */
 
 'use client';
 
 import { useEffect, useMemo, useState, useRef } from 'react';
-import clsx from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { FallbackTextCard } from './FallbackTextCard';
-import type { ImageGenSource } from '@/lib/api/client';
 
 interface Props {
   imageUrl: string | null;
-  imageSource?: ImageGenSource | null;
-  altImageUrl?: string | null;
-  altImageSource?: ImageGenSource | null;
   isFallbackTextCard: boolean;
   /** 文字降级时使用的孩子原话 */
   fallbackDescription?: string;
   companionName: string;
-  /** 提交确认；chosenSource 仅在双图测试期有值 */
-  onConfirm: (args: { autoTimeout?: boolean; chosenSource: ImageGenSource | null }) => void;
+  /** 提交确认 */
+  onConfirm: (args: { autoTimeout?: boolean }) => void;
   /** 「不太对」点击 */
   onReject: () => void;
   /** 是否在确认中（按钮禁用）*/
   submitting?: boolean;
 }
-
-const SOURCE_LABEL: Record<ImageGenSource, string> = {
-  dashscope: '通义万相',
-  minimax: 'MiniMax',
-};
 
 const ASKING_LINES = [
   '你说的地方大概是这样的，对吗？',
@@ -55,9 +48,6 @@ const PROMPT_90_MS = 90 * 1000;
 
 export function CardConfirm({
   imageUrl,
-  imageSource,
-  altImageUrl,
-  altImageSource,
   isFallbackTextCard,
   fallbackDescription,
   companionName,
@@ -65,10 +55,7 @@ export function CardConfirm({
   onReject,
   submitting,
 }: Props) {
-  const hasBoth = !!imageUrl && !!altImageUrl;
-  const hasSingle = !!imageUrl && !altImageUrl;
   const [hint, setHint] = useState<string | null>(null);
-  const [picked, setPicked] = useState<ImageGenSource | null>(null);
   const autoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hint30Ref = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hint90Ref = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -83,27 +70,15 @@ export function CardConfirm({
     hint30Ref.current = setTimeout(() => setHint(PROMPT_30S), PROMPT_30_MS);
     hint90Ref.current = setTimeout(() => setHint(PROMPT_90S), PROMPT_90_MS);
     autoTimerRef.current = setTimeout(() => {
-      if (!submitting) onConfirm({ autoTimeout: true, chosenSource: null });
+      if (!submitting) onConfirm({ autoTimeout: true });
     }, AUTO_CONFIRM_MS);
     return () => {
       if (hint30Ref.current) clearTimeout(hint30Ref.current);
       if (hint90Ref.current) clearTimeout(hint90Ref.current);
       if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
     };
-    // 仅 mount 时启动一次定时器
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // 双图情景下，必须选一张才允许"就是这样"
-  const confirmDisabled = submitting || (hasBoth && !picked);
-  // 单图直接传 imageSource；双图传 picked；fallback / 单图 alt 不传
-  const confirmChosenSource: ImageGenSource | null = hasBoth
-    ? picked
-    : hasSingle
-      ? (imageSource ?? null)
-      : null;
-
-  const confirmLabel = hasBoth && !picked ? '先点一张' : '就是这样';
 
   return (
     <div className="flex flex-col gap-5 items-center" data-testid="card-confirm">
@@ -111,23 +86,8 @@ export function CardConfirm({
       <div className="flex justify-center pt-2 w-full">
         {isFallbackTextCard ? (
           <FallbackTextCard description={fallbackDescription ?? ''} large />
-        ) : hasBoth ? (
-          <div className="grid grid-cols-2 gap-3 w-full">
-            <SelectableCardImage
-              url={imageUrl!}
-              source={imageSource ?? null}
-              picked={picked === imageSource}
-              onPick={() => imageSource && setPicked(imageSource)}
-            />
-            <SelectableCardImage
-              url={altImageUrl!}
-              source={altImageSource ?? null}
-              picked={picked === altImageSource}
-              onPick={() => altImageSource && setPicked(altImageSource)}
-            />
-          </div>
-        ) : hasSingle ? (
-          <CardImage url={imageUrl!} source={imageSource ?? null} large />
+        ) : imageUrl ? (
+          <CardImage url={imageUrl} large />
         ) : (
           <FallbackTextCard description={fallbackDescription ?? '（生成失败）'} large />
         )}
@@ -166,30 +126,22 @@ export function CardConfirm({
           variant="amber"
           size="lg"
           fullWidth
-          disabled={confirmDisabled}
-          onClick={() => onConfirm({ chosenSource: confirmChosenSource })}
+          disabled={submitting}
+          onClick={() => onConfirm({})}
         >
-          {confirmLabel}
+          就是这样
         </Button>
       </div>
     </div>
   );
 }
 
-function CardImage({
-  url,
-  source,
-  large,
-}: {
-  url: string;
-  source: ImageGenSource | null;
-  large?: boolean;
-}) {
+function CardImage({ url, large }: { url: string; large?: boolean }) {
   return (
-    <figure className="flex flex-col items-center">
+    <figure className="flex flex-col items-center relative">
       <img
         src={url}
-        alt={source ? `${SOURCE_LABEL[source]} 生成` : '卡片'}
+        alt="卡片"
         className={
           large
             ? 'w-[300px] h-[300px] rounded-[14px] object-cover bg-white shadow-paper border-[1.5px] border-[#D3D1C7]'
@@ -197,61 +149,14 @@ function CardImage({
         }
         style={large ? { transform: 'rotate(-2deg)' } : undefined}
       />
-      {source && (
-        <figcaption className="font-num text-mini text-ink-3 mt-2 tracking-[0.06em]">
-          {SOURCE_LABEL[source]}
-        </figcaption>
-      )}
-    </figure>
-  );
-}
-
-function SelectableCardImage({
-  url,
-  source,
-  picked,
-  onPick,
-}: {
-  url: string;
-  source: ImageGenSource | null;
-  picked: boolean;
-  onPick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onPick}
-      data-testid={`card-pick-${source ?? 'unknown'}`}
-      className={clsx(
-        'flex flex-col items-center cursor-pointer rounded-[12px] p-1 bg-transparent border-0 transition',
-        picked && 'ring-2 ring-amber-deep ring-offset-2 ring-offset-bg-base',
-      )}
-    >
-      <span className="relative block w-full">
-        <img
-          src={url}
-          alt={source ? `${SOURCE_LABEL[source]} 生成` : '卡片'}
-          className="w-full aspect-square rounded-[12px] object-cover bg-white shadow-paper border-[1.5px] border-[#D3D1C7]"
-        />
-        {picked && (
-          <span
-            aria-hidden
-            className="absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-deep text-bg-base font-title text-body shadow-md"
-          >
-            ✓
-          </span>
-        )}
+      {/* V1.0: 右下角 ✏️ 标识 — 暗示"是描述生成的" */}
+      <span
+        aria-hidden
+        className="absolute bottom-1.5 right-1.5 text-[10px] leading-none opacity-60"
+        title="这是我根据你的描述画的"
+      >
+        ✏️
       </span>
-      {source && (
-        <span
-          className={clsx(
-            'font-num text-mini mt-2 tracking-[0.06em]',
-            picked ? 'text-amber-deep' : 'text-ink-3',
-          )}
-        >
-          {SOURCE_LABEL[source]}
-        </span>
-      )}
-    </button>
+    </figure>
   );
 }

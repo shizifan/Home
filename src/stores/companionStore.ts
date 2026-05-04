@@ -1,8 +1,10 @@
 /**
  * companionStore — 前端只存"路由判断需要的最少状态"
  *
- * 真数据从 /api/companion/state 取（serverside MySQL）。
+ * 真数据从 /api/companion/state 取（serverside PostgreSQL）。
  * 这里仅保留：introCompleted（是否看过引导）+ companionId（是否已创建过伙伴）。
+ *
+ * V1.0 新增：station 驿站状态、isGraduated、refreshCompanionState
  */
 
 import { useEffect, useState } from 'react';
@@ -10,10 +12,19 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 import { localJSONStorage } from '@/lib/storage/local';
+import { getCompanionState } from '@/lib/api/client';
 
 /** V0.6.1：输入偏好与麦克风权限 */
 export type InputPreference = 'voice' | 'text';
 export type MicPermission = 'granted' | 'denied' | 'prompt';
+
+/** V1.0：驿站解锁状态 */
+export interface StationState {
+  friendHouseUnlocked: boolean;
+  schoolUnlocked: boolean;
+  plazaUnlocked: boolean;
+  dailyDeparturesRemaining: number;
+}
 
 interface CompanionState {
   introCompleted: boolean;
@@ -27,12 +38,19 @@ interface CompanionState {
   /** V0.6.1：是否已经看过权限引导预告（避免重复弹）*/
   micPermissionPreShown: boolean;
 
+  /** V1.0：驿站解锁状态（由 refreshCompanionState 拉取） */
+  station: StationState;
+  /** V1.0：是否已毕业 */
+  isGraduated: boolean;
+
   setCompanionId: (id: string) => void;
   markIntroCompleted: () => void;
   markSkippedOnce: () => void;
   setInputPreference: (p: InputPreference) => void;
   setMicPermission: (p: MicPermission) => void;
   markMicPermissionPreShown: () => void;
+  /** V1.0：从服务端刷新全量状态（含 station 字段）*/
+  refreshCompanionState: () => Promise<void>;
   reset: () => void;
 }
 
@@ -46,12 +64,43 @@ export const useCompanionStore = create<CompanionState>()(
       micPermission: 'prompt',
       micPermissionPreShown: false,
 
+      station: {
+        friendHouseUnlocked: false,
+        schoolUnlocked: false,
+        plazaUnlocked: false,
+        dailyDeparturesRemaining: 0,
+      },
+      isGraduated: false,
+
       setCompanionId: (id) => set({ companionId: id }),
       markIntroCompleted: () => set({ introCompleted: true }),
       markSkippedOnce: () => set({ hasSkippedOnce: true }),
       setInputPreference: (p) => set({ inputPreference: p }),
       setMicPermission: (p) => set({ micPermission: p }),
       markMicPermissionPreShown: () => set({ micPermissionPreShown: true }),
+
+      refreshCompanionState: async () => {
+        const state = await getCompanionState();
+        if (state?.companion) {
+          set({
+            isGraduated: state.is_graduated ?? false,
+            station: state.station
+              ? {
+                  friendHouseUnlocked: state.station.friend_house_unlocked ?? false,
+                  schoolUnlocked: state.station.school_unlocked ?? false,
+                  plazaUnlocked: state.station.plaza_unlocked ?? false,
+                  dailyDeparturesRemaining: state.station.daily_departures_remaining ?? 0,
+                }
+              : {
+                  friendHouseUnlocked: false,
+                  schoolUnlocked: false,
+                  plazaUnlocked: false,
+                  dailyDeparturesRemaining: 0,
+                },
+          });
+        }
+      },
+
       reset: () =>
         set({
           introCompleted: false,
@@ -60,6 +109,13 @@ export const useCompanionStore = create<CompanionState>()(
           inputPreference: 'voice',
           micPermission: 'prompt',
           micPermissionPreShown: false,
+          station: {
+            friendHouseUnlocked: false,
+            schoolUnlocked: false,
+            plazaUnlocked: false,
+            dailyDeparturesRemaining: 0,
+          },
+          isGraduated: false,
         }),
     }),
     {

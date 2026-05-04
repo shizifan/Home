@@ -16,6 +16,8 @@ import type { MemoryBankEntry } from '@/types';
 interface Day7Input {
   companion: CompanionPresetMeta;
   memoryBank: MemoryBankEntry[];
+  /** 累计跳过的任务数（用于 Day 7 三档模式）*/
+  skipCount?: number;
 }
 
 function summarizeRemembered(bank: MemoryBankEntry[]): string {
@@ -62,6 +64,17 @@ export async function runDay7(input: Day7Input, companionId?: string) {
     .map((s) => `- ${s}`)
     .join('\n');
 
+  // skipMode 三档处理（Plan_04 §1.3）
+  const skipMode: 'normal' | 'limited' | 'sparse' =
+    (input.skipCount ?? 0) >= 6 ? 'sparse' : (input.skipCount ?? 0) >= 3 ? 'limited' : 'normal';
+
+  const promptNote =
+    skipMode === 'sparse'
+      ? '\n\n【重要】孩子的输入非常少。第5项"我完全不知道"应该直接反思训练数据不足。'
+      : skipMode === 'limited'
+        ? '\n\n【提示】孩子的输入有限。回答可以更笼统一些。'
+        : '';
+
   const systemPrompt = renderPrompt(
     'day7',
     {
@@ -77,31 +90,38 @@ export async function runDay7(input: Day7Input, companionId?: string) {
     fewShot,
   );
 
-  return callLLM<Day7Output>({
+  const result = await callLLM<Day7Output>({
     callType: 'day7',
-    systemPrompt,
+    systemPrompt: systemPrompt + promptNote,
     userPrompt: '请输出 JSON。',
     expectJson: true,
     parse: (raw) => {
       const data = parseJsonStrict(raw, Day7Schema);
       if (!data) return null;
       // 第 5 题必须命中 unknown 列表（PRD §15.6.4）
-      const unknownNames = input.memoryBank
-        .filter((m) => m.type === 'unknown')
-        .map((m) => m.concept_name);
-      if (unknownNames.length > 0) {
-        const hit = unknownNames.some((n) => data.unknown_thing.includes(n));
-        if (!hit) {
-          // LLM 没引用任何 unknown 概念 — 验证失败
-          return null;
+      // sparse 模式跳过此验证（因为会被硬替换）
+      if (skipMode !== 'sparse') {
+        const unknownNames = input.memoryBank
+          .filter((m) => m.type === 'unknown')
+          .map((m) => m.concept_name);
+        if (unknownNames.length > 0) {
+          const hit = unknownNames.some((n) => data.unknown_thing.includes(n));
+          if (!hit) return null;
         }
       }
       return data;
     },
     companionId,
     promptVersion: 'v1',
-    maxRetries: 2, // 总共 3 次（PRD §15.6.4）
+    maxRetries: 2,
   });
+
+  // sparse 模式：硬替换第 5 项为固定反思文案
+  if (result.success && skipMode === 'sparse') {
+    result.data.unknown_thing = '其实……我对你的事知道得不太多。这是你给我的全部。';
+  }
+
+  return result;
 }
 
 export function hasRestoredItems(bank: MemoryBankEntry[]): boolean {

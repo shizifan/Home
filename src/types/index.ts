@@ -1,14 +1,15 @@
 /**
- * 全局共享类型
- * 与 supabase/migrations/0001_init.sql 的列同名同语义。
- * 真接 Supabase 后用 `npm run db:types` 生成 src/types/database.ts，
- * 此文件只放业务层视图与 store 类型。
+ * 全局共享类型 — V1.0
+ * 与 db/migrations/0004_v1_init_pg.sql 列同名同语义。
  */
 
 import type { CompanionPresetId } from '@/components/characters/types';
 
 export type DayNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
+// ============================================================
+// User
+// ============================================================
 export interface User {
   id: string;
   parent_phone?: string;
@@ -17,6 +18,9 @@ export interface User {
   consent_at?: string;
 }
 
+// ============================================================
+// Companion（V1.0：+visit_count/+school_count/+plaza_count，-last_panel_visit_at/-personality_weight）
+// ============================================================
 export interface Companion {
   id: string;
   user_id: string;
@@ -24,12 +28,16 @@ export interface Companion {
   custom_name?: string;
   starting_personality: string;
   current_day: DayNumber;
-  last_panel_visit_at?: string;
-  personality_weight: number;
+  visit_count: number;
+  school_count: number;
+  plaza_count: number;
   created_at: string;
   graduated_at?: string;
 }
 
+// ============================================================
+// Memory
+// ============================================================
 export type MemoryInputType = 'photo' | 'text' | 'choice' | 'skipped' | 'voice' | 'describe';
 export type InputMethod = 'photo' | 'voice' | 'text' | 'choice' | 'skipped' | 'describe';
 
@@ -38,28 +46,25 @@ export interface Memory {
   companion_id: string;
   day: DayNumber;
   type: MemoryInputType;
-  /** V0.6.1 新增：与 type 区分。type 是数据形态；input_method 是用户实际操作方式 */
   input_method?: InputMethod;
   photo_url?: string;
   vision_tags?: VisionTags;
   user_text?: string;
-  /** V0.6.1：语音文件 URL（如果 input_method=voice）*/
+  description_text?: string;
+  user_choice?: unknown;
   voice_audio_url?: string;
-  /** V0.6.1：ASR 原始识别结果（在孩子编辑前）*/
   asr_transcription?: string;
-  /** V0.6.1：孩子在中转页编辑后的最终文字 */
   edited_text?: string;
-  /** V0.6.1：卡片重做次数（0/1/2/3）*/
-  regenerate_count?: number;
   task_id: string;
   task_question?: string;
   created_at: string;
 }
 
-/** V0.6.1：纸片插画卡片（PRD §4 + Plan §4.1） */
+// ============================================================
+// Card
+// ============================================================
 export type CardSeverity = 'ok' | 'minor' | 'major';
 export type CardChildAction = 'confirmed' | 'rejected' | 'no_action_timeout';
-
 export type ImageSource = 'dashscope' | 'minimax';
 
 export interface Card {
@@ -75,6 +80,8 @@ export interface Card {
   style_check_passed: boolean | null;
   style_check_severity: CardSeverity | null;
   style_check_issues: string[];
+  content_audit_passed?: boolean | null;
+  content_audit_labels?: string[];
   generation_attempt: 1 | 2 | 3 | 4;
   is_active: boolean;
   is_fallback_text_card: boolean;
@@ -83,7 +90,6 @@ export interface Card {
   created_at: string;
 }
 
-/** V0.6.1：关键词提取输出（图像生成 prompt 内容来源） */
 export interface KeywordExtractOutput {
   scene_type: 'indoor_room' | 'outdoor_place' | 'people_with_env' | 'object_focus';
   main_subjects: string[];
@@ -93,13 +99,15 @@ export interface KeywordExtractOutput {
   excluded_details: string[];
 }
 
-/** V0.6.1：风格审核输出 */
 export interface StyleAuditOutput {
   style_match: boolean;
   issues: string[];
   severity: CardSeverity;
 }
 
+// ============================================================
+// VisionTags（保留给历史数据）
+// ============================================================
 export interface VisionTags {
   objects: string[];
   scene?: string;
@@ -107,8 +115,12 @@ export interface VisionTags {
   time_of_day?: string;
 }
 
+// ============================================================
+// MemoryBank（V1.0：+source_type/+source_companion_id，-cached_detail/-cache_dirty/-display_order）
+// ============================================================
 export type MemoryBankType = 'remembered' | 'uncertain' | 'set_aside' | 'unknown';
 export type ConceptCategory = 'person' | 'place' | 'food' | 'activity' | 'object' | 'emotion' | 'other';
+export type MemorySourceType = 'direct' | 'secondhand';
 
 export interface MemoryBankEntry {
   id: string;
@@ -118,19 +130,21 @@ export interface MemoryBankEntry {
   concept_category?: ConceptCategory;
   ai_summary?: string;
   ai_reasoning?: string;
-  evidence: Array<{ memory_id: string; day: number; excerpt: string }>;
+  evidence: EvidenceItem[];
   confidence: number;
+  source_type: MemorySourceType;
+  source_companion_id?: string;
   user_corrected: boolean;
   user_correction_history: CorrectionEvent[];
-  cached_detail?: {
-    understanding: string;
-    reasoning: string;
-    evidence_rephrased: Array<{ day: number; text: string }>;
-  } | null;
-  cache_dirty?: boolean;
-  display_order?: number;
   last_updated: string;
   created_at: string;
+}
+
+export interface EvidenceItem {
+  quote: string;
+  day: number;
+  source: string;
+  at: string;
 }
 
 export type CorrectionAction = 'restore' | 'dismiss' | 'clarify' | 'rename' | 'merge' | 'inform' | 'withhold';
@@ -141,6 +155,9 @@ export interface CorrectionEvent {
   payload?: Record<string, unknown>;
 }
 
+// ============================================================
+// Conversation
+// ============================================================
 export interface ConversationLine {
   id: string;
   companion_id: string;
@@ -151,6 +168,9 @@ export interface ConversationLine {
   created_at: string;
 }
 
+// ============================================================
+// Worldview + Stats
+// ============================================================
 export interface WorldviewCard {
   id: string;
   companion_id: string;
@@ -160,14 +180,21 @@ export interface WorldviewCard {
   most_scary_thing: string;
   unknown_thing: string;
   almost_forgot_thing?: string;
-  stats?: { photos: number; conversations: number; corrections: number };
+  stats?: WorldviewStats;
   generated_at: string;
 }
 
-/** 任务定义（PRD §3 + §11.3）
- * V0.6.1：'describe' 替代 'photo' / 'photo_text'（保留旧值用于兼容期，新逻辑只用 describe）
- */
-export type TaskKind = 'photo' | 'text' | 'photo_text' | 'choice' | 'memory_review' | 'describe';
+export interface WorldviewStats {
+  cards_count: number;
+  conversations_count: number;
+  corrections_count: number;
+  days_count: number;
+}
+
+// ============================================================
+// Task
+// ============================================================
+export type TaskKind = 'describe' | 'text' | 'choice' | 'memory_review';
 
 export interface TaskDef {
   id: string;
@@ -177,4 +204,90 @@ export interface TaskDef {
   description: string;
   inputPlaceholder?: string;
   charLimit?: number;
+}
+
+// ============================================================
+// V1.0 NEW: Station types
+// ============================================================
+export type TripType = 'visit' | 'school' | 'plaza';
+export type TripStatus = 'traveling' | 'returned';
+export type VisitPurpose = 'meet_friend' | 'observe_home' | 'introduce_self' | 'ask_question';
+export type SchoolPurpose = 'attend_class' | 'ask_my_question' | 'observe_others' | 'learn_new';
+
+export interface Trip {
+  id: string;
+  companion_id: string;
+  trip_type: TripType;
+  destination_companion_id?: string;
+  purpose_type?: VisitPurpose | SchoolPurpose;
+  purpose_question?: string;
+  plaza_play_id?: string;
+  status: TripStatus;
+  departed_at: string;
+  returned_at?: string;
+  report_narrative?: string;
+  report_data?: Record<string, unknown>;
+}
+
+export type ItemCategory = 'knowledge' | 'object' | 'gift' | 'ability';
+
+export interface InventoryItem {
+  id: string;
+  companion_id: string;
+  item_id: string;
+  item_name: string;
+  item_category: ItemCategory;
+  item_subcategory?: string;
+  item_description: string;
+  item_detailed_description: string;
+  acquired_at: string;
+  acquired_from?: string;
+  use_count: number;
+  last_used_at?: string;
+  is_upgraded_from?: string;
+}
+
+export type PlazaEndingType = 'perfect' | 'good' | 'barely';
+
+export interface PlazaPlay {
+  id: string;
+  companion_id: string;
+  trip_id?: string;
+  scenario_id: string;
+  scenario_title?: string;
+  act_choices: ActChoice[];
+  ending_type?: PlazaEndingType;
+  ending_narrative?: string;
+  earned_items?: EarnedItem[];
+  played_at: string;
+  finished_at?: string;
+}
+
+export interface ActChoice {
+  act: number;
+  selected_item_id: string | null;
+  item_name?: string;
+  narrative: string;
+  item_use_quality?: 'clever' | 'reasonable' | 'barely_relevant';
+}
+
+export interface EarnedItem {
+  item_id: string;
+  item_name: string;
+  category: ItemCategory;
+}
+
+export interface StationUnlockStatus {
+  friendHouseUnlocked: boolean;
+  schoolUnlocked: boolean;
+  plazaUnlocked: boolean;
+  dailyDeparturesRemaining: number;
+}
+
+// ============================================================
+// Content Audit
+// ============================================================
+export interface ContentAuditResult {
+  passed: boolean;
+  labels: string[];
 }

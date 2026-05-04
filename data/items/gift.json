@@ -1,0 +1,38 @@
+[
+  {
+    "item_id": "western_tribute",
+    "item_name": "西域贡品",
+    "item_category": "gift",
+    "item_subcategory": "exotic",
+    "item_description": "来自遥远西域的珍贵礼物",
+    "item_detailed_description": "包含异域香料、宝石和精美织物。作为礼物送出，被送的人会非常高兴。",
+    "acquirable_from": ["initial"]
+  },
+  {
+    "item_id": "silk_roll",
+    "item_name": "一卷丝绸",
+    "item_category": "gift",
+    "item_subcategory": "textile",
+    "item_description": "上等的丝绸卷",
+    "item_detailed_description": "光滑柔软，花纹精美。是皇室才会使用的高档丝绸，送礼体面大方。",
+    "acquirable_from": ["initial"]
+  },
+  {
+    "item_id": "rare_herbs",
+    "item_name": "珍稀药材",
+    "item_category": "gift",
+    "item_subcategory": "medicine",
+    "item_description": "一盒珍贵的药材",
+    "item_detailed_description": "百年人参、灵芝等珍稀药材。用于治病或作为贵重礼物都非常合适。",
+    "acquirable_from": ["initial"]
+  },
+  {
+    "item_id": "tea_set",
+    "item_name": "一套茶具",
+    "item_category": "gift",
+    "item_subcategory": "art",
+    "item_description": "精美的茶道器具",
+    "item_detailed_description": "名窑烧制的茶壶与茶杯，温润如玉。泡茶共饮可拉近关系，交流更自然。",
+    "acquirable_from": ["initial"]
+  }
+]

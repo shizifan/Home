@@ -17,6 +17,15 @@ export interface CompanionStateResponse {
   today_done?: boolean;
   can_advance?: boolean;
   can_view_worldview?: boolean;
+  /** V1.0：是否已毕业 */
+  is_graduated?: boolean;
+  /** V1.0：驿站解锁状态 */
+  station?: {
+    friend_house_unlocked: boolean;
+    school_unlocked: boolean;
+    plaza_unlocked: boolean;
+    daily_departures_remaining: number;
+  };
   photos: Array<{ id: string; url: string; day: number }>;
   /** V0.6.1：纸片插画卡片（已确认的）*/
   cards?: Array<{
@@ -203,8 +212,10 @@ export interface MemoryBankCardData {
   concept_category?: string;
   ai_summary?: string;
   ai_reasoning?: string;
-  evidence?: Array<{ memory_id: string; day: number; excerpt: string }>;
+  evidence?: Array<{ quote: string; day: number; source: string; at: string }>;
   confidence: number;
+  source_type?: string;          // V1.0: 'direct' | 'secondhand'
+  source_companion_id?: string;  // V1.0: 二手信息来源伙伴ID
   user_corrected: boolean;
   user_correction_history?: Array<{
     action: string;
@@ -341,6 +352,7 @@ export interface WorldviewData {
 export async function generateWorldview(): Promise<{
   worldview: WorldviewData;
   from_cache: boolean;
+  skipCount: number;
 }> {
   const r = await fetch('/api/day7/generate', { method: 'POST' });
   if (r.status === 503) {

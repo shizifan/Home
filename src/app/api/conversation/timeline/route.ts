@@ -68,16 +68,16 @@ export async function GET(req: Request) {
     query<ConvRow>(
       `select id, day, role, content, source, created_at
          from conversations
-         where companion_id = :cid and role in ('companion', 'child')
+         where companion_id = $1 and role in ('companion', 'child')
          order by created_at asc`,
-      { cid: companion.id },
+      [companion.id],
     ),
     query<MemRow>(
       `select id, day, type, photo_url, user_text, vision_tags, created_at
          from memories
-         where companion_id = :cid
+         where companion_id = $1
          order by created_at asc`,
-      { cid: companion.id },
+      [companion.id],
     ),
   ]);
 

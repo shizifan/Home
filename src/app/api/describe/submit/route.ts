@@ -78,14 +78,17 @@ export async function POST(req: Request) {
       card_id: result.card.id,
       image_url: result.card.image_url,
       image_source: result.card.image_source,
-      alt_image_url: result.card.alt_image_url,
-      alt_image_source: result.card.alt_image_source,
+      image_prompt: result.card.image_prompt,
       is_fallback_text_card: result.card.is_fallback_text_card,
       style_check: {
         passed: result.card.style_check_passed,
         severity: result.card.style_check_severity,
         regenerate_count: result.card.generation_attempt - 1,
         issues: result.card.style_check_issues,
+      },
+      content_audit: {
+        passed: result.card.content_audit_passed ?? true,
+        labels: result.card.content_audit_labels ?? [],
       },
       memory_update: {
         action: result.pass1.action,

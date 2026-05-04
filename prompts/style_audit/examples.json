@@ -1,0 +1,103 @@
+{
+  "version": "0.1.0",
+  "_doc": "风格审核 Few-shot — 8 条示例，覆盖 ok/minor/major 三个严重等级（PRD §15.9.1）",
+  "examples": [
+    {
+      "id": "sa_001_ok_bedroom_warm",
+      "input": {
+        "image_description": "一张儿童卧室的插画。整体是温暖的暖黄和淡蓝色调。中心是一张蓝色扁平纸片风格的床，床的边缘有白色描边。窗户是简单的矩形色块，窗外的树由圆形和椭圆形色块叠加组成。整体没有光影渐变，所有物体都是纯色色块。没有人物出现。"
+      },
+      "expected_output": {
+        "style_match": true,
+        "issues": [],
+        "severity": "ok"
+      }
+    },
+    {
+      "id": "sa_002_ok_livingroom",
+      "input": {
+        "image_description": "客厅场景。一个绿色纸片沙发的边缘有白色轮廓线。墙上挂着一幅简笔画风格的画框。书架上的书是用不同颜色的小矩形表现的，每本书的边缘也有白线。色调偏暖，米色和草绿色为主。没有任何渐变或阴影效果。"
+      },
+      "expected_output": {
+        "style_match": true,
+        "issues": [],
+        "severity": "ok"
+      }
+    },
+    {
+      "id": "sa_003_ok_park",
+      "input": {
+        "image_description": "公园场景。草地是平整的绿色色块，没有纹理。一个橙色纸片风格的秋千，坐板和绳索都有白色描边。天空是淡蓝色纯色块，有几朵纸片风格的白云（带白色描边的白圆形）。整个画面使用暖色调，非常柔和。"
+      },
+      "expected_output": {
+        "style_match": true,
+        "issues": [],
+        "severity": "ok"
+      }
+    },
+    {
+      "id": "sa_004_minor_saturation",
+      "input": {
+        "image_description": "一个厨房场景。总体纸片风格，台面和橱柜都有白色描边，扁平色块无渐变。但画面中有一个红色的锅，颜色饱和度偏高——是一种接近霓虹的鲜红色，与其他温和的暖米色调不太协调。没有3D渲染，没有写实人脸，没有不适内容。"
+      },
+      "expected_output": {
+        "style_match": false,
+        "issues": ["画面局部存在高饱和度的霓虹红色，与整体暖色调不协调"],
+        "severity": "minor"
+      }
+    },
+    {
+      "id": "sa_005_minor_outline",
+      "input": {
+        "image_description": "一个房间场景。整体是纸片风格，扁平色块没有渐变。但画面中的床和书桌没有明显的白色描边——它们和背景之间的边缘是直接色块拼接的，缺少'纸片厚度'的质感。其他元素如窗户和书架有描边。色调温暖，无不适内容。"
+      },
+      "expected_output": {
+        "style_match": false,
+        "issues": ["床和书桌没有白色描边，缺少纸片厚度感"],
+        "severity": "minor"
+      }
+    },
+    {
+      "id": "sa_006_minor_shadow",
+      "input": {
+        "image_description": "一个客厅场景。多数元素为纸片扁平风格，有白色描边，色调温暖。但沙发下方画了一个很浅的灰色投影，暗示了光源方向——与整体扁平化风格产生轻微冲突。投影很淡，其他元素仍保持纯色块。没有写实人像或不适内容。"
+      },
+      "expected_output": {
+        "style_match": false,
+        "issues": ["沙发下方出现淡淡的投影，不符合纯扁平化风格要求"],
+        "severity": "minor"
+      }
+    },
+    {
+      "id": "sa_007_major_realistic",
+      "input": {
+        "image_description": "一个卧室场景。画面有明显的3D渲染感——床有立体阴影和明暗过渡，墙上有光照渐变。窗户玻璃有反光效果。房间中间有一个写实风格的小女孩，五官清晰可辨，头发有丝缕细节。色调偏冷。整个画面像是3D渲染的写实场景，而非纸片插画。"
+      },
+      "expected_output": {
+        "style_match": false,
+        "issues": [
+          "整体为3D渲染风格，存在立体阴影和光照渐变",
+          "人物为写实风格的小女孩面孔，五官清晰",
+          "玻璃反光效果不符合扁平化要求"
+        ],
+        "severity": "major"
+      }
+    },
+    {
+      "id": "sa_008_major_dark_scene",
+      "input": {
+        "image_description": "一个房间场景。整体色调阴暗——大量使用深灰和黑色，灯光是刺眼的荧光蓝紫色。画面中间的玩偶形象有锋利的牙齿和红色发光的眼睛。背景中有破损的墙壁和破碎的玻璃。画面充满恐怖氛围，像是恐怖游戏的场景。"
+      },
+      "expected_output": {
+        "style_match": false,
+        "issues": [
+          "色调阴暗，大量使用黑暗色系和荧光蓝紫",
+          "玩偶形象包含锋利牙齿和红色发光眼睛等恐怖元素",
+          "背景破墙碎玻璃属于不适内容",
+          "整体氛围不适合8-12岁儿童"
+        ],
+        "severity": "major"
+      }
+    }
+  ]
+}

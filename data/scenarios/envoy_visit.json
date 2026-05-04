@@ -1,0 +1,38 @@
+{
+  "id": "envoy_visit",
+  "title": "来使记",
+  "synopsis": "西域使节来访，态度傲慢。你需要在朝堂上维护国威，同时不伤和气。",
+  "roles": ["丞相", "使节", "礼部尚书", "侍卫"],
+  "companion_role_map": {
+    "xiaoqinglong": "丞相",
+    "xiaolvlong": "使节"
+  },
+  "acts": [
+    {
+      "act": 1,
+      "title": "使节入朝",
+      "setting": "西域使节带着奇珍异宝来到朝堂。他昂着头，语气中带着傲慢。",
+      "dilemma": "如何在不失礼貌的前提下维护国威？",
+      "choices": ["knowledge", "object", "gift", "ability"]
+    },
+    {
+      "act": 2,
+      "title": "宴会交锋",
+      "setting": "晚宴上，使节提出了一个苛刻的贸易条件。大臣们议论纷纷，空气紧绷。",
+      "dilemma": "你用什么方式回应使节的要求？",
+      "choices": ["knowledge", "gift", "ability"]
+    },
+    {
+      "act": 3,
+      "title": "送别大典",
+      "setting": "使节即将离去。他留下了一道谜题——如果能解开，他将以诚相待；如果解不开，两国关系可能恶化。",
+      "dilemma": "如何破解使节的最后一道考题？",
+      "choices": ["knowledge", "object", "gift", "ability"]
+    }
+  ],
+  "endings": {
+    "perfect": { "condition": "三幕均有 clever 道具使用", "narrative_template": "使节点头称赞，真诚地说：你是我见过最有智慧的丞相。两国缔结了长久的和平。皇帝赐你一枚玉印，以彰外交之功。" },
+    "good": { "condition": "至少一幕 clever", "narrative_template": "使节满意而归。虽然过程中有些波折，但你和使节建立了不错的友谊。" },
+    "barely": { "condition": "无 clever 使用", "narrative_template": "使节拂袖而去。虽然表面维持了体面，但你知道这次外交不算成功。" }
+  }
+}

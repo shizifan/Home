@@ -1,0 +1,38 @@
+[
+  {
+    "item_id": "bag_of_gold",
+    "item_name": "一袋金子",
+    "item_category": "object",
+    "item_subcategory": "currency",
+    "item_description": "沉甸甸的一袋金币",
+    "item_detailed_description": "国库拨出的专项经费。可以用于赈灾、赏赐或购买物资。有钱就是好办事。",
+    "acquirable_from": ["initial"]
+  },
+  {
+    "item_id": "sharp_sword",
+    "item_name": "一把宝剑",
+    "item_category": "object",
+    "item_subcategory": "weapon",
+    "item_description": "锋利无比的宝剑",
+    "item_detailed_description": "削铁如泥，剑光凛凛。不仅可以防身，在关键时刻亮出也有震慑效果。",
+    "acquirable_from": ["initial"]
+  },
+  {
+    "item_id": "sealed_letter",
+    "item_name": "一封密函",
+    "item_category": "object",
+    "item_subcategory": "document",
+    "item_description": "盖着官印的密封信件",
+    "item_detailed_description": "内容可以根据需要填写。有官印加持，具备朝廷正式公文的分量。",
+    "acquirable_from": ["initial"]
+  },
+  {
+    "item_id": "jade_seal",
+    "item_name": "一枚玉印",
+    "item_category": "object",
+    "item_subcategory": "token",
+    "item_description": "宰相的随身玉印",
+    "item_detailed_description": "代表丞相权威的印信。正事盖印即生效，百官见印如见丞相本人。",
+    "acquirable_from": ["plaza_envoy_visit"]
+  }
+]

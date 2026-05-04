@@ -58,10 +58,25 @@ export interface FloorItemProps {
   kind: FloorItemKind;
 }
 
+export interface CardStickerProps {
+  x: number;
+  y: number;
+  rot?: number;
+  wall?: 'back' | 'left' | 'right';
+  /** 卡片贴图 URL */
+  imageUrl?: string;
+  /** 是否为文字降级卡片 */
+  isFallback?: boolean;
+  /** 点击触发 */
+  onClick?: () => void;
+}
+
 export interface RoomProps {
   width?: number;
   height?: number;
   photos?: PhotoStickerProps[];
+  /** V1.0：卡片贴纸（替换 PhotoSticker 渲染 cards） */
+  cards?: CardStickerProps[];
   familyFrames?: FrameStickerProps[];
   items?: FloorItemProps[];
   /** 整体光线偏暖 / 偏冷（PRD §4.4 房间情绪映射） */
@@ -73,6 +88,7 @@ export function Room({
   width = 600,
   height = 600,
   photos = [],
+  cards = [],
   familyFrames = [],
   items = [],
   mood = 'neutral',
@@ -174,6 +190,9 @@ export function Room({
       {photos.map((p, i) => (
         <PhotoSticker key={`p-${i}`} {...p} />
       ))}
+      {cards?.map((c, i) => (
+        <CardSticker key={`c-${i}`} {...c} />
+      ))}
       {familyFrames.map((f, i) => (
         <FrameSticker key={`f-${i}`} {...f} />
       ))}
@@ -188,6 +207,68 @@ export function Room({
         <rect x="0" y="0" width="600" height="600" fill={moodOverlay} pointerEvents="none" />
       )}
     </svg>
+  );
+}
+
+/** V1.0 卡片贴纸（CardSticker, Plan_02 §7.2）
+ *
+ * 40×50px（含 4px 白边），内层插画 32×32px。
+ * 右下角 6px ✏️ 图标暗示"是描述生成的"。
+ */
+export function CardSticker({
+  x,
+  y,
+  rot = -4,
+  wall = 'back',
+  imageUrl,
+  isFallback,
+  onClick,
+}: CardStickerProps) {
+  const skew = wall === 'left' ? -18 : wall === 'right' ? 18 : 0;
+  const clipId = `cs-clip-${Math.round(x)}-${Math.round(y)}`;
+  return (
+    <g
+      transform={`translate(${x},${y}) rotate(${rot}) skewY(${skew})`}
+      onClick={onClick}
+      style={onClick ? { cursor: 'pointer' } : undefined}
+      role={onClick ? 'button' : undefined}
+    >
+      {/* 白边卡片 */}
+      <rect x="-20" y="-25" width="40" height="50" fill="#FFF" stroke="#5F5E5A" strokeWidth="0.8" rx="2" />
+      {imageUrl ? (
+        <>
+          <defs>
+            <clipPath id={clipId}>
+              <rect x="-16" y="-21" width="32" height="32" rx="1" />
+            </clipPath>
+          </defs>
+          <image
+            href={imageUrl}
+            x="-16"
+            y="-21"
+            width="32"
+            height="32"
+            preserveAspectRatio="xMidYMid slice"
+            clipPath={`url(#${clipId})`}
+          />
+        </>
+      ) : (
+        <rect x="-16" y="-21" width="32" height="32" fill={isFallback ? '#FEF9E7' : '#F5DEB3'} rx="1" />
+      )}
+      {/* ✏️ 右下角标识 */}
+      <text
+        x="12"
+        y="19"
+        fontSize="6"
+        fill="#5F5E5A"
+        opacity="0.6"
+        textAnchor="middle"
+        fontFamily="sans-serif"
+        aria-hidden
+      >
+        ✏️
+      </text>
+    </g>
   );
 }
 

@@ -23,7 +23,6 @@ import { NextResponse } from 'next/server';
 import {
   getCardById,
   setCardChildAction,
-  swapCardPrimaryImage,
 } from '@/lib/db/cardsRepo';
 import { getCompanionById, insertCompanionLine } from '@/lib/db/repos';
 import { getCompanionPreset } from '@/lib/companionPresets';
@@ -52,10 +51,6 @@ export async function POST(req: Request) {
     const body = await req.json();
     const cardId: string = body.card_id;
     const autoTimeout: boolean = body.auto_timeout === true;
-    const chosenSource: 'dashscope' | 'minimax' | undefined =
-      body.chosen_source === 'dashscope' || body.chosen_source === 'minimax'
-        ? body.chosen_source
-        : undefined;
 
     if (!cardId) {
       return NextResponse.json({ error: 'missing card_id' }, { status: 400 });
@@ -66,15 +61,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'card not found' }, { status: 404 });
     }
 
-    // 双图测试期：孩子选了 alt 那张 → 把 image_url ↔ alt_image_url 互换
-    if (
-      chosenSource &&
-      card.alt_image_url &&
-      card.image_source &&
-      card.image_source !== chosenSource
-    ) {
-      await swapCardPrimaryImage(cardId);
-    }
+    // 双图测试期已结束（V1.0 移除），chosen_source 不再处理
 
     if (card.child_action === 'confirmed' || card.child_action === 'no_action_timeout') {
       // 幂等：再次调用直接返回成功（避免前端重试时报错）

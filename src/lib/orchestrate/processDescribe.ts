@@ -1,17 +1,20 @@
 /**
- * 描述任务端到端编排（V0.6.1 §4.5）
+ * 描述任务端到端编排（V1.0 改造）
  *
- * 输入：孩子提交的描述文字（来自 ASR 或直接打字）
- * 输出：完整 describe 响应（卡片 + 伙伴回应 + memory_bank 更新）
+ * V1.0 变更（Plan_02 §2.3）：
+ *   - 图像生成串行化：主路通义万相 → 兜底 MiniMax（去掉双路并行）
+ *   - 内容审核接入：阿里云内容安全 + LLM Vision 双层审核
+ *   - LLM 切 Claude（Pass1/Pass2/keyword_extract）
  *
- * 顺序（双图源并行测试期）：
- *   1. 写 memories
- *   2. 并行：Pass1 + 关键词提取
- *   3. 并行调用 DashScope + MiniMax 出图（不审核、不重试）
- *   4. 写 memory_bank（与 V0.5 同源）
- *   5. Pass2 → 写 conversations
- *
- * 风格 / 内容审核暂时跳过（待主力定下来后再上）。
+ * 顺序：
+ *   1. 输入安全过滤
+ *   2. 写 memories
+ *   3. 并行：Pass1 + 关键词提取
+ *   4. 拼接 stylePrompt
+ *   5. 图像生成（串行）+ 风格审核 + 内容审核（带重试，最多 3 次）
+ *   6. 写 cards
+ *   7. 写 memory_bank
+ *   8. Pass2 → 写 conversations
  */
 
 import 'server-only';
@@ -20,8 +23,15 @@ import { getCompanionPreset } from '@/lib/companionPresets';
 import { runPass1, pass1FallbackSetAside } from '@/lib/llm/pass1';
 import { runPass2, pass2Fallback } from '@/lib/llm/pass2';
 import { runKeywordExtract, keywordExtractFallback } from '@/lib/llm/keywordExtract';
-import { generateImagesParallel } from '@/lib/imagegen/parallel';
-import { buildImagePrompt, pickReferenceImage } from '@/lib/imagegen/stylePrompt';
+import {
+  generateImageDashScope,
+  type ImageGenInput,
+  type ImageGenResult,
+} from '@/lib/imagegen/client';
+import { generateImageMiniMax } from '@/lib/imagegen/minimaxClient';
+import { auditImageStyle } from '@/lib/imagegen/styleAudit';
+import { auditImageContent, type ContentAuditResult } from '@/lib/imagegen/contentAudit';
+import { buildImagePrompt } from '@/lib/imagegen/stylePrompt';
 import {
   appendEvidenceToMemoryBank,
   getCompanionById,
@@ -30,13 +40,13 @@ import {
   insertMemory,
   upsertMemoryBankEntry,
 } from '@/lib/db/repos';
-import { createCard, incrementMemoryRegenerateCount } from '@/lib/db/cardsRepo';
+import { countCardAttempts, createCard } from '@/lib/db/cardsRepo';
 import {
   filterChildInput,
   filterCompanionOutput,
   getInputRejectionLine,
 } from '@/lib/safety/filters';
-import type { Card, DayNumber, KeywordExtractOutput } from '@/types';
+import type { Card, CardSeverity, DayNumber, ImageSource, KeywordExtractOutput } from '@/types';
 import type { Pass1Output } from '@/lib/llm/validators';
 
 export interface ProcessDescribeInput {
@@ -58,6 +68,8 @@ export interface ProcessDescribeResult {
   pass2Reply: string;
   pass2Source: 'llm' | 'fallback';
   memoryBankId?: string;
+  /** V1.0 新增 */
+  contentAudit: ContentAuditResult | null;
 }
 
 export async function processDescribe(
@@ -129,15 +141,16 @@ export async function processDescribe(
   const keywords: KeywordExtractOutput =
     keywordResult ?? keywordExtractFallback(input.taskTitle);
 
-  // 3. 双图源并行出图（暂不做风格 / 内容审核）
-  const card = await generateBothAndPersist({
+  // 3. 图像生成（串行）+ 风格审核 + 内容审核（V1.0 改造）
+  const prompt = buildImagePrompt(keywords.prompt_content);
+  const card = await generateCardWithRetry({
+    prompt,
     companionId: companion.id,
     memoryId: memory.id,
     keywords,
-    attempt: 1,
   });
 
-  // 6. 写 memory_bank（与 V0.5 同逻辑）
+  // 4. 写 memory_bank（与 V0.5 同逻辑）
   const memoryBankId = await applyPass1ToBank({
     companionId: companion.id,
     day,
@@ -146,7 +159,7 @@ export async function processDescribe(
     memoryBank,
   });
 
-  // 7. Pass 2 → 伙伴对卡片做出口语回应
+  // 5. Pass 2 → 伙伴对卡片做出口语回应
   const pass2Result = await runPass2(
     {
       companion: preset,
@@ -168,7 +181,7 @@ export async function processDescribe(
     pass2Source = 'fallback';
   }
 
-  // 8. 写 conversations
+  // 6. 写 conversations
   await insertCompanionLine({
     companionId: companion.id,
     day,
@@ -185,65 +198,151 @@ export async function processDescribe(
     pass2Reply,
     pass2Source,
     memoryBankId,
+    contentAudit: {
+      passed: card.content_audit_passed ?? true,
+      labels: card.content_audit_labels ?? [],
+    },
   };
 }
 
 /**
- * 内部：DashScope + MiniMax 同时跑，两份结果都保存。
- * 暂不做风格 / 内容审核（测试期）。
+ * V1.0 新函数：生成卡片（串行图片生成 + 内容审核 + 风格审核）
+ *
+ * 替代 V0.6.1 的 generateBothAndPersist（双路并行，无审核）。
  */
-async function generateBothAndPersist(args: {
+async function generateCard(
+  prompt: string,
+  companionId: string,
+  attempt: number,
+): Promise<{
+  imageUrl: string | null;
+  source: ImageSource | null;
+  isFallback: boolean;
+  contentAudit: ContentAuditResult;
+} | null> {
+  // 主路：通义万相
+  let result = await generateImageDashScope({ prompt }, companionId);
+  let source: ImageSource = 'dashscope';
+
+  // 兜底：MiniMax
+  if (!result) {
+    result = await generateImageMiniMax({ prompt }, companionId);
+    source = 'minimax';
+  }
+
+  // 全失败
+  if (!result) {
+    return {
+      imageUrl: null,
+      source: null,
+      isFallback: true,
+      contentAudit: { passed: false, labels: ['imagegen_failed'] },
+    };
+  }
+
+  // 内容审核（V1.0 新增）
+  const audit = await auditImageContent(result.imageUrl, companionId);
+  if (!audit.passed && attempt < 3) {
+    return null; // 触发外层重试
+  }
+  if (!audit.passed) {
+    return {
+      imageUrl: null,
+      source,
+      isFallback: true,
+      contentAudit: audit,
+    };
+  }
+
+  return {
+    imageUrl: result.imageUrl,
+    source,
+    isFallback: false,
+    contentAudit: audit,
+  };
+}
+
+/**
+ * V1.0 带重试的生成循环：生成 → 风格审核 → 内容审核
+ * 最多重试 3 次（含初次），均失败则文字降级。
+ */
+async function generateCardWithRetry(args: {
+  prompt: string;
   companionId: string;
   memoryId: string;
   keywords: KeywordExtractOutput;
-  attempt: 1 | 2 | 3 | 4;
 }): Promise<Card> {
-  const prompt = buildImagePrompt(args.keywords.prompt_content);
-  const refImg = pickReferenceImage(args.keywords.scene_type);
+  const { prompt, companionId, memoryId, keywords } = args;
+  const MAX_ATTEMPTS = 3;
 
-  const { dashscope, minimax } = await generateImagesParallel(
-    { prompt, referenceImageUrl: refImg },
-    args.companionId,
-  );
+  let lastCardResult: Awaited<ReturnType<typeof generateCard>> = null;
+  let stylePassed: boolean | null = null;
+  let styleSeverity: CardSeverity | null = null;
+  let styleIssues: string[] = [];
+  let contentAudit: ContentAuditResult = { passed: true, labels: [] };
+  let finalImageUrl: string | null = null;
+  let finalSource: ImageSource | null = null;
+  let finalIsFallback = false;
 
-  // 主图优先 dashscope；alt 给 minimax；任一失败时把另一家提到主位
-  let primaryUrl: string | null = null;
-  let primarySource: 'dashscope' | 'minimax' | null = null;
-  let altUrl: string | null = null;
-  let altSource: 'dashscope' | 'minimax' | null = null;
-
-  if (dashscope) {
-    primaryUrl = dashscope.imageUrl;
-    primarySource = 'dashscope';
-  }
-  if (minimax) {
-    if (primaryUrl) {
-      altUrl = minimax.imageUrl;
-      altSource = 'minimax';
-    } else {
-      primaryUrl = minimax.imageUrl;
-      primarySource = 'minimax';
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    // 生成图像 + 内容审核
+    lastCardResult = await generateCard(prompt, companionId, attempt);
+    if (!lastCardResult) continue; // content audit failed, retry
+    if (lastCardResult.isFallback) {
+      finalImageUrl = null;
+      finalSource = lastCardResult.source ?? 'dashscope';
+      finalIsFallback = true;
+      contentAudit = lastCardResult.contentAudit;
+      styleIssues = ['image_generation_failed'];
+      break;
     }
+
+    // 风格审核
+    if (lastCardResult.imageUrl) {
+      const styleAudit = await auditImageStyle(lastCardResult.imageUrl, companionId);
+      stylePassed = styleAudit.style_match;
+      styleSeverity = styleAudit.severity as CardSeverity;
+      styleIssues = styleAudit.issues ?? [];
+
+      if (styleAudit.severity === 'major') {
+        continue; // 风格不通过，重生成
+      }
+    }
+
+    // 通过
+    finalImageUrl = lastCardResult.imageUrl;
+    finalSource = lastCardResult.source;
+    finalIsFallback = false;
+    contentAudit = lastCardResult.contentAudit;
+    break;
   }
 
-  const failureNotes: string[] = [];
-  if (!dashscope) failureNotes.push('dashscope_failed');
-  if (!minimax) failureNotes.push('minimax_failed');
+  // 所有尝试均失败 → 文字降级
+  if (!finalImageUrl && !finalIsFallback) {
+    finalIsFallback = true;
+    finalSource = lastCardResult?.source ?? 'dashscope';
+  }
+
+  const attemptNum = styleIssues.includes('image_generation_failed')
+    ? MAX_ATTEMPTS
+    : lastCardResult === null
+      ? MAX_ATTEMPTS
+      : 1;
 
   return await createCard({
-    memoryId: args.memoryId,
-    companionId: args.companionId,
-    imageUrl: primaryUrl,
-    imageSource: primarySource,
-    altImageUrl: altUrl,
-    altImageSource: altSource,
+    memoryId,
+    companionId,
+    imageUrl: finalImageUrl,
+    imageSource: finalSource,
     imagePrompt: prompt,
-    rawKeywordExtract: args.keywords,
-    styleCheckPassed: null,
-    styleCheckSeverity: null,
-    styleCheckIssues: failureNotes,
-    generationAttempt: args.attempt,
-    isFallbackTextCard: !primaryUrl,
+    rawKeywordExtract: keywords,
+    styleCheckPassed: stylePassed,
+    styleCheckSeverity: styleSeverity ?? (finalIsFallback ? 'major' : 'ok'),
+    styleCheckIssues: styleIssues,
+    contentAuditPassed: contentAudit.passed,
+    contentAuditLabels: contentAudit.labels,
+    generationAttempt: Math.min(attemptNum, 4) as 1 | 2 | 3 | 4,
+    isFallbackTextCard: finalIsFallback,
   });
 }
 
@@ -261,9 +360,10 @@ async function applyPass1ToBank(args: {
 
   if (pass1Data.action === 'append_to_existing' && pass1Data.target_concept_id) {
     await appendEvidenceToMemoryBank(pass1Data.target_concept_id, {
-      memory_id: memoryId,
+      quote: pass1Data.evidence_text,
       day,
-      excerpt: pass1Data.evidence_text,
+      source: memoryId,
+      at: new Date().toISOString(),
     });
     return pass1Data.target_concept_id;
   }
@@ -282,7 +382,12 @@ async function applyPass1ToBank(args: {
     conceptCategory: pass1Data.concept_category,
     aiSummary: pass1Data.evidence_text,
     aiReasoning: pass1Data.ai_reasoning,
-    evidence: [{ memory_id: memoryId, day, excerpt: pass1Data.evidence_text }],
+    evidence: [{
+      quote: pass1Data.evidence_text,
+      day,
+      source: memoryId,
+      at: new Date().toISOString(),
+    }],
     confidence: pass1Data.confidence,
   });
   return entry.id;
@@ -319,7 +424,12 @@ async function safetyRejectionPath(args: {
     conceptCategory: 'other',
     aiSummary: '一些不太适合记下的话，先放着。',
     aiReasoning: '这次的内容我先放一放。',
-    evidence: [{ memory_id: memory.id, day: args.day, excerpt: '(过滤)' }],
+    evidence: [{
+      quote: '(过滤)',
+      day: args.day,
+      source: memory.id,
+      at: memory.created_at,
+    }],
     confidence: 1.0,
   });
 
@@ -360,12 +470,15 @@ async function safetyRejectionPath(args: {
     pass2Reply: rejectionLine,
     pass2Source: 'fallback',
     memoryBankId: fallbackEntry.id,
+    contentAudit: { passed: false, labels: ['safety_input_blocked'] },
   };
 }
 
 /**
- * Revise 流程：基于 card_id 找到 memory，重新跑关键词提取 + 图像生成 + 风格审核。
+ * Revise 流程：基于 card_id 找到 memory，重新跑关键词提取 + 图像生成 + 审核。
  * 不重写 memory_bank（复用原 Pass1 结果）。
+ *
+ * V1.0 改造：使用串行生成 + 风格审核 + 内容审核。
  *
  * @returns 新卡片 + 新 attempt
  */
@@ -376,22 +489,23 @@ export async function processReviseCard(args: {
   revisionText: string;
   originalDescription: string;
   taskTitle: string;
-}): Promise<{ card: Card; attempt: number; isExhausted: boolean }> {
-  // memories.regenerate_count 计数的是"用户点过几次「不太对」"
-  // 自增后：newCount=1 表示这是第 1 次 revise，对应新 card 的 generation_attempt=2
-  const newCount = await incrementMemoryRegenerateCount(args.oldCard.memory_id);
-  // 新 card 的 generation_attempt = 1 (原始) + revise 次数
-  const newAttempt = newCount + 1;
+}): Promise<{
+  card: Card;
+  attempt: number;
+  isExhausted: boolean;
+  contentAudit: ContentAuditResult | null;
+}> {
+  // 统计已有卡片数，新 card 的 generation_attempt = 已有数 + 1
+  const existingCount = await countCardAttempts(args.oldCard.memory_id);
+  const newAttempt = existingCount + 1;
 
-  // 第 4 次 revise 之后（newCount=4，会让 attempt=5 超过上限 4）→ 熔断，不再重做
+  // 第 4 次 revise 之后 → 熔断，不再重做
   if (newAttempt > 4) {
     const fallbackCard = await createCard({
       memoryId: args.oldCard.memory_id,
       companionId: args.oldCard.companion_id,
       imageUrl: args.oldCard.image_url, // 保留最后一次卡片
       imageSource: args.oldCard.image_source,
-      altImageUrl: args.oldCard.alt_image_url,
-      altImageSource: args.oldCard.alt_image_source,
       imagePrompt: args.oldCard.image_prompt,
       isFallbackTextCard: true,
       generationAttempt: 4,
@@ -399,7 +513,12 @@ export async function processReviseCard(args: {
       styleCheckSeverity: 'major',
       styleCheckIssues: ['regen_exhausted'],
     });
-    return { card: fallbackCard, attempt: 4, isExhausted: true };
+    return {
+      card: fallbackCard,
+      attempt: 4,
+      isExhausted: true,
+      contentAudit: null,
+    };
   }
 
   // 拼接修订描述
@@ -417,12 +536,22 @@ export async function processReviseCard(args: {
       args.oldCard.companion_id,
     )) ?? keywordExtractFallback(args.taskTitle);
 
-  const newCard = await generateBothAndPersist({
+  // V1.0：使用带重试的生成流程
+  const prompt = buildImagePrompt(keywords.prompt_content);
+  const newCard = await generateCardWithRetry({
+    prompt,
     companionId: args.oldCard.companion_id,
     memoryId: args.oldCard.memory_id,
     keywords,
-    attempt: Math.min(newAttempt, 4) as 1 | 2 | 3 | 4,
   });
 
-  return { card: newCard, attempt: newAttempt, isExhausted: false };
+  return {
+    card: newCard,
+    attempt: newAttempt,
+    isExhausted: false,
+    contentAudit: {
+      passed: newCard.content_audit_passed ?? true,
+      labels: newCard.content_audit_labels ?? [],
+    },
+  };
 }

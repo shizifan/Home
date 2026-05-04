@@ -1,0 +1,39 @@
+{
+  "id": "border_alarm",
+  "title": "边关记",
+  "synopsis": "边关告急！敌军来犯。你是丞相，需要协助将军制定战略。",
+  "roles": ["丞相", "将军", "使节", "户部尚书"],
+  "companion_role_map": {
+    "xiaoqinglong": "丞相",
+    "dabear": "将军",
+    "xiaolvlong": "使节"
+  },
+  "acts": [
+    {
+      "act": 1,
+      "title": "烽火连天",
+      "setting": "边关烽火台狼烟四起。将军呈上地图——敌军兵力是我军的三倍。",
+      "dilemma": "选择应战的第一个策略。",
+      "choices": ["knowledge", "object", "gift", "ability"]
+    },
+    {
+      "act": 2,
+      "title": "外交博弈",
+      "setting": "使节建议先和谈拖延时间，但将军认为敌军只是在麻痹我们。户部尚书担心军饷不够。",
+      "dilemma": "如何在战与和之间做选择？",
+      "choices": ["knowledge", "gift", "ability"]
+    },
+    {
+      "act": 3,
+      "title": "决胜疆场",
+      "setting": "敌军开始了进攻。将军已经布好阵型，但前线吃紧。最后一刻的抉择至关重要。",
+      "dilemma": "决战的策略是什么？",
+      "choices": ["knowledge", "object", "ability"]
+    }
+  ],
+  "endings": {
+    "perfect": { "condition": "三幕均有 clever 道具使用", "narrative_template": "你以《兵法要诀》中的奇阵击退了敌军，又派使节成功和谈。边关恢复了和平，将军对你佩服得五体投地。你获得了一面帅旗。" },
+    "good": { "condition": "至少一幕 clever", "narrative_template": "边境的冲突得以平息。虽然经历了艰难的战斗，但和平最终到来。" },
+    "barely": { "condition": "无 clever 使用", "narrative_template": "战斗持续了很久，双方都付出了很大的代价。你意识到军事战略需要更多的智慧。" }
+  }
+}

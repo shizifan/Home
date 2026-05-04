@@ -1,0 +1,261 @@
+{
+  "version": "0.1.0",
+  "_doc": "伙伴驿站·小区广场·角色扮演幕次 Few-shot — 15 条示例，覆盖 5 剧本 × 3 幕次（PRD §15.9.1）",
+  "examples": [
+    {
+      "id": "plaza_act_001_water_act1",
+      "input": {
+        "scenario": { "title": "治水之策", "summary": "南方连日暴雨，河流决堤，百姓受灾。皇帝命丞相小青龙速速拿出对策。" },
+        "current_act": { "act_number": 1, "setting": "朝堂之上，百官焦急。使者送来了南方水患的奏报。", "dilemma": "如何快速了解灾情？" },
+        "selected_item": { "item_name": "千里传音铃", "category": "tools" },
+        "previous_acts": [],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "朝堂之上，雨水从屋檐滴落。使者浑身湿透，跪在殿前呈上奏报。百官窃窃私语，目光纷纷投向丞相小青龙。",
+        "companion_speech": "（缓缓走到使者面前，从袖中取出一枚银铃）请用这枚千里传音铃，与灾区的百姓直接通话。我要听到他们自己的声音。",
+        "reactions": "使者接过银铃，一脸惊讶。铃声轻响后，殿中竟然传来远方百姓大声呼救的声音。百官哗然，有人低声说'丞相果然有妙计'。",
+        "item_use_quality": "clever"
+      }
+    },
+    {
+      "id": "plaza_act_002_water_act2",
+      "input": {
+        "scenario": { "title": "治水之策", "summary": "南方连日暴雨，河流决堤，百姓受灾。皇帝命丞相小青龙速速拿出对策。" },
+        "current_act": { "act_number": 2, "setting": "堤坝上，洪水汹涌。百姓们用沙袋堵决口，但水流太急。", "dilemma": "怎样才能堵住决口？" },
+        "selected_item": { "item_name": "万斤石锁", "category": "tools" },
+        "previous_acts": [{ "act": 1, "item_used": "千里传音铃", "result": "了解了灾区实况" }],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "洪水像一条暴怒的龙，从决口处咆哮而出。沙袋一扔下去就被冲走。站在堤上的士兵面色苍白，百姓们抱在一起发抖。",
+        "companion_speech": "（举起万斤石锁，沉着地指向决口）将军，请准我用这把石锁封住决口。它坚固无比，水冲不散。",
+        "reactions": "将军犹豫了一瞬，然后重重点头。石锁坠入江中，巨浪溅起，决口被稳稳封住。洪水转向，百姓们欢呼起来。有人喊'丞相救了我们'。",
+        "item_use_quality": "clever"
+      }
+    },
+    {
+      "id": "plaza_act_003_water_act3",
+      "input": {
+        "scenario": { "title": "治水之策", "summary": "南方连日暴雨，河流决堤，百姓受灾。皇帝命丞相小青龙速速拿出对策。" },
+        "current_act": { "act_number": 3, "setting": "灾后重建的村庄。房屋倒塌，田地淹没，百姓无家可归。", "dilemma": "如何帮助百姓重建家园？" },
+        "selected_item": { "item_name": "图纸卷轴", "category": "tools" },
+        "previous_acts": [
+          { "act": 1, "item_used": "千里传音铃", "result": "了解了灾区实况" },
+          { "act": 2, "item_used": "万斤石锁", "result": "堵住了决口" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "洪水退去后，村庄一片泥泞。倒塌的房屋、折断的树木、哭泣的孩子——整个村子像是被揉碎了一样。百姓们坐在废墟上，眼里无光。",
+        "companion_speech": "（展开图纸卷轴，上面画着整齐的房屋）大家看，这是我画的图纸。新房子不用木头，用石头，地基垫高。这样下一次洪水来也不怕了。",
+        "reactions": "百姓围过来看图纸，一开始沉默，然后有老木匠点了点头，说'这方法确实好'。年轻人开始搬石头。废墟之上，重新有了锤子的声音。",
+        "item_use_quality": "reasonable"
+      }
+    },
+    {
+      "id": "plaza_act_004_envoy_act1",
+      "input": {
+        "scenario": { "title": "使节来访", "summary": "邻国派来使节，表面上是友好访问，暗中却在试探我国的实力。" },
+        "current_act": { "act_number": 1, "setting": "宫殿前，使节队伍浩浩荡荡。邻国使臣带着厚礼，但眼神闪烁。", "dilemma": "如何既不泄露机密，又让使节感受到大国的气度？" },
+        "selected_item": { "item_name": "金缕玉佩", "category": "treasure" },
+        "previous_acts": [],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "邻国使臣身着华服，身后跟着满载礼物的车队。他面带微笑走进大殿，但眼睛却像在默默数着殿中侍卫的数量。",
+        "companion_speech": "（双手捧起金缕玉佩）这枚玉佩象征我国与邻国的友谊。今日赠予贵使，愿两国百年交好。请代我向贵国国君问安。",
+        "reactions": "使臣接过玉佩，微微一怔。他本想打探虚实，却被这真诚的礼物堵住了嘴。他躬身行礼，说'贵国丞相气度非凡'。",
+        "item_use_quality": "clever"
+      }
+    },
+    {
+      "id": "plaza_act_005_envoy_act2",
+      "input": {
+        "scenario": { "title": "使节来访", "summary": "邻国派来使节，表面上是友好访问，暗中却在试探我国的实力。" },
+        "current_act": { "act_number": 2, "setting": "御花园夜宴。使臣借着酒意不停追问军力、粮草。", "dilemma": "如何巧妙地避开使臣的盘问？" },
+        "selected_item": { "item_name": "墨玉棋盘", "category": "treasure" },
+        "previous_acts": [{ "act": 1, "item_used": "金缕玉佩", "result": "稳住了使臣，建立了友好气氛" }],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "月光下的御花园，使臣举着酒杯，话越来越多。他问完军队又问粮草，问完粮草又问城墙。旁边的侍卫握紧了剑柄。",
+        "companion_speech": "（微笑，从怀中取出墨玉棋盘）贵使心忧天下，不如与我下一局棋。棋盘虽小，却可论天下大势。以棋会友，岂不快哉？",
+        "reactions": "使臣只得坐下。棋局之间，丞相步步为营。使臣几次想岔开话题问军情，都被棋局牵了回去。最终输得心服口服，也不再追问。",
+        "item_use_quality": "clever"
+      }
+    },
+    {
+      "id": "plaza_act_006_envoy_act3",
+      "input": {
+        "scenario": { "title": "使节来访", "summary": "邻国派来使节，表面上是友好访问，暗中却在试探我国的实力。" },
+        "current_act": { "act_number": 3, "setting": "使臣即将回国。他在告别时提出一个难题：希望我们在边境展示军力。", "dilemma": "如何拒绝这个要求又不失大国风范？" },
+        "selected_item": { "item_name": "和风折扇", "category": "treasure" },
+        "previous_acts": [
+          { "act": 1, "item_used": "金缕玉佩", "result": "稳住了使臣" },
+          { "act": 2, "item_used": "墨玉棋盘", "result": "化解了盘问" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "城门外，使臣的队伍整装待发。使臣突然转身，说想在离开前看看我军的阵列。这个请求让送行的官员们面面相觑。",
+        "companion_speech": "（不紧不慢地展开折扇，扇面上画着山河）贵使请看——这把扇子上画的就是我国的壮丽山河。军队的存在是为了守护这些，而不是展示。真正的强大，在心里，不在阵前。",
+        "reactions": "使臣看着扇面上的山河图，沉默片刻。他收起之前的试探，郑重地鞠了一躬，说'受教了'。然后上马离去，没有回头。",
+        "item_use_quality": "reasonable"
+      }
+    },
+    {
+      "id": "plaza_act_007_plague_act1",
+      "input": {
+        "scenario": { "title": "瘟疫来袭", "summary": "北方爆发不明瘟疫，七天内已有三个村庄沦陷。太医院束手无策。" },
+        "current_act": { "act_number": 1, "setting": "太医院内，太医们围着一本本草纲目争论不休。没有人知道这是什么病。", "dilemma": "如何找出疫病的源头？" },
+        "selected_item": { "item_name": "探源罗盘", "category": "tools" },
+        "previous_acts": [],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "太医院灯火通明，医书摊了满地。太医们额头上都是汗，一个说症状像伤寒，另一个说更像霍乱。但真正的病因谁都不知道。",
+        "companion_speech": "（取出探源罗盘，指针微微发亮）争吵不能救人。用这个探源罗盘，它能追踪疫气的来源。我们先去第一个发病的村庄。",
+        "reactions": "太医们安静下来。罗盘的指针颤抖着指向北方。老御医擦了擦额头的汗，说'听丞相的'。一行人连夜出发。",
+        "item_use_quality": "clever"
+      }
+    },
+    {
+      "id": "plaza_act_008_plague_act2",
+      "input": {
+        "scenario": { "title": "瘟疫来袭", "summary": "北方爆发不明瘟疫，七天内已有三个村庄沦陷。太医院束手无策。" },
+        "current_act": { "act_number": 2, "setting": "疫病村庄外。太医确认疫气来自一口枯井。但井太深，无法下去取样。", "dilemma": "如何安全地从井底取样？" },
+        "selected_item": { "item_name": "隔空取物壶", "category": "tools" },
+        "previous_acts": [{ "act": 1, "item_used": "探源罗盘", "result": "找到了疫源——村庄里的枯井" }],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "枯井旁草木枯黄，空气中有一种奇怪的甜味。太医们捂着口鼻远远站着，没一个人敢靠近。井口黑洞洞的，像一张嘴。",
+        "companion_speech": "（举起隔空取物壶，壶口对准井底）别怕，用这个。它能把井底的水和泥土取上来，不用人下去。大家退后一些。",
+        "reactions": "众人后退。壶口发出微弱的吸力，片刻后取上来一小瓶井水和泥土样本。老御医颤抖着接过，说'这下有救了'。随从们松了一口气。",
+        "item_use_quality": "clever"
+      }
+    },
+    {
+      "id": "plaza_act_009_plague_act3",
+      "input": {
+        "scenario": { "title": "瘟疫来袭", "summary": "北方爆发不明瘟疫，七天内已有三个村庄沦陷。太医院束手无策。" },
+        "current_act": { "act_number": 3, "setting": "村庄隔离区。药方已经配好，但百姓害怕来隔离点拿药。感染人数还在上升。", "dilemma": "如何说服百姓按时服药并隔离？" },
+        "selected_item": { "item_name": "银铃风信", "category": "tools" },
+        "previous_acts": [
+          { "act": 1, "item_used": "探源罗盘", "result": "找到疫源" },
+          { "act": 2, "item_used": "隔空取物壶", "result": "成功取样" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "药铺门口的药汤没人来领。百姓不敢出门，害怕一出门就会染病。村里一片死寂，只有风在空荡的巷子里吹。",
+        "companion_speech": "（拿起银铃风信，轻轻一摇，铃声中带着温和的声音）各位乡亲不要害怕。药已经配好了，我和太医亲自试过，是安全的。请每家派一人来取。这个病不可怕，只要及时吃药和隔离。",
+        "reactions": "铃声带着信任传遍了村庄。一户人家率先推开了门，然后是第二户、第三户。人们排着队来取药，有人对丞相鞠了深深的一躬。",
+        "item_use_quality": "reasonable"
+      }
+    },
+    {
+      "id": "plaza_act_010_court_act1",
+      "input": {
+        "scenario": { "title": "朝廷阴谋", "summary": "有大臣密谋篡位，在皇宫中安插了眼线。丞相必须揪出幕后黑手。" },
+        "current_act": { "act_number": 1, "setting": "深夜的御书房。丞相发现了一份被烧掉大半的密信，只留下几行模糊字迹。", "dilemma": "如何辨认密信的内容？" },
+        "selected_item": { "item_name": "显影水晶", "category": "tools" },
+        "previous_acts": [],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "御书房中灯火摇曳，一盆炭火烧得通红。纸灰飘在空气中，只有半片残页被压在砚台下。字迹被浓墨涂去，什么都看不清。",
+        "companion_speech": "（取出显影水晶，悬在残页上方）烧不掉的东西，水晶能看到。让我看看这底下到底写了什么。",
+        "reactions": "水晶发出柔和的光芒，涂改过的墨迹逐渐褪去，露出底下的字：'...月圆之夜，西门...'。旁站的侍卫倒吸一口冷气——月圆之夜就在后天。",
+        "item_use_quality": "clever"
+      }
+    },
+    {
+      "id": "plaza_act_011_court_act2",
+      "input": {
+        "scenario": { "title": "朝廷阴谋", "summary": "有大臣密谋篡位，在皇宫中安插了眼线。丞相必须揪出幕后黑手。" },
+        "current_act": { "act_number": 2, "setting": "朝堂之上。丞相已知密信内容，但不能打草惊蛇。需要在朝会上找出谋反者。", "dilemma": "如何在众臣子中揪出真正的叛臣而不引起恐慌？" },
+        "selected_item": { "item_name": "万象明镜", "category": "treasure" },
+        "previous_acts": [{ "act": 1, "item_used": "显影水晶", "result": "还原了密信的残留字迹" }],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "早朝如常进行，表面上一切平静。但小青龙知道，殿中至少有一个大臣在准备谋反。皇帝坐在龙椅上，浑然不觉危险就在身边。",
+        "companion_speech": "（将万象明镜置于殿中）各位大人，陛下新得一宝物，名为万象明镜。传说它能映出人心。请各位依次上前一观，以证忠诚。",
+        "reactions": "大臣们依次走过明镜。多数人坦然面对，轮到李将军时他面色突然发白，汗如雨下。不等其他人反应，他就瘫坐在地。侍卫上前将其拿下。",
+        "item_use_quality": "clever"
+      }
+    },
+    {
+      "id": "plaza_act_012_court_act3",
+      "input": {
+        "scenario": { "title": "朝廷阴谋", "summary": "有大臣密谋篡位，在皇宫中安插了眼线。丞相必须揪出幕后黑手。" },
+        "current_act": { "act_number": 3, "setting": "叛乱已被平息，但朝中人心惶惶。大臣们互相猜忌，没人敢信任同僚。", "dilemma": "如何安抚朝堂，重建信任？" },
+        "selected_item": { "item_name": "五色米种", "category": "treasure" },
+        "previous_acts": [
+          { "act": 1, "item_used": "显影水晶", "result": "还原密信内容" },
+          { "act": 2, "item_used": "万象明镜", "result": "揪出了叛臣李将军" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "叛乱平定后，朝堂的气氛反而更紧张了。大臣们连走路都低头，不敢看别人的眼睛。有人小声说'下一个会不会轮到我'。空气像绷紧的弦。",
+        "companion_speech": "（捧出一袋五色米种，分给每位大臣）各位大人，这是五色米种，象征五谷丰登。李将军的错是他一个人的，与旁人无关。我们要一起种下这袋米，明年一起收割。朝堂需要的是信任，不是恐惧。",
+        "reactions": "大臣们接过米种，有人低头擦了擦眼角。老尚书率先开口说'听丞相的'。紧张的气氛终于松动了一些。",
+        "item_use_quality": "reasonable"
+      }
+    },
+    {
+      "id": "plaza_act_013_border_act1",
+      "input": {
+        "scenario": { "title": "边境警报", "summary": "西部边境烽火台燃起狼烟，游牧骑兵突然出现在边界线上。" },
+        "current_act": { "act_number": 1, "setting": "军事会议上，斥候报告敌军数量远超预计。将领们意见不一，有的主战，有的主守。", "dilemma": "如何在情报不全的情况下做出最好的决策？" },
+        "selected_item": { "item_name": "鹰隼哨笛", "category": "tools" },
+        "previous_acts": [],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "军帐中，地图上插满了小旗。斥候跪地说敌军至少有五千骑。主战派拍桌要出城，主守派说等援军。吵得地图都飞了起来。",
+        "companion_speech": "（走到帐外，吹响鹰隼哨笛）各位将军别吵了。让鹰隼替我们侦察。它们飞得高看得远，比斥候更快更准。我们等它回来再决定。",
+        "reactions": "尖锐的哨声响彻天空。片刻后，一只巨大的鹰隼落在丞相肩头，轻声鸣叫。丞相听了一会儿，冷静地说：'敌军约三千，不是五千。有骑兵也有步兵。'将领们停止了争吵。",
+        "item_use_quality": "clever"
+      }
+    },
+    {
+      "id": "plaza_act_014_border_act2",
+      "input": {
+        "scenario": { "title": "边境警报", "summary": "西部边境烽火台燃起狼烟，游牧骑兵突然出现在边界线上。" },
+        "current_act": { "act_number": 2, "setting": "城墙之上，敌军已经开始攻城。步兵架云梯，骑兵在远处列阵。守城士兵箭矢即将耗尽。", "dilemma": "如何在箭矢不足的情况下守住城墙？" },
+        "selected_item": { "item_name": "铁蒺藜种子", "category": "tools" },
+        "previous_acts": [{ "act": 1, "item_used": "鹰隼哨笛", "result": "侦察清楚了敌情" }],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "城墙上箭筒已经见底。云梯一架一架靠上来，敌军像蚂蚁一样往上爬。士兵们开始用石头砸，但石头也不多了。气氛非常紧张。",
+        "companion_speech": "（撒出一把铁蒺藜种子，种子落地即长成带刺的铁藤）把铁蒺藜撒在城墙下！这些刺藤会缠住敌军的云梯和攻城器械，他们上不来！",
+        "reactions": "铁蒺藜迅速蔓延，把云梯缠得结结实实。敌军推梯子时被刺藤扎了手，纷纷后退。守城士兵大呼'神了'，士气大涨。",
+        "item_use_quality": "clever"
+      }
+    },
+    {
+      "id": "plaza_act_015_border_act3",
+      "input": {
+        "scenario": { "title": "边境警报", "summary": "西部边境烽火台燃起狼烟，游牧骑兵突然出现在边界线上。" },
+        "current_act": { "act_number": 3, "setting": "敌军撤退后，边境百姓的房屋和庄稼被毁。冬天将至，百姓无粮无房。", "dilemma": "如何在入冬前重建家园？" },
+        "selected_item": { "item_name": "大锅饭", "category": "tools" },
+        "previous_acts": [
+          { "act": 1, "item_used": "鹰隼哨笛", "result": "侦察敌情" },
+          { "act": 2, "item_used": "铁蒺藜种子", "result": "成功守城" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "scene_narrative": "战火过后，村庄满目疮痍。烧焦的房梁、踩毁的麦田、哭泣的妇孺。冬天还有两个月就到，但今年的粮食已经全没了。村长摇头说'这冬天怕是过不去'。",
+        "companion_speech": "（下令支起大锅饭）今天起，所有人都来广场吃饭，一锅不够就两锅。先把肚子填饱，吃完后有力气——有力气才能修房子、补田地。这个冬天，我们不会饿着。",
+        "reactions": "大锅饭的香味飘了起来。饥肠辘辘的人们围过来，有人边吃边流泪。一个老奶奶说'有这口热饭，再冷的冬天也不怕了'。人们吃完了就开始搬木料、盖屋顶。",
+        "item_use_quality": "barely_relevant"
+      }
+    }
+  ]
+}

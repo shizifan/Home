@@ -25,6 +25,7 @@ import { processReviseCard } from '@/lib/orchestrate/processDescribe';
 import { queryOne } from '@/lib/db/client';
 import { getTaskByDay } from '@/lib/tasks';
 import { getCompanionById } from '@/lib/db/repos';
+import { filterChildInput, getInputRejectionLine } from '@/lib/safety/filters';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -53,8 +54,8 @@ export async function POST(req: Request) {
 
     // 找 memory 原始描述
     const mem = await queryOne<{ user_text: string | null; task_id: string }>(
-      `select user_text, task_id from memories where id = :id`,
-      { id: card.memory_id },
+      `select user_text, task_id from memories where id = $1`,
+      [card.memory_id],
     );
     if (!mem) {
       return NextResponse.json({ error: 'memory not found' }, { status: 404 });
@@ -67,6 +68,17 @@ export async function POST(req: Request) {
 
     // 把旧卡片设为 rejected
     await setCardChildAction(cardId, 'rejected');
+
+    // 输入安全过滤
+    if (revisionText) {
+      const inputCheck = filterChildInput(revisionText);
+      if (!inputCheck.ok) {
+        return NextResponse.json(
+          { error: getInputRejectionLine(inputCheck.reason ?? 'unknown') },
+          { status: 422 },
+        );
+      }
+    }
 
     const { card: newCard, attempt, isExhausted } = await processReviseCard({
       cardId,
@@ -82,8 +94,7 @@ export async function POST(req: Request) {
       card_id: newCard.id,
       image_url: newCard.image_url,
       image_source: newCard.image_source,
-      alt_image_url: newCard.alt_image_url,
-      alt_image_source: newCard.alt_image_source,
+      image_prompt: newCard.image_prompt,
       is_fallback_text_card: newCard.is_fallback_text_card,
       attempt,
       is_exhausted: isExhausted,
@@ -92,6 +103,10 @@ export async function POST(req: Request) {
         severity: newCard.style_check_severity,
         regenerate_count: attempt - 1,
         issues: newCard.style_check_issues,
+      },
+      content_audit: {
+        passed: newCard.content_audit_passed ?? true,
+        labels: newCard.content_audit_labels ?? [],
       },
     });
   } catch (err) {

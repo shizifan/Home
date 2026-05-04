@@ -271,7 +271,7 @@ function MemoryReadonlyTab({ bank }: { bank: MemoryBankResponse | null }) {
               iconText={categoryLabel(c.concept_category)}
               name={c.concept_name}
               summary={c.ai_summary || ''}
-              evidence={(c.evidence ?? []).map((e) => `Day ${e.day}: ${e.excerpt}`)}
+              evidence={(c.evidence ?? []).map((e) => `Day ${e.day}: ${e.quote}`)}
             />
           ))}
         </>

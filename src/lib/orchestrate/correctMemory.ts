@@ -24,6 +24,7 @@ import {
 import { execute } from '@/lib/db/client';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import { runCorrection } from '@/lib/llm/correction';
+import { filterChildInput, getInputRejectionLine } from '@/lib/safety/filters';
 import type { CorrectionAction, DayNumber, MemoryBankEntry } from '@/types';
 
 export interface CorrectionRequest {
@@ -77,6 +78,10 @@ export async function correctMemory(req: CorrectionRequest): Promise<CorrectionR
 
     case 'clarify': {
       const clar = (req.params?.clarification ?? '').toString().trim().slice(0, 300);
+      const inputCheck = filterChildInput(clar);
+      if (!inputCheck.ok) {
+        throw new Error(getInputRejectionLine(inputCheck.reason ?? 'unknown'));
+      }
       newUnderstanding = clar
         ? `孩子澄清说："${clar}"`
         : `孩子给了一个澄清。`;
@@ -84,8 +89,8 @@ export async function correctMemory(req: CorrectionRequest): Promise<CorrectionR
       newType = 'remembered';
       // 把澄清写到 ai_summary 末尾
       await execute(
-        `update memory_bank set ai_summary = concat(coalesce(ai_summary,''), '\n[澄清] ', :c), type = 'remembered', cache_dirty = true where id = :id`,
-        { c: clar, id: req.memoryId },
+        `update memory_bank set ai_summary = concat(coalesce(ai_summary,''), '\n[澄清] ', $1), type = 'remembered' where id = $2`,
+        [clar, req.memoryId],
       );
       break;
     }
@@ -97,8 +102,8 @@ export async function correctMemory(req: CorrectionRequest): Promise<CorrectionR
       correctionDetails = `把"${entry.concept_name}"改名为"${name}"`;
       newUnderstanding = `孩子让我把它叫做"${name}"。`;
       await execute(
-        `update memory_bank set concept_name = :n, cache_dirty = true where id = :id`,
-        { n: name, id: req.memoryId },
+        `update memory_bank set concept_name = $1 where id = $2`,
+        [name, req.memoryId],
       );
       break;
     }
@@ -117,7 +122,7 @@ export async function correctMemory(req: CorrectionRequest): Promise<CorrectionR
         await appendEvidenceToMemoryBank(targetId, ev);
       }
       // 删除当前 entry
-      await execute(`delete from memory_bank where id = :id`, { id: req.memoryId });
+      await execute(`delete from memory_bank where id = $1`, [req.memoryId]);
       correctionDetails = `把"${entry.concept_name}"和"${target.concept_name}"合到一起`;
       newUnderstanding = `孩子说"${entry.concept_name}"和"${target.concept_name}"是一回事。`;
       // 在 target 上记录 correction history
@@ -154,7 +159,12 @@ export async function correctMemory(req: CorrectionRequest): Promise<CorrectionR
         conceptCategory: entry.concept_category,
         aiSummary: childText || `孩子告诉了我关于"${conceptName}"的事。`,
         aiReasoning: `孩子主动从我"还不知道的事"里挑了"${conceptName}"告诉我。`,
-        evidence: [{ memory_id: memory.id, day: companion.current_day, excerpt: childText || conceptName }],
+        evidence: [{
+          quote: childText || conceptName,
+          day: companion.current_day,
+          source: 'memory_panel_inform',
+          at: memory.created_at,
+        }],
         confidence: 0.7,
       });
       // 3. 删除 unknown 行
@@ -200,15 +210,14 @@ export async function correctMemory(req: CorrectionRequest): Promise<CorrectionR
       await execute(
         `update memory_bank
            set type = 'set_aside',
-               ai_summary = :sum,
-               ai_reasoning = :rea,
-               cache_dirty = true
-           where id = :id`,
-        {
-          sum: `你选择不告诉我关于"${entry.concept_name}"的事。`,
-          rea: '我问过你这个，你选择了先不说。这是你的权利。',
-          id: req.memoryId,
-        },
+               ai_summary = $1,
+               ai_reasoning = $2
+           where id = $3`,
+        [
+          `你选择不告诉我关于"${entry.concept_name}"的事。`,
+          '我问过你这个，你选择了先不说。这是你的权利。',
+          req.memoryId,
+        ],
       );
       correctionDetails = `孩子选择不告诉我关于"${entry.concept_name}"的事`;
       newUnderstanding = `孩子明确选择不说。`;

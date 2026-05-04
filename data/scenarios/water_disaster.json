@@ -1,0 +1,38 @@
+{
+  "id": "water_disaster",
+  "title": "治水记",
+  "synopsis": "洪水肆虐，百姓危在旦夕。身为丞相，你需要召集大臣商议对策。",
+  "roles": ["丞相", "将军", "户部尚书", "百姓代表"],
+  "companion_role_map": {
+    "xiaoqinglong": "丞相",
+    "dabear": "将军"
+  },
+  "acts": [
+    {
+      "act": 1,
+      "title": "洪水来临",
+      "setting": "朝堂之上，八百里加急来报——堤坝决口，三县被淹。百姓哭喊声仿佛传到了朝堂。",
+      "dilemma": "你需要在朝堂上提出第一个对策。",
+      "choices": ["knowledge", "object", "gift", "ability"]
+    },
+    {
+      "act": 2,
+      "title": "资源之争",
+      "setting": "户部尚书反对——国库空虚，开渠需要大量银两。但如果不治水，将有更多人流离失所。",
+      "dilemma": "如何说服户部拨款？",
+      "choices": ["knowledge", "gift", "ability"]
+    },
+    {
+      "act": 3,
+      "title": "决断时刻",
+      "setting": "洪水即将冲垮第二道堤坝。百姓们的生命危在旦夕。必须立刻做最后的决定。",
+      "dilemma": "是用尽全部资源孤注一掷，还是做最坏打算？",
+      "choices": ["knowledge", "object", "ability"]
+    }
+  ],
+  "endings": {
+    "perfect": { "condition": "三幕均有 clever 道具使用", "narrative_template": "洪水退去，万民欢呼。你巧用《治水图》开渠分流，保住了千里沃野。皇帝亲自嘉奖，封你为治水功臣。" },
+    "good": { "condition": "至少一幕 clever", "narrative_template": "洪水终于平息。虽然过程曲折，但百姓们重建了家园。你收获了宝贵的经验。" },
+    "barely": { "condition": "无 clever 使用", "narrative_template": "洪水造成了不小的损失。百姓们虽然艰难地度过了一劫，但你也意识到需要多学些治水的本事。" }
+  }
+}

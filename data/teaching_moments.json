@@ -1,0 +1,22 @@
+[
+  { "id": "tm1", "text": "AI 回答不同的问题，是因为它们见过的东西不一样。这就像不同的人有不同的经历。", "category": "ai_literacy", "tags": ["training_data", "diversity"] },
+  { "id": "tm2", "text": "同一个问题，不同的人会给出不同答案——AI 也是这样，因为它们的训练数据不同。", "category": "ai_literacy", "tags": ["subjectivity"] },
+  { "id": "tm3", "text": "AI 没有对错，只有看过的世界不同。就像你从小住的城市和你的朋友不一样。", "category": "ai_literacy", "tags": ["perspective"] },
+  { "id": "tm4", "text": "训练数据就像 AI 读过的所有书。读不同的书，AI 就会给出不同的答案。", "category": "ai_literacy", "tags": ["training_data"] },
+  { "id": "tm5", "text": "不同的经历让人有不同的想法，不同的训练数据让 AI 有不同的答案。", "category": "ai_literacy", "tags": ["analogy"] },
+  { "id": "tm6", "text": "有些 AI 知道的事情多，有些知道的事情少——取决于它们读了什么数据。", "category": "ai_literacy", "tags": ["knowledge_scope"] },
+  { "id": "tm7", "text": "AI 的答案不是唯一的。如果给它看不同的东西，它会给出不同的回答。", "category": "ai_literacy", "tags": ["non_uniqueness"] },
+  { "id": "tm8", "text": "就像你和你的朋友有不同看法一样，不同的 AI 对一个问题的回答也不一样。", "category": "ai_literacy", "tags": ["diversity"] },
+  { "id": "tm9", "text": "AI 不会自己决定对错，它的回答来自于它看过的数据。", "category": "ai_literacy", "tags": ["no_agency"] },
+  { "id": "tm10", "text": "每个 AI 都像来自不同国家的人——它们见过的世界塑造了它们的想法。", "category": "ai_literacy", "tags": ["global"] },
+  { "id": "tm11", "text": "AI 的训练数据不是全部真理，它只是一部分信息。所以 AI 的答案也只是一部分观点。", "category": "ai_literacy", "tags": ["critical_thinking"] },
+  { "id": "tm12", "text": "人和动物在小的时候，通过看到、听到、感受到的东西来认识世界。AI 也是这样的。", "category": "ai_literacy", "tags": ["learning"] },
+  { "id": "tm13", "text": "你想让 AI 知道什么，就要给它看什么数据——这就是训练。", "category": "ai_literacy", "tags": ["training"] },
+  { "id": "tm14", "text": "有时候 AI 不知道答案，那是因为它的训练数据里没有相关的信息。", "category": "ai_literacy", "tags": ["knowledge_gap"] },
+  { "id": "tm15", "text": "同一个 AI，如果给它重新看一批数据重新训练，它的答案也会改变。", "category": "ai_literacy", "tags": ["changeable"] },
+  { "id": "tm16", "text": "AI 并不是真的聪明，它只是记住了很多数据，按照模式来回答。", "category": "ai_literacy", "tags": ["pattern"] },
+  { "id": "tm17", "text": "不同的训练数据塑造了不同的 AI 世界观。就像你读了不同的书会变成不同的人。", "category": "ai_literacy", "tags": ["worldview"] },
+  { "id": "tm18", "text": "AI 的答案来自过去的经验（数据），而不是未来的预测。", "category": "ai_literacy", "tags": ["backward_looking"] },
+  { "id": "tm19", "text": "如果 AI 的训练数据不完整，它的答案也会不完整。就像你只看了一本书的一半就想解释结局。", "category": "ai_literacy", "tags": ["incomplete"] },
+  { "id": "tm20", "text": "AI 之间可以有不同的看法，这不代表有对错，只代表有不同的训练数据。", "category": "ai_literacy", "tags": ["neutrality"] }
+]

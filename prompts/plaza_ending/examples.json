@@ -1,0 +1,186 @@
+{
+  "version": "0.1.0",
+  "_doc": "伙伴驿站·小区广场·结局生成 Few-shot — 10 条示例，覆盖 5 剧本 × 2 种结局等级（高/低）（PRD §15.9.1）",
+  "examples": [
+    {
+      "id": "plaza_end_001_water_perfect",
+      "input": {
+        "scenario": "治水之策",
+        "all_acts": [
+          { "act": 1, "item_used": "千里传音铃", "quality": "clever" },
+          { "act": 2, "item_used": "万斤石锁", "quality": "clever" },
+          { "act": 3, "item_used": "图纸卷轴", "quality": "clever" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "ending_type": "perfect",
+        "narrative": "洪水退去，南方大地重新披上绿色。三幕之中，丞相先以千里传音铃聆听民意，再用万斤石锁阻断洪流，最后以图纸为百姓规划新居。百姓在新落成的高台村口立了一块石碑，刻着四个字：'丞相之光'。皇帝闻讯大喜，赐予丞相一枚'治水天印'，表彰他智勇双全。",
+        "earned_items": [
+          { "item_id": "water_seal_001", "item_name": "治水天印", "category": "treasure" }
+        ]
+      }
+    },
+    {
+      "id": "plaza_end_002_water_barely",
+      "input": {
+        "scenario": "治水之策",
+        "all_acts": [
+          { "act": 1, "item_used": "千里传音铃", "quality": "reasonable" },
+          { "act": 2, "item_used": "沙袋", "quality": "barely_relevant" },
+          { "act": 3, "item_used": "大锅饭", "quality": "reasonable" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "ending_type": "barely",
+        "narrative": "洪水最终退去了，但路上磕磕绊绊。沙袋没能完全解决问题，大锅饭也填不饱所有肚子。不过丞相始终没有放弃，守着百姓直到最后一袋沙也搬完了。也许不算大胜，但百姓们记得——丞相没有走。这份坚持，比胜利更珍贵。",
+        "earned_items": []
+      }
+    },
+    {
+      "id": "plaza_end_003_envoy_good",
+      "input": {
+        "scenario": "使节来访",
+        "all_acts": [
+          { "act": 1, "item_used": "金缕玉佩", "quality": "clever" },
+          { "act": 2, "item_used": "墨玉棋盘", "quality": "clever" },
+          { "act": 3, "item_used": "和风折扇", "quality": "reasonable" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "ending_type": "good",
+        "narrative": "使臣带着玉佩、棋谱和对折扇深深的敬意离开了。邻国没有再来试探，反而寄来一封正式国书，愿互通商贸。丞相以三件雅物守住了边界——不是用刀剑，而是用棋盘上的智慧和扇面上的胸怀。不战而屈人之兵，这就是最好的守卫。",
+        "earned_items": [
+          { "item_id": "envoy_jade_002", "item_name": "文心玉佩", "category": "treasure" }
+        ]
+      }
+    },
+    {
+      "id": "plaza_end_004_envoy_barely",
+      "input": {
+        "scenario": "使节来访",
+        "all_acts": [
+          { "act": 1, "item_used": "金缕玉佩", "quality": "reasonable" },
+          { "act": 2, "item_used": "普通酒杯", "quality": "barely_relevant" },
+          { "act": 3, "item_used": "和风折扇", "quality": "reasonable" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "ending_type": "barely",
+        "narrative": "使臣来访三天，丞相尽力了。虽然一度被问得手足无措，用错了道具，但最终折扇还是表达了诚意。使臣离去时没有恶意，也没有太多好感。这也许不是一场漂亮的接待，但至少没有让两国关系变坏。平淡的结局，也是好的结局。",
+        "earned_items": []
+      }
+    },
+    {
+      "id": "plaza_end_005_plague_perfect",
+      "input": {
+        "scenario": "瘟疫来袭",
+        "all_acts": [
+          { "act": 1, "item_used": "探源罗盘", "quality": "clever" },
+          { "act": 2, "item_used": "隔空取物壶", "quality": "clever" },
+          { "act": 3, "item_used": "银铃风信", "quality": "clever" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "ending_type": "perfect",
+        "narrative": "瘟疫在半个月内得到控制。丞相用罗盘找到疫源，用取物壶拿到样本，最后用风信传遍药方。太医院将这次的诊疗经验编成一本《疫病防治录》，开篇写着：'感谢丞相的智慧与勇气'。百姓送来了'万民伞'——一把画满名字的油纸伞，象征着所有人的感恩。",
+        "earned_items": [
+          { "item_id": "plague_umbrella_001", "item_name": "万民伞", "category": "treasure" }
+        ]
+      }
+    },
+    {
+      "id": "plaza_end_006_plague_barely",
+      "input": {
+        "scenario": "瘟疫来袭",
+        "all_acts": [
+          { "act": 1, "item_used": "探源罗盘", "quality": "reasonable" },
+          { "act": 2, "item_used": "普通木桶", "quality": "barely_relevant" },
+          { "act": 3, "item_used": "银铃风信", "quality": "reasonable" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "ending_type": "barely",
+        "narrative": "疫情最终平息了，但速度不够快，中间还走了一些弯路。有些人本可以不被感染。不过丞相学到了很重要的一课：对抗瘟疫需要的不只是智慧，还有速度。这些遗憾会成为下一次更好的理由。",
+        "earned_items": []
+      }
+    },
+    {
+      "id": "plaza_end_007_court_good",
+      "input": {
+        "scenario": "朝廷阴谋",
+        "all_acts": [
+          { "act": 1, "item_used": "显影水晶", "quality": "clever" },
+          { "act": 2, "item_used": "万象明镜", "quality": "clever" },
+          { "act": 3, "item_used": "五色米种", "quality": "reasonable" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "ending_type": "good",
+        "narrative": "阴谋被揭穿，李将军下狱，朝堂恢复平静。丞相用水晶看穿密信、用明镜揪出叛臣、用米种愈合人心。虽然没有完全化解所有的猜疑——也许永远也做不到——但朝堂已经能重新运转了。皇帝感慨道：'有丞相在，朕可高枕无忧。'",
+        "earned_items": [
+          { "item_id": "court_mirror_001", "item_name": "忠义镜", "category": "treasure" }
+        ]
+      }
+    },
+    {
+      "id": "plaza_end_008_court_barely",
+      "input": {
+        "scenario": "朝廷阴谋",
+        "all_acts": [
+          { "act": 1, "item_used": "显影水晶", "quality": "reasonable" },
+          { "act": 2, "item_used": "普通令牌", "quality": "barely_relevant" },
+          { "act": 3, "item_used": "五色米种", "quality": "reasonable" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "ending_type": "barely",
+        "narrative": "李将军最终被查出来了，但过程中丞相打草惊蛇，差点让真正的幕后之人逃脱。朝堂的伤痕还在，仍然有大臣不敢完全信任同僚。不过至少叛臣已经不在了。有时候一场破破烂烂的胜利，也是一场胜利。",
+        "earned_items": []
+      }
+    },
+    {
+      "id": "plaza_end_009_border_perfect",
+      "input": {
+        "scenario": "边境警报",
+        "all_acts": [
+          { "act": 1, "item_used": "鹰隼哨笛", "quality": "clever" },
+          { "act": 2, "item_used": "铁蒺藜种子", "quality": "clever" },
+          { "act": 3, "item_used": "图纸卷轴", "quality": "clever" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "ending_type": "perfect",
+        "narrative": "边境终于安静了。鹰隼在天空盘旋，铁蒺藜变成的绿篱围在城墙下，春天还在开小花。新的房屋按照图纸整齐落成。这场危机让丞相赢得了边民的心——一个老军士说：'丞相没有给我们盾牌，他给了我们眼睛和刺，还有主意。'皇帝赐予丞相一把'边疆之钥'金令牌，表彰他的远见与坚毅。",
+        "earned_items": [
+          { "item_id": "border_key_001", "item_name": "边疆之钥", "category": "treasure" }
+        ]
+      }
+    },
+    {
+      "id": "plaza_end_010_border_barely",
+      "input": {
+        "scenario": "边境警报",
+        "all_acts": [
+          { "act": 1, "item_used": "鹰隼哨笛", "quality": "reasonable" },
+          { "act": 2, "item_used": "普通弓箭", "quality": "barely_relevant" },
+          { "act": 3, "item_used": "大锅饭", "quality": "barely_relevant" }
+        ],
+        "companion": { "name": "小青龙", "role": "丞相" }
+      },
+      "expected_output": {
+        "ending_type": "barely",
+        "narrative": "敌军终于退走了，但边境的疮痍要很久才能修复。弓箭没能守住城墙，大锅饭也只能止一时之饥。不过奇怪的是，边民没有抱怨——他们看到丞相一直在城墙上，直到最后一股狼烟熄灭才下来。有些时候，陪着，就是最好用的道具。",
+        "earned_items": []
+      }
+    }
+  ]
+}

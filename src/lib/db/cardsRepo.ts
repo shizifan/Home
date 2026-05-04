@@ -1,5 +1,5 @@
 /**
- * cards 表 CRUD（V0.6.1 §4.1）
+ * cards 表 CRUD（V1.0 PostgreSQL 方言）
  *
  * 一张 memory 可以有多张 cards（重做产生多版本），但同一 memory 同时只能有 1 张 is_active=true。
  */
@@ -25,12 +25,14 @@ interface CardRow {
   alt_image_source: string | null;
   image_prompt: string;
   raw_keyword_extract: KeywordExtractOutput | null;
-  style_check_passed: number | null;
+  style_check_passed: boolean | null;
   style_check_severity: string | null;
   style_check_issues: string[] | null;
+  content_audit_passed: boolean | null;
+  content_audit_labels: string[] | null;
   generation_attempt: number;
-  is_active: number;
-  is_fallback_text_card: number;
+  is_active: boolean;
+  is_fallback_text_card: boolean;
   child_action: string | null;
   confirmed_at: string | null;
   created_at: string;
@@ -39,7 +41,8 @@ interface CardRow {
 const CARD_COLUMNS = `id, memory_id, companion_id, image_url, image_source,
   alt_image_url, alt_image_source, image_prompt,
   raw_keyword_extract, style_check_passed, style_check_severity,
-  style_check_issues, generation_attempt, is_active, is_fallback_text_card,
+  style_check_issues, content_audit_passed, content_audit_labels,
+  generation_attempt, is_active, is_fallback_text_card,
   child_action, confirmed_at, created_at`;
 
 function rowToCard(row: CardRow): Card {
@@ -53,9 +56,11 @@ function rowToCard(row: CardRow): Card {
     alt_image_source: (row.alt_image_source ?? null) as ImageSource | null,
     image_prompt: row.image_prompt,
     raw_keyword_extract: row.raw_keyword_extract,
-    style_check_passed: row.style_check_passed == null ? null : Boolean(row.style_check_passed),
+    style_check_passed: row.style_check_passed,
     style_check_severity: (row.style_check_severity ?? null) as CardSeverity | null,
     style_check_issues: Array.isArray(row.style_check_issues) ? row.style_check_issues : [],
+    content_audit_passed: row.content_audit_passed ?? null,
+    content_audit_labels: Array.isArray(row.content_audit_labels) ? row.content_audit_labels : [],
     generation_attempt: row.generation_attempt as 1 | 2 | 3 | 4,
     is_active: Boolean(row.is_active),
     is_fallback_text_card: Boolean(row.is_fallback_text_card),
@@ -77,6 +82,8 @@ export interface CreateCardArgs {
   styleCheckPassed?: boolean | null;
   styleCheckSeverity?: CardSeverity | null;
   styleCheckIssues?: string[];
+  contentAuditPassed?: boolean | null;
+  contentAuditLabels?: string[];
   generationAttempt: 1 | 2 | 3 | 4;
   isFallbackTextCard?: boolean;
 }
@@ -88,35 +95,31 @@ export async function createCard(args: CreateCardArgs): Promise<Card> {
   const id = uuid();
   // 旧 active → inactive
   await execute(
-    `update cards set is_active = 0 where memory_id = :mid and is_active = 1`,
-    { mid: args.memoryId },
+    `update cards set is_active = false where memory_id = $1 and is_active = true`,
+    [args.memoryId],
   );
   await execute(
     `insert into cards
        (id, memory_id, companion_id, image_url, image_source,
         alt_image_url, alt_image_source, image_prompt,
         raw_keyword_extract, style_check_passed, style_check_severity,
-        style_check_issues, generation_attempt, is_active, is_fallback_text_card)
-     values
-       (:id, :mid, :cid, :url, :src, :alt_url, :alt_src, :prompt, cast(:kw as json),
-        :passed, :sev, cast(:issues as json),
-        :attempt, 1, :fallback)`,
-    {
-      id,
-      mid: args.memoryId,
-      cid: args.companionId,
-      url: args.imageUrl,
-      src: args.imageSource ?? null,
-      alt_url: args.altImageUrl ?? null,
-      alt_src: args.altImageSource ?? null,
-      prompt: args.imagePrompt,
-      kw: args.rawKeywordExtract ? JSON.stringify(args.rawKeywordExtract) : null,
-      passed: args.styleCheckPassed == null ? null : args.styleCheckPassed ? 1 : 0,
-      sev: args.styleCheckSeverity ?? null,
-      issues: JSON.stringify(args.styleCheckIssues ?? []),
-      attempt: args.generationAttempt,
-      fallback: args.isFallbackTextCard ? 1 : 0,
-    },
+        style_check_issues, content_audit_passed, content_audit_labels,
+        generation_attempt, is_active, is_fallback_text_card)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12::jsonb,$13,$14::jsonb,$15,true,$16)`,
+    [
+      id, args.memoryId, args.companionId,
+      args.imageUrl, args.imageSource ?? null,
+      args.altImageUrl ?? null, args.altImageSource ?? null,
+      args.imagePrompt,
+      args.rawKeywordExtract ? JSON.stringify(args.rawKeywordExtract) : null,
+      args.styleCheckPassed ?? null,
+      args.styleCheckSeverity ?? null,
+      JSON.stringify(args.styleCheckIssues ?? []),
+      args.contentAuditPassed ?? null,
+      args.contentAuditLabels ? JSON.stringify(args.contentAuditLabels) : null,
+      args.generationAttempt,
+      args.isFallbackTextCard ?? false,
+    ],
   );
   const row = await getCardById(id);
   if (!row) throw new Error('createCard: row not found after insert');
@@ -125,8 +128,8 @@ export async function createCard(args: CreateCardArgs): Promise<Card> {
 
 export async function getCardById(id: string): Promise<Card | null> {
   const row = await queryOne<CardRow>(
-    `select ${CARD_COLUMNS} from cards where id = :id`,
-    { id },
+    `select ${CARD_COLUMNS} from cards where id = $1`,
+    [id],
   );
   return row ? rowToCard(row) : null;
 }
@@ -134,9 +137,9 @@ export async function getCardById(id: string): Promise<Card | null> {
 export async function getActiveCardForMemory(memoryId: string): Promise<Card | null> {
   const row = await queryOne<CardRow>(
     `select ${CARD_COLUMNS}
-       from cards where memory_id = :mid and is_active = 1
+       from cards where memory_id = $1 and is_active = true
        order by created_at desc limit 1`,
-    { mid: memoryId },
+    [memoryId],
   );
   return row ? rowToCard(row) : null;
 }
@@ -145,17 +148,16 @@ export async function listCardsForCompanion(
   companionId: string,
   limit = 50,
 ): Promise<Card[]> {
-  // mysql2 的 ? 占位符不允许 LIMIT 用绑定参数；钳制后拼接
   const lim = Math.max(1, Math.min(200, Math.floor(limit)));
   const rows = await query<CardRow>(
     `select ${CARD_COLUMNS}
        from cards
-       where companion_id = :cid
-         and is_active = 1
+       where companion_id = $1
+         and is_active = true
          and child_action in ('confirmed', 'no_action_timeout')
        order by created_at desc
-       limit ${lim}`,
-    { cid: companionId },
+       limit $2`,
+    [companionId, lim],
   );
   return rows.map(rowToCard);
 }
@@ -166,49 +168,21 @@ export async function setCardChildAction(
 ): Promise<void> {
   await execute(
     `update cards
-       set child_action = :a, confirmed_at = current_timestamp(3)
-       where id = :id`,
-    { id: cardId, a: action },
+       set child_action = $1, confirmed_at = now()
+       where id = $2`,
+    [action, cardId],
   );
 }
 
 export async function setCardInactive(cardId: string): Promise<void> {
-  await execute(`update cards set is_active = 0 where id = :id`, { id: cardId });
+  await execute(`update cards set is_active = false where id = $1`, [cardId]);
 }
 
-/**
- * 测试期：用户在双图中选了 alt 那张时，把 image_url ↔ alt_image_url 互换。
- * 互换后 image_url / image_source 永远是孩子选中的那张。
- */
-export async function swapCardPrimaryImage(cardId: string): Promise<void> {
-  const row = await getCardById(cardId);
-  if (!row) return;
-  await execute(
-    `update cards
-       set image_url = :url,
-           image_source = :src,
-           alt_image_url = :alt_url,
-           alt_image_source = :alt_src
-     where id = :id`,
-    {
-      id: cardId,
-      url: row.alt_image_url,
-      src: row.alt_image_source,
-      alt_url: row.image_url,
-      alt_src: row.image_source,
-    },
+/** 获取同一 memory 的卡片数量（用于判断重做是否超限） */
+export async function countCardAttempts(memoryId: string): Promise<number> {
+  const r = await queryOne<{ c: number }>(
+    `select count(*)::int as c from cards where memory_id = $1`,
+    [memoryId],
   );
-}
-
-/** 累加 memories.regenerate_count（用于限制 ≤ 3 次重做）*/
-export async function incrementMemoryRegenerateCount(memoryId: string): Promise<number> {
-  await execute(
-    `update memories set regenerate_count = regenerate_count + 1 where id = :id`,
-    { id: memoryId },
-  );
-  const row = await queryOne<{ regenerate_count: number }>(
-    `select regenerate_count from memories where id = :id`,
-    { id: memoryId },
-  );
-  return row?.regenerate_count ?? 0;
+  return Number(r?.c ?? 0);
 }

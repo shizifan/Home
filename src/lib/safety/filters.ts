@@ -14,6 +14,9 @@ const INPUT_BLOCKED_PATTERNS: Array<{ test: RegExp; reason: string }> = [
   { test: /杀.{0,2}(他|她|你|妈|爸)/, reason: 'violence' },
   { test: /色情|做爱|裸|做.{0,1}爱|脱光/, reason: 'sexual' },
   { test: /操(你|他|她)|妈的|傻逼|滚/, reason: 'profanity' },
+  { test: /(?:1[3-9]\d)[\s-]?\d{4}[\s-]?\d{4}/, reason: 'personal_info' },
+  { test: /(省|市|区|路|号|栋|单元|室).{2,10}/, reason: 'personal_info' },
+  { test: /(密码|账号|登录|注册|验证码)/, reason: 'account_info' },
 ];
 
 const OUTPUT_BLOCKED_PATTERNS: Array<{ test: RegExp; reason: string }> = [
@@ -29,6 +32,8 @@ const OUTPUT_BLOCKED_PATTERNS: Array<{ test: RegExp; reason: string }> = [
   { test: /建议.{0,5}(看医生|去医院|心理咨询)/, reason: 'medical_advice' },
   // 鼓励危险行为
   { test: /(独自).{0,5}(出去|外出|过马路)/, reason: 'unsafe' },
+  // 套取孩子个人信息
+  { test: /(?:告诉我|说说).{0,5}(?:密码|账号|手机号|地址)/, reason: 'solicit_pii' },
 ];
 
 export interface FilterResult {
@@ -76,6 +81,10 @@ export function getInputRejectionLine(reason: string): string {
     case 'sexual':
     case 'profanity':
       return '换种说法告诉我吧，慢慢来。';
+    case 'personal_info':
+      return '这些是你的秘密哦，不用告诉我的。我们聊点别的吧？';
+    case 'account_info':
+      return '这个不用告诉我啦，我们来聊聊别的事情吧。';
     default:
       return '这个我先放一放，下次再说吧。';
   }

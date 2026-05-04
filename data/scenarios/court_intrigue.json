@@ -1,0 +1,38 @@
+{
+  "id": "court_intrigue",
+  "title": "朝堂记",
+  "synopsis": "朝中暗流涌动。有大臣暗中勾结，意图动摇朝廷。你必须在不动声色中找出真相。",
+  "roles": ["丞相", "密探", "对手大臣", "礼部尚书"],
+  "companion_role_map": {
+    "xiaoqinglong": "丞相",
+    "xiaohuolong": "密探"
+  },
+  "acts": [
+    {
+      "act": 1,
+      "title": "密报深夜",
+      "setting": "深夜，密探送来一封密信——朝中有人与外人勾结，似乎在密谋什么。",
+      "dilemma": "你选择先调查什么方向？",
+      "choices": ["knowledge", "object", "ability"]
+    },
+    {
+      "act": 2,
+      "title": "朝堂试探",
+      "setting": "早朝上，对手大臣提出了一个看似无害但暗藏图谋的提议。其他大臣犹豫不决。",
+      "dilemma": "你用什么方式应对对手大臣？",
+      "choices": ["knowledge", "object", "gift", "ability"]
+    },
+    {
+      "act": 3,
+      "title": "真相大白",
+      "setting": "证据确凿。密探带来了最终证据——对手大臣贪污国库、私通外敌。你必须在朝堂上当众揭露。",
+      "dilemma": "如何在揭露真相的同时稳住朝局？",
+      "choices": ["knowledge", "object", "gift", "ability"]
+    }
+  ],
+  "endings": {
+    "perfect": { "condition": "三幕均有 clever 道具使用", "narrative_template": "你在朝堂上出示铁证，对手大臣无言以对。皇帝震怒，将逆臣下狱。你平定了朝局，皇帝赐你一把尚方宝剑。" },
+    "good": { "condition": "至少一幕 clever", "narrative_template": "对手大臣被罢免。虽然有一些余波，但朝廷恢复了平静。你收获了朝臣的信任。" },
+    "barely": { "condition": "无 clever 使用", "narrative_template": "对手大臣逃脱了罪责。朝廷上仍旧暗流涌动，你知道战斗还没有结束。" }
+  }
+}

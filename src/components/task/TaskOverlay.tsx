@@ -489,7 +489,7 @@ function ReplyState({
 
 function TaskIcon({ kind }: { kind: TaskDef['kind'] }) {
   const baseCls = 'w-11 h-11 rounded-[10px] border-[1.5px] border-ink-2 flex items-center justify-center';
-  if (kind === 'photo' || kind === 'photo_text') {
+  if (kind === 'describe') {
     return (
       <div className={clsx(baseCls, 'bg-amber-light')}>
         <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden>

@@ -1,0 +1,38 @@
+[
+  {
+    "item_id": "read_minds",
+    "item_name": "洞察人心",
+    "item_category": "ability",
+    "item_subcategory": "perception",
+    "item_description": "能察觉他人真实想法的能力",
+    "item_detailed_description": "盯着对方的眼睛，就能大概猜到他在想什么。是真是假，是好是坏，一看便知。",
+    "acquirable_from": ["plaza_court_intrigue", "initial"]
+  },
+  {
+    "item_id": "observe_stars",
+    "item_name": "夜观天象",
+    "item_category": "ability",
+    "item_subcategory": "divination",
+    "item_description": "通过观察星象预测未来",
+    "item_detailed_description": "夜晚观察星辰的变化，可以推算吉凶。古人说天之变化与人间之事相应。",
+    "acquirable_from": ["initial"]
+  },
+  {
+    "item_id": "memory_scholar",
+    "item_name": "过目不忘",
+    "item_category": "ability",
+    "item_subcategory": "intellect",
+    "item_description": "看过的东西都能记住",
+    "item_detailed_description": "只要见过的文字或图画都能完整记住。在需要引用典籍旧案时极为有用。",
+    "acquirable_from": ["initial"]
+  },
+  {
+    "item_id": "persuasive_voice",
+    "item_name": "动人声音",
+    "item_category": "ability",
+    "item_subcategory": "speech",
+    "item_description": "说话特别有感染力",
+    "item_detailed_description": "你说的话让人不自觉地想要听，想要信服。在争论和劝说时特别有用。",
+    "acquirable_from": ["initial"]
+  }
+]

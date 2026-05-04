@@ -98,13 +98,13 @@ export default function HomePage() {
   const presetId = c.preset_id as CompanionPresetId;
 
   // 派生房间布局（PRD §4.4）
-  // V0.6.1：优先用 cards（已确认的纸片插画），向后兼容 V0.5 的 photos
-  const wallStickers =
+  // V1.0：cards 使用 CardSticker 渲染，photos 使用 PhotoSticker 渲染
+  const cardsForLayout =
     state.cards && state.cards.length > 0
       ? state.cards.map((card) => ({
           id: card.id,
           url: card.image_url ?? '',
-          day: card.day,
+          isFallback: card.is_fallback_text_card,
           onClick: () =>
             setViewingCard({
               id: card.id,
@@ -114,11 +114,16 @@ export default function HomePage() {
               description: card.description,
             }),
         }))
-      : state.photos;
+      : undefined;
   const layout = deriveRoomLayout({
     remembered: state.remembered_concepts ?? [],
-    photos: wallStickers,
+    photos: state.photos,
+    cards: cardsForLayout,
   });
+
+  // V1.0：毕业后显示出门探索按钮
+  const isGraduated = state.is_graduated ?? false;
+  const departuresRemaining = state.station?.daily_departures_remaining ?? 0;
 
   return (
     <MobileShell>
@@ -145,6 +150,7 @@ export default function HomePage() {
           width={360}
           height={380}
           photos={layout.photos}
+          cards={layout.cards}
           familyFrames={layout.frames}
           items={layout.items}
           mood={layout.mood}
@@ -161,7 +167,24 @@ export default function HomePage() {
         onTap={() => openOverlay('chat')}
       />
 
-      {/* 给 BottomNav (absolute h-84) 让出空间，否则最后一段内容会被盖住 */}
+      {/* V1.0：毕业后「出门探索」按钮（Plan_02 §7.3）*/}
+      {isGraduated && (
+        <div className="mx-5 mb-3">
+          <button
+            onClick={() => router.push('/station/map')}
+            className="w-full h-[52px] bg-ink-1 text-bg-base rounded-button font-title text-[18px] tracking-[0.06em] cursor-pointer border-0 flex items-center justify-center gap-2"
+          >
+            <span>🚪 出门探索</span>
+          </button>
+          {departuresRemaining > 0 && (
+            <p className="text-center font-title text-mini text-ink-3 mt-1.5">
+              今天还可以出门 {departuresRemaining} 次
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* 给 BottomNav (absolute h-84) 让出空间 */}
       <div className="h-[100px]" aria-hidden />
 
       <BottomNav
@@ -178,7 +201,7 @@ export default function HomePage() {
           task={{
             id: task.id,
             day: c.current_day as 1 | 2 | 3 | 4 | 5 | 6 | 7,
-            kind: task.kind as 'photo' | 'text' | 'photo_text' | 'choice' | 'memory_review',
+            kind: task.kind as 'describe' | 'text' | 'choice' | 'memory_review',
             title: task.title,
             description: task.description,
           }}

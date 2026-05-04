@@ -16,6 +16,7 @@ import type {
   FloorItemProps,
   FrameStickerProps,
   PhotoStickerProps,
+  CardStickerProps,
 } from '@/components/room/Room';
 
 interface RememberedConcept {
@@ -105,6 +106,16 @@ const PHOTO_SLOTS: Array<Pick<PhotoStickerProps, 'x' | 'y' | 'rot' | 'wall'>> = 
   { x: 90, y: 240, rot: 4, wall: 'left' },
 ];
 
+/** V1.0：卡片贴纸专用槽位（与照片槽位交替使用） */
+const CARD_SLOTS: Array<Pick<CardStickerProps, 'x' | 'y' | 'wall'>> = [
+  { x: 230, y: 250, wall: 'back' },
+  { x: 370, y: 225, wall: 'back' },
+  { x: 290, y: 315, wall: 'back' },
+  { x: 415, y: 290, wall: 'back' },
+  { x: 105, y: 285, wall: 'left' },
+  { x: 95, y: 238, wall: 'left' },
+];
+
 const ITEM_SLOTS = [
   { x: 240, y: 470 },
   { x: 380, y: 500 },
@@ -120,24 +131,50 @@ const FRAME_SLOTS: Array<Pick<FrameStickerProps, 'x' | 'y' | 'rot' | 'wall'>> = 
 
 export interface DerivedLayout {
   photos: PhotoStickerProps[];
+  /** V1.0：卡片贴纸（使用 CardSticker 渲染） */
+  cards: CardStickerProps[];
   items: FloorItemProps[];
   frames: FrameStickerProps[];
   mood: 'warm' | 'cool' | 'neutral';
 }
 
+/**
+ * 为卡片 ID 生成稳定的随机旋转角度（-10° ~ +10°）
+ */
+function cardRotation(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = ((hash << 5) - hash + id.charCodeAt(i)) | 0;
+  }
+  return (hash % 21) - 10; // -10 ~ +10
+}
+
 export function deriveRoomLayout(args: {
   remembered: RememberedConcept[];
   photos: Photo[];
+  /** V1.0：卡片数据（用于 CardSticker） */
+  cards?: Array<{ id: string; url: string; isFallback?: boolean; onClick?: () => void }>;
 }): DerivedLayout {
-  // 1. 照片
+  // 1. 照片（回退兼容 V0.5 的拍摄照片）
   const photoStickers: PhotoStickerProps[] = args.photos
-    .slice(0, 6)
+    .slice(0, 3)
     .map((p, i) => ({
       ...PHOTO_SLOTS[i],
       label: `D${p.day}`,
       tone: '#E8C896',
       imageUrl: p.url || undefined,
       onClick: p.onClick,
+    }));
+
+  // 2. 卡片贴纸（V1.0 新增，最多 6 张）
+  const cardStickers: CardStickerProps[] = (args.cards ?? [])
+    .slice(0, 6)
+    .map((c, i) => ({
+      ...CARD_SLOTS[i],
+      rot: cardRotation(c.id),
+      imageUrl: c.url || undefined,
+      isFallback: c.isFallback,
+      onClick: c.onClick,
     }));
 
   // 2. 地上物品（最多 4，按概念顺序）
@@ -160,5 +197,5 @@ export function deriveRoomLayout(args: {
   // 4. 情绪光线
   const mood = pickMood(args.remembered);
 
-  return { photos: photoStickers, items, frames, mood };
+  return { photos: photoStickers, cards: cardStickers, items, frames, mood };
 }

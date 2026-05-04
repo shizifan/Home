@@ -12,14 +12,21 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"prompts/**/*.{md,json}\"",
     "db:migrate": "mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} $MYSQL_DATABASE < db/migrations/0001_init.sql && mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} $MYSQL_DATABASE < db/seed.sql",
     "db:reset": "mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} -e 'DROP DATABASE IF EXISTS home; CREATE DATABASE home DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;' && npm run db:migrate",
-    "prompt:eval": "tsx scripts/prompt-eval.ts"
+    "prompt:eval": "tsx scripts/prompt-eval.ts",
+    "test:p0": "playwright test --project=p0-mock",
+    "test:e2e": "playwright test",
+    "test:api": "vitest run tests/api"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.92.0",
+    "ali-oss": "^6.23.0",
     "clsx": "^2.1.1",
     "html-to-image": "^1.11.13",
+    "ioredis": "^5.10.1",
     "mysql2": "^3.22.3",
     "next": "^15.1.0",
     "openai": "^4.77.0",
+    "pg": "^8.20.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "server-only": "^0.0.1",
@@ -27,9 +34,12 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.48.0",
     "@types/node": "^22.10.0",
+    "@types/pg": "^8.20.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/ws": "^8.18.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.16.0",
     "eslint-config-next": "^15.1.0",
@@ -38,7 +48,8 @@
     "prettier-plugin-tailwindcss": "^0.6.9",
     "tailwindcss": "^3.4.16",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.0"
   },
   "engines": {
     "node": ">=20.0.0"

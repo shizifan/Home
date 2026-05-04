@@ -1,6 +1,6 @@
 /**
- * 业务层数据访问 — 把 SQL 屏蔽在这一层。
- * 上层 API route 只调这里的方法。
+ * 业务层数据访问 — V1.0 PostgreSQL 方言
+ * 把 SQL 屏蔽在这一层。上层 API route 只调这里的方法。
  */
 
 import 'server-only';
@@ -12,11 +12,14 @@ import type {
   ConversationLine,
   CorrectionEvent,
   DayNumber,
+  EvidenceItem,
   Memory,
   MemoryBankEntry,
   MemoryBankType,
   MemoryInputType,
+  MemorySourceType,
   VisionTags,
+  WorldviewStats,
 } from '@/types';
 import type { CompanionPresetId } from '@/components/characters/types';
 
@@ -25,21 +28,21 @@ import type { CompanionPresetId } from '@/components/characters/types';
 export async function findCompanionForSingleUser(): Promise<Companion | null> {
   return await queryOne<Companion>(
     `select id, user_id, preset_id, custom_name, starting_personality,
-            current_day, last_panel_visit_at, personality_weight,
+            current_day, visit_count, school_count, plaza_count,
             created_at, graduated_at
-       from companions where user_id = :uid
+       from companions where user_id = $1
        order by created_at desc limit 1`,
-    { uid: SINGLE_USER_ID },
+    [SINGLE_USER_ID],
   );
 }
 
 export async function getCompanionById(id: string): Promise<Companion | null> {
   return await queryOne<Companion>(
     `select id, user_id, preset_id, custom_name, starting_personality,
-            current_day, last_panel_visit_at, personality_weight,
+            current_day, visit_count, school_count, plaza_count,
             created_at, graduated_at
-       from companions where id = :id`,
-    { id },
+       from companions where id = $1`,
+    [id],
   );
 }
 
@@ -50,13 +53,8 @@ export async function createCompanion(args: {
   const id = uuid();
   await execute(
     `insert into companions (id, user_id, preset_id, starting_personality)
-       values (:id, :uid, :preset_id, :sp)`,
-    {
-      id,
-      uid: SINGLE_USER_ID,
-      preset_id: args.presetId,
-      sp: args.startingPersonality,
-    },
+       values ($1, $2, $3, $4)`,
+    [id, SINGLE_USER_ID, args.presetId, args.startingPersonality],
   );
   const row = await getCompanionById(id);
   if (!row) throw new Error('createCompanion: row not found after insert');
@@ -64,23 +62,17 @@ export async function createCompanion(args: {
 }
 
 export async function setCompanionName(id: string, name: string | null) {
-  await execute(`update companions set custom_name = :name where id = :id`, {
-    id,
-    name,
-  });
+  await execute(`update companions set custom_name = $1 where id = $2`, [name, id]);
 }
 
 export async function advanceCompanionDay(id: string, day: DayNumber) {
-  await execute(
-    `update companions set current_day = :day where id = :id`,
-    { id, day },
-  );
+  await execute(`update companions set current_day = $1 where id = $2`, [day, id]);
 }
 
-export async function markPanelVisited(id: string) {
+export async function graduateCompanion(id: string) {
   await execute(
-    `update companions set last_panel_visit_at = current_timestamp(3) where id = :id`,
-    { id },
+    `update companions set graduated_at = now() where id = $1`,
+    [id],
   );
 }
 
@@ -95,63 +87,57 @@ export async function insertMemory(args: {
   photoUrl?: string;
   visionTags?: VisionTags;
   userText?: string;
-  /** V0.6.1：用户实际输入方式（与 type 区分）*/
+  descriptionText?: string;
+  userChoice?: unknown;
   inputMethod?: string;
-  /** V0.6.1：语音文件 URL（如有）*/
   voiceAudioUrl?: string;
-  /** V0.6.1：ASR 原始结果 */
   asrTranscription?: string;
-  /** V0.6.1：孩子在中转页编辑后的最终文字 */
   editedText?: string;
 }): Promise<Memory> {
   const id = uuid();
   await execute(
     `insert into memories
-       (id, companion_id, day, type, photo_url, vision_tags, user_text, task_id, task_question,
+       (id, companion_id, day, type, photo_url, vision_tags, user_text,
+        description_text, user_choice, task_id, task_question,
         input_method, voice_audio_url, asr_transcription, edited_text)
      values
-       (:id, :cid, :day, :type, :photo, cast(:tags as json), :text, :task_id, :tq,
-        :im, :va, :asr, :et)`,
-    {
-      id,
-      cid: args.companionId,
-      day: args.day,
-      type: args.type,
-      photo: args.photoUrl ?? null,
-      tags: args.visionTags ? JSON.stringify(args.visionTags) : null,
-      text: args.userText ?? null,
-      task_id: args.taskId,
-      tq: args.taskQuestion ?? null,
-      im: args.inputMethod ?? args.type,
-      va: args.voiceAudioUrl ?? null,
-      asr: args.asrTranscription ?? null,
-      et: args.editedText ?? null,
-    },
+       ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9::jsonb,$10,$11,$12,$13,$14,$15)`,
+    [
+      id, args.companionId, args.day, args.type,
+      args.photoUrl ?? null,
+      args.visionTags ? JSON.stringify(args.visionTags) : null,
+      args.userText ?? null,
+      args.descriptionText ?? null,
+      args.userChoice ? JSON.stringify(args.userChoice) : null,
+      args.taskId,
+      args.taskQuestion ?? null,
+      args.inputMethod ?? args.type,
+      args.voiceAudioUrl ?? null,
+      args.asrTranscription ?? null,
+      args.editedText ?? null,
+    ],
   );
   const row = await queryOne<Memory>(
     `select id, companion_id, day, type, photo_url, vision_tags, user_text,
+            description_text, user_choice,
             task_id, task_question, created_at,
-            input_method, voice_audio_url, asr_transcription, edited_text, regenerate_count
-       from memories where id = :id`,
-    { id },
+            input_method, voice_audio_url, asr_transcription, edited_text
+       from memories where id = $1`,
+    [id],
   );
   if (!row) throw new Error('insertMemory: row not found after insert');
   return row;
 }
 
-/**
- * 今日是否已经完成主任务（含跳过）。
- * 判定：当天 task_id 下至少有 1 条 memory（含 type=skipped）。
- */
 export async function isTaskDoneToday(
   companionId: string,
   day: DayNumber,
   taskId: string,
 ): Promise<boolean> {
   const r = await queryOne<{ c: number }>(
-    `select count(*) as c from memories
-       where companion_id = :cid and day = :day and task_id = :tid`,
-    { cid: companionId, day, tid: taskId },
+    `select count(*)::int as c from memories
+       where companion_id = $1 and day = $2 and task_id = $3`,
+    [companionId, day, taskId],
   );
   return Number(r?.c ?? 0) > 0;
 }
@@ -160,59 +146,49 @@ export async function listRecentMemories(
   companionId: string,
   limit = 5,
 ): Promise<Memory[]> {
-  // mysql2 的 ? 占位符不允许 LIMIT 用绑定参数；用 number 拼接（已校验整数）
   const lim = Math.max(1, Math.min(100, Math.floor(limit)));
   return await query<Memory>(
     `select id, companion_id, day, type, photo_url, vision_tags, user_text,
+            description_text, user_choice,
             task_id, task_question, created_at
-       from memories where companion_id = :cid
-       order by created_at desc limit ${lim}`,
-    { cid: companionId },
+       from memories where companion_id = $1
+       order by created_at desc limit $2`,
+    [companionId, lim],
   );
 }
 
 // ──────────────────── memory_bank ────────────────────
 
-export async function getMemoryBank(
-  companionId: string,
-): Promise<MemoryBankEntry[]> {
+const MB_COLUMNS = `id, companion_id, type, concept_name, concept_category,
+  ai_summary, ai_reasoning, evidence, confidence,
+  source_type, source_companion_id,
+  user_corrected, user_correction_history, last_updated, created_at`;
+
+export async function getMemoryBank(companionId: string): Promise<MemoryBankEntry[]> {
   return await query<MemoryBankEntry>(
-    `select id, companion_id, type, concept_name, concept_category,
-            ai_summary, ai_reasoning, evidence, confidence,
-            user_corrected, user_correction_history, cached_detail, cache_dirty,
-            display_order, last_updated, created_at
-       from memory_bank where companion_id = :cid
+    `select ${MB_COLUMNS} from memory_bank where companion_id = $1
        order by last_updated desc`,
-    { cid: companionId },
+    [companionId],
   );
 }
 
 export async function findMemoryBankById(id: string): Promise<MemoryBankEntry | null> {
   return await queryOne<MemoryBankEntry>(
-    `select id, companion_id, type, concept_name, concept_category,
-            ai_summary, ai_reasoning, evidence, confidence,
-            user_corrected, user_correction_history, cached_detail, cache_dirty,
-            display_order, last_updated, created_at
-       from memory_bank where id = :id`,
-    { id },
+    `select ${MB_COLUMNS} from memory_bank where id = $1`,
+    [id],
   );
 }
 
-/** 按 (companion_id, type, concept_name) 精确查回 —— ER_DUP_ENTRY 后用 */
 export async function findMemoryBankByConcept(
   companionId: string,
   type: MemoryBankType,
   conceptName: string,
 ): Promise<MemoryBankEntry | null> {
   return await queryOne<MemoryBankEntry>(
-    `select id, companion_id, type, concept_name, concept_category,
-            ai_summary, ai_reasoning, evidence, confidence,
-            user_corrected, user_correction_history, cached_detail, cache_dirty,
-            display_order, last_updated, created_at
-       from memory_bank
-       where companion_id = :cid and type = :type and concept_name = :cn
+    `select ${MB_COLUMNS} from memory_bank
+       where companion_id = $1 and type = $2 and concept_name = $3
        limit 1`,
-    { cid: companionId, type, cn: conceptName },
+    [companionId, type, conceptName],
   );
 }
 
@@ -223,59 +199,45 @@ export interface CreateMemoryBankInput {
   conceptCategory?: ConceptCategory;
   aiSummary?: string;
   aiReasoning?: string;
-  evidence: Array<{ memory_id: string; day: number; excerpt: string }>;
+  evidence: EvidenceItem[];
   confidence?: number;
+  sourceType?: MemorySourceType;
+  sourceCompanionId?: string;
 }
 
-export async function createMemoryBankEntry(
-  input: CreateMemoryBankInput,
-): Promise<MemoryBankEntry> {
+export async function createMemoryBankEntry(input: CreateMemoryBankInput): Promise<MemoryBankEntry> {
   const id = uuid();
   await execute(
     `insert into memory_bank
       (id, companion_id, type, concept_name, concept_category,
        ai_summary, ai_reasoning, evidence, confidence,
+       source_type, source_companion_id,
        user_correction_history)
      values
-      (:id, :cid, :type, :cn, :cat,
-       :sum, :rea, cast(:ev as json), :conf,
-       cast('[]' as json))`,
-    {
-      id,
-      cid: input.companionId,
-      type: input.type,
-      cn: input.conceptName,
-      cat: input.conceptCategory ?? null,
-      sum: input.aiSummary ?? null,
-      rea: input.aiReasoning ?? null,
-      ev: JSON.stringify(input.evidence),
-      conf: input.confidence ?? 0.5,
-    },
+      ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12::jsonb)`,
+    [
+      id, input.companionId, input.type, input.conceptName,
+      input.conceptCategory ?? null,
+      input.aiSummary ?? null, input.aiReasoning ?? null,
+      JSON.stringify(input.evidence),
+      input.confidence ?? 0.5,
+      input.sourceType ?? 'direct',
+      input.sourceCompanionId ?? null,
+      JSON.stringify([]),
+    ],
   );
   const row = await findMemoryBankById(id);
   if (!row) throw new Error('createMemoryBankEntry: row not found');
   return row;
 }
 
-/**
- * Upsert：试图新建 memory_bank entry；若 (companion_id, type, concept_name)
- * 已有同行（ER_DUP_ENTRY），改为给已有行 append evidence 并返回它。
- *
- * 防御项：
- *   - LLM 输出 concept_name 与 DB 之间存在不可见 unicode 差异
- *   - 多请求并发命中同一 fixed concept（安全过滤兜底、Pass1 兜底等）
- */
-export async function upsertMemoryBankEntry(
-  input: CreateMemoryBankInput,
-): Promise<MemoryBankEntry> {
+export async function upsertMemoryBankEntry(input: CreateMemoryBankInput): Promise<MemoryBankEntry> {
   try {
     return await createMemoryBankEntry(input);
   } catch (err) {
-    if ((err as { code?: string })?.code !== 'ER_DUP_ENTRY') throw err;
+    if ((err as { code?: string })?.code !== '23505') throw err; // unique_violation
     const existing = await findMemoryBankByConcept(
-      input.companionId,
-      input.type,
-      input.conceptName,
+      input.companionId, input.type, input.conceptName,
     );
     if (!existing) throw err;
     for (const ev of input.evidence) {
@@ -287,14 +249,13 @@ export async function upsertMemoryBankEntry(
 
 export async function appendEvidenceToMemoryBank(
   id: string,
-  evidence: { memory_id: string; day: number; excerpt: string },
+  evidence: EvidenceItem,
 ): Promise<void> {
   await execute(
     `update memory_bank
-       set evidence = json_array_append(evidence, '$', cast(:ev as json)),
-           cache_dirty = true
-       where id = :id`,
-    { id, ev: JSON.stringify(evidence) },
+       set evidence = evidence || $1::jsonb
+       where id = $2`,
+    [JSON.stringify(evidence), id],
   );
 }
 
@@ -304,44 +265,30 @@ export async function appendCorrectionHistory(
 ): Promise<void> {
   await execute(
     `update memory_bank
-       set user_correction_history = json_array_append(user_correction_history, '$', cast(:e as json)),
-           user_corrected = true,
-           cache_dirty = true
-       where id = :id`,
-    { id, e: JSON.stringify(event) },
+       set user_correction_history = user_correction_history || $1::jsonb,
+           user_corrected = true
+       where id = $2`,
+    [JSON.stringify(event), id],
   );
 }
 
-export async function setMemoryBankType(
-  id: string,
-  type: MemoryBankType,
-): Promise<void> {
-  await execute(
-    `update memory_bank set type = :type, cache_dirty = true where id = :id`,
-    { id, type },
-  );
+export async function setMemoryBankType(id: string, type: MemoryBankType): Promise<void> {
+  await execute(`update memory_bank set type = $1 where id = $2`, [type, id]);
 }
 
 export async function deleteMemoryBankEntry(id: string): Promise<void> {
-  await execute(`delete from memory_bank where id = :id`, { id });
+  await execute(`delete from memory_bank where id = $1`, [id]);
 }
 
-export async function countByType(
-  companionId: string,
-  type: MemoryBankType,
-): Promise<number> {
+export async function countByType(companionId: string, type: MemoryBankType): Promise<number> {
   const r = await queryOne<{ c: number }>(
-    `select count(*) as c from memory_bank where companion_id = :cid and type = :type`,
-    { cid: companionId, type },
+    `select count(*)::int as c from memory_bank where companion_id = $1 and type = $2`,
+    [companionId, type],
   );
   return Number(r?.c ?? 0);
 }
 
-export async function bulkInsertUnknown(
-  companionId: string,
-  items: string[],
-): Promise<void> {
-  // upsertMemoryBankEntry：已存在的同名 unknown 直接走 append（evidence 空，无副作用）
+export async function bulkInsertUnknown(companionId: string, items: string[]): Promise<void> {
   for (const name of items) {
     const trimmed = name.trim().slice(0, 60);
     if (!trimmed) continue;
@@ -350,8 +297,6 @@ export async function bulkInsertUnknown(
       type: 'unknown',
       conceptName: trimmed,
       conceptCategory: 'other',
-      aiSummary: undefined,
-      aiReasoning: undefined,
       evidence: [],
       confidence: 0.5,
     });
@@ -372,30 +317,19 @@ export async function insertCompanionLine(args: {
   await execute(
     `insert into conversations
       (id, companion_id, day, role, content, source, related_memory_id, related_memory_bank_id)
-     values
-      (:id, :cid, :day, 'companion', :content, :source, :rm, :rmb)`,
-    {
-      id,
-      cid: args.companionId,
-      day: args.day,
-      content: args.content,
-      source: args.source,
-      rm: args.relatedMemoryId ?? null,
-      rmb: args.relatedMemoryBankId ?? null,
-    },
+     values ($1,$2,$3,'companion',$4,$5,$6,$7)`,
+    [id, args.companionId, args.day, args.content, args.source,
+     args.relatedMemoryId ?? null, args.relatedMemoryBankId ?? null],
   );
   const row = await queryOne<ConversationLine>(
     `select id, companion_id, day, role, content, source, created_at
-       from conversations where id = :id`,
-    { id },
+       from conversations where id = $1`,
+    [id],
   );
   if (!row) throw new Error('insertCompanionLine: row not found');
   return row;
 }
 
-/**
- * 写一条 role='child' 的对话行。Free Chat 流程用：孩子主动问问题时落库。
- */
 export async function insertChildLine(args: {
   companionId: string;
   day: DayNumber;
@@ -404,59 +338,44 @@ export async function insertChildLine(args: {
 }): Promise<ConversationLine> {
   const id = uuid();
   await execute(
-    `insert into conversations
-      (id, companion_id, day, role, content, source)
-     values
-      (:id, :cid, :day, 'child', :content, :source)`,
-    {
-      id,
-      cid: args.companionId,
-      day: args.day,
-      content: args.content,
-      source: args.source,
-    },
+    `insert into conversations (id, companion_id, day, role, content, source)
+     values ($1,$2,$3,'child',$4,$5)`,
+    [id, args.companionId, args.day, args.content, args.source],
   );
   const row = await queryOne<ConversationLine>(
     `select id, companion_id, day, role, content, source, created_at
-       from conversations where id = :id`,
-    { id },
+       from conversations where id = $1`,
+    [id],
   );
   if (!row) throw new Error('insertChildLine: row not found');
   return row;
 }
 
-/**
- * 取最近 N 条对话（含 child / companion / system），时间正序（最旧 → 最新）。
- * 用于 Free Chat 给 LLM 注入上下文。
- */
 export async function listRecentConversations(
   companionId: string,
   limit: number,
 ): Promise<ConversationLine[]> {
   const lim = Math.max(1, Math.min(100, Math.floor(limit)));
-  // mysql2 ? 不允许在 LIMIT 用绑定参数；这里钳制后字面拼接
   const rows = await query<ConversationLine>(
     `select * from (
        select id, companion_id, day, role, content, source, created_at
          from conversations
-         where companion_id = :cid
+         where companion_id = $1
          order by created_at desc
-         limit ${lim}
+         limit $2
      ) t order by created_at asc`,
-    { cid: companionId },
+    [companionId, lim],
   );
   return rows;
 }
 
-export async function getRecentCompanionLine(
-  companionId: string,
-): Promise<ConversationLine | null> {
+export async function getRecentCompanionLine(companionId: string): Promise<ConversationLine | null> {
   return await queryOne<ConversationLine>(
     `select id, companion_id, day, role, content, source, created_at
        from conversations
-       where companion_id = :cid and role = 'companion'
+       where companion_id = $1 and role = 'companion'
        order by created_at desc limit 1`,
-    { cid: companionId },
+    [companionId],
   );
 }
 
@@ -471,7 +390,7 @@ export interface WorldviewRow {
   most_scary_thing: string | null;
   unknown_thing: string | null;
   almost_forgot_thing: string | null;
-  stats: { photos: number; conversations: number; corrections: number } | null;
+  stats: Record<string, number> | null;
   generated_at: string;
 }
 
@@ -479,8 +398,8 @@ export async function findWorldview(companionId: string): Promise<WorldviewRow |
   return await queryOne<WorldviewRow>(
     `select id, companion_id, most_important_person, most_fun_thing, most_delicious_thing,
             most_scary_thing, unknown_thing, almost_forgot_thing, stats, generated_at
-       from worldview_cards where companion_id = :cid`,
-    { cid: companionId },
+       from worldview_cards where companion_id = $1`,
+    [companionId],
   );
 }
 
@@ -494,7 +413,7 @@ export async function upsertWorldview(args: {
     unknown_thing: string;
     almost_forgot_thing: string | null;
   };
-  stats: { photos: number; conversations: number; corrections: number };
+  stats: { cards_count: number; conversations_count: number; corrections_count: number; days_count: number };
   rawLLMOutput?: unknown;
 }): Promise<WorldviewRow> {
   const id = uuid();
@@ -502,55 +421,46 @@ export async function upsertWorldview(args: {
     `insert into worldview_cards
        (id, companion_id, most_important_person, most_fun_thing, most_delicious_thing,
         most_scary_thing, unknown_thing, almost_forgot_thing, stats, raw_llm_output)
-     values
-       (:id, :cid, :p1, :p2, :p3, :p4, :p5, :p6, cast(:s as json), cast(:r as json))
-     on duplicate key update
-       most_important_person = values(most_important_person),
-       most_fun_thing = values(most_fun_thing),
-       most_delicious_thing = values(most_delicious_thing),
-       most_scary_thing = values(most_scary_thing),
-       unknown_thing = values(unknown_thing),
-       almost_forgot_thing = values(almost_forgot_thing),
-       stats = values(stats),
-       raw_llm_output = values(raw_llm_output),
-       generated_at = current_timestamp(3)`,
-    {
-      id,
-      cid: args.companionId,
-      p1: args.data.most_important_person,
-      p2: args.data.most_fun_thing,
-      p3: args.data.most_delicious_thing,
-      p4: args.data.most_scary_thing,
-      p5: args.data.unknown_thing,
-      p6: args.data.almost_forgot_thing,
-      s: JSON.stringify(args.stats),
-      r: JSON.stringify(args.rawLLMOutput ?? null),
-    },
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb)
+     on conflict (companion_id) do update set
+       most_important_person = excluded.most_important_person,
+       most_fun_thing = excluded.most_fun_thing,
+       most_delicious_thing = excluded.most_delicious_thing,
+       most_scary_thing = excluded.most_scary_thing,
+       unknown_thing = excluded.unknown_thing,
+       almost_forgot_thing = excluded.almost_forgot_thing,
+       stats = excluded.stats,
+       raw_llm_output = excluded.raw_llm_output,
+       generated_at = now()`,
+    [
+      id, args.companionId,
+      args.data.most_important_person, args.data.most_fun_thing,
+      args.data.most_delicious_thing, args.data.most_scary_thing,
+      args.data.unknown_thing, args.data.almost_forgot_thing,
+      JSON.stringify(args.stats),
+      JSON.stringify(args.rawLLMOutput ?? null),
+    ],
   );
   const row = await findWorldview(args.companionId);
   if (!row) throw new Error('upsertWorldview: not found after insert');
   return row;
 }
 
-/** 用 companion_stats 视图（schema 已建）取 4 个数字 */
 export async function getCompanionStats(
   companionId: string,
 ): Promise<{ photos: number; conversations: number; corrections: number; current_day: number }> {
   const r = await queryOne<{
-    photos: number;
-    conversations_count: number;
-    corrections: number;
-    current_day: number;
+    photos: number; conversations_count: number; corrections: number; current_day: number;
   }>(
-    `select photos, conversations_count, corrections, current_day
-       from companion_stats where companion_id = :cid`,
-    { cid: companionId },
+    `select photos::int, conversations_count::int, corrections::int, current_day::int
+       from companion_stats where companion_id = $1`,
+    [companionId],
   );
   return {
-    photos: Number(r?.photos ?? 0),
-    conversations: Number(r?.conversations_count ?? 0),
-    corrections: Number(r?.corrections ?? 0),
-    current_day: Number(r?.current_day ?? 1),
+    photos: r?.photos ?? 0,
+    conversations: r?.conversations_count ?? 0,
+    corrections: r?.corrections ?? 0,
+    current_day: r?.current_day ?? 1,
   };
 }
 
@@ -572,18 +482,140 @@ export async function logLLMCall(args: {
     `insert into llm_call_log
        (companion_id, call_type, model, input_tokens, output_tokens,
         latency_ms, success, fail_reason, prompt_version)
-     values
-       (:cid, :type, :model, :it, :ot, :lat, :ok, :fr, :pv)`,
-    {
-      cid: args.companionId ?? null,
-      type: args.callType,
-      model: args.model,
-      it: args.inputTokens ?? null,
-      ot: args.outputTokens ?? null,
-      lat: args.latencyMs,
-      ok: args.success,
-      fr: args.failReason ?? null,
-      pv: args.promptVersion ?? null,
-    },
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+    [
+      args.companionId ?? null, args.callType, args.model,
+      args.inputTokens ?? null, args.outputTokens ?? null,
+      args.latencyMs, args.success,
+      args.failReason ?? null, args.promptVersion ?? null,
+    ],
+  );
+}
+
+// ============================================================
+// V1.0 NEW: Station repos (trips, inventory, plaza_plays)
+// ============================================================
+
+import type { Trip, TripType, TripStatus, InventoryItem, PlazaPlay } from '@/types';
+
+export async function createTrip(args: {
+  companionId: string;
+  tripType: TripType;
+  destinationCompanionId?: string;
+  purposeType?: string;
+  purposeQuestion?: string;
+}): Promise<Trip> {
+  const id = uuid();
+  await execute(
+    `insert into trips (id, companion_id, trip_type, destination_companion_id, purpose_type, purpose_question)
+     values ($1,$2,$3,$4,$5,$6)`,
+    [id, args.companionId, args.tripType, args.destinationCompanionId ?? null,
+     args.purposeType ?? null, args.purposeQuestion ?? null],
+  );
+  const row = await queryOne<Trip>(`select * from trips where id = $1`, [id]);
+  if (!row) throw new Error('createTrip: row not found');
+  return row;
+}
+
+export async function getTripById(id: string): Promise<Trip | null> {
+  return await queryOne<Trip>(`select * from trips where id = $1`, [id]);
+}
+
+export async function completeTrip(id: string, reportNarrative: string, reportData?: Record<string, unknown>): Promise<void> {
+  await execute(
+    `update trips set status = 'returned', returned_at = now(),
+       report_narrative = $1, report_data = $2::jsonb where id = $3`,
+    [reportNarrative, JSON.stringify(reportData ?? {}), id],
+  );
+}
+
+export async function countTodayTrips(companionId: string): Promise<number> {
+  const r = await queryOne<{ c: number }>(
+    `select count(*)::int as c from trips
+       where companion_id = $1 and created_at::date = current_date`,
+    [companionId],
+  );
+  return Number(r?.c ?? 0);
+}
+
+export async function addInventoryItem(args: {
+  companionId: string;
+  itemId: string;
+  itemName: string;
+  itemCategory: string;
+  itemSubcategory?: string;
+  itemDescription: string;
+  itemDetailedDescription: string;
+  acquiredFrom?: string;
+  upgradedFrom?: string;
+}): Promise<InventoryItem> {
+  const id = uuid();
+  await execute(
+    `insert into inventory_items
+       (id, companion_id, item_id, item_name, item_category, item_subcategory,
+        item_description, item_detailed_description, acquired_from, is_upgraded_from)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    [id, args.companionId, args.itemId, args.itemName, args.itemCategory,
+     args.itemSubcategory ?? null, args.itemDescription, args.itemDetailedDescription,
+     args.acquiredFrom ?? null, args.upgradedFrom ?? null],
+  );
+  const row = await queryOne<InventoryItem>(`select * from inventory_items where id = $1`, [id]);
+  if (!row) throw new Error('addInventoryItem: row not found');
+  return row;
+}
+
+export async function getInventory(companionId: string): Promise<InventoryItem[]> {
+  return await query<InventoryItem>(
+    `select * from inventory_items where companion_id = $1 order by item_category, acquired_at desc`,
+    [companionId],
+  );
+}
+
+export async function createPlazaPlay(args: {
+  companionId: string;
+  tripId?: string;
+  scenarioId: string;
+  scenarioTitle?: string;
+}): Promise<PlazaPlay> {
+  const id = uuid();
+  await execute(
+    `insert into plaza_plays (id, companion_id, trip_id, scenario_id, scenario_title)
+     values ($1,$2,$3,$4,$5)`,
+    [id, args.companionId, args.tripId ?? null, args.scenarioId, args.scenarioTitle ?? null],
+  );
+  const row = await queryOne<PlazaPlay>(`select * from plaza_plays where id = $1`, [id]);
+  if (!row) throw new Error('createPlazaPlay: row not found');
+  return row;
+}
+
+export async function updatePlazaPlay(
+  id: string,
+  updates: { actChoices?: unknown; endingType?: string; endingNarrative?: string; earnedItems?: unknown },
+): Promise<void> {
+  await execute(
+    `update plaza_plays
+       set act_choices = coalesce($1, act_choices),
+           ending_type = coalesce($2, ending_type),
+           ending_narrative = coalesce($3, ending_narrative),
+           earned_items = coalesce($4::jsonb, earned_items),
+           finished_at = case when $3 is not null then now() else finished_at end
+       where id = $5`,
+    [
+      updates.actChoices ? JSON.stringify(updates.actChoices) : null,
+      updates.endingType ?? null,
+      updates.endingNarrative ?? null,
+      updates.earnedItems ? JSON.stringify(updates.earnedItems) : null,
+      id,
+    ],
+  );
+}
+
+export async function incrementStationCounter(
+  companionId: string,
+  column: 'visit_count' | 'school_count' | 'plaza_count',
+): Promise<void> {
+  await execute(
+    `update companions set ${column} = ${column} + 1 where id = $1`,
+    [companionId],
   );
 }

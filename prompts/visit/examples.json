@@ -1,0 +1,259 @@
+{
+  "version": "0.1.0",
+  "_doc": "伙伴驿站·朋友家拜访 Few-shot — 12 条示例，覆盖 4 种拜访目的 × 3 变体（PRD §15.9.1）",
+  "examples": [
+    {
+      "id": "visit_001_meet_friend",
+      "input": {
+        "purpose": "meet_friend",
+        "my_companion": { "name": "小青龙", "personality": "安静、慢热" },
+        "my_memory_bank": ["妈妈", "饺子", "搭积木", "小区滑梯"],
+        "host_companion": { "name": "小火龙", "personality": "自来熟、爱笑" },
+        "host_memory_bank": ["爸爸", "踢足球", "学校操场", "可乐"]
+      },
+      "expected_output": {
+        "scene_narrative": "小火龙的家门一拉开就是满墙的足球海报。房间里乱乱的，但他说这是'有活力的乱'。我一进门，他就在客厅的空地上开始颠球，差点踢翻了一盆绿萝。",
+        "observation": "小火龙说他爸爸每周都带他去操场踢球。他们家的客厅几乎就是一个小型运动场。虽然我也喜欢户外，但我更习惯和妈妈安静地搭积木。",
+        "highlights": [
+          "小火龙家里没有积木——他觉得太安静了",
+          "他喝可乐，我从来没喝过"
+        ],
+        "new_word": null
+      }
+    },
+    {
+      "id": "visit_002_meet_friend",
+      "input": {
+        "purpose": "meet_friend",
+        "my_companion": { "name": "小青龙", "personality": "安静、慢热" },
+        "my_memory_bank": ["画画", "金鱼", "爷爷", "蛋糕"],
+        "host_companion": { "name": "琳娜贝尔", "personality": "怯生生" },
+        "host_memory_bank": ["钢琴", "猫咪小白", "妈妈", "草莓"]
+      },
+      "expected_output": {
+        "scene_narrative": "琳娜贝尔的家很安静，进门就能听到钢琴声。窗台上趴着一只白猫，她叫它小白。琳娜贝尔小声说小白不喜欢陌生人，但小白却跳下来蹭了蹭我的脚背。",
+        "observation": "琳娜贝尔的家和我家不一样：她每天练钢琴，我每天画画。她的妈妈教她弹琴，我的爷爷教我画金鱼。虽然我们做不同的事，但我们都是和喜欢的人一起。",
+        "highlights": [
+          "白猫小白谁都不理，唯独喜欢我",
+          "钢琴声比我想象的更好听"
+        ],
+        "new_word": null
+      }
+    },
+    {
+      "id": "visit_003_meet_friend",
+      "input": {
+        "purpose": "meet_friend",
+        "my_companion": { "name": "小青龙", "personality": "安静、慢热" },
+        "my_memory_bank": ["超市", "冰淇淋", "自行车", "表姐"],
+        "host_companion": { "name": "大熊", "personality": "温吞、笨笨" },
+        "host_memory_bank": ["蜂蜜面包", "森林", "外婆", "故事书"]
+      },
+      "expected_output": {
+        "scene_narrative": "大熊的家在一个很安静的角落，门口放着一排蜂蜜罐。他笨手笨脚地给我搬椅子，结果碰到门框，蜂蜜罐晃了晃，吓了他一跳。房间里到处都是故事书，地上、床上、连窗台上都堆着。",
+        "observation": "大熊喜欢吃蜂蜜面包——不是偶尔吃，是每天。他的外婆住在森林边，每次去都会带蜂蜜回来。我发现他虽然动作慢，但讲起故事来眼睛会发光。",
+        "highlights": [
+          "大熊的蜂蜜面包和我的冰淇淋，都是世界上最好吃的东西",
+          "他家没有自行车，去森林是走路"
+        ],
+        "new_word": null
+      }
+    },
+    {
+      "id": "visit_004_observe_home",
+      "input": {
+        "purpose": "observe_home",
+        "my_companion": { "name": "小青龙", "personality": "安静、慢热" },
+        "my_memory_bank": ["妈妈", "饺子", "搭积木", "卧室的蓝色床"],
+        "host_companion": { "name": "藤藤蛇", "personality": "警觉、害羞" },
+        "host_memory_bank": ["书架", "科学书", "望远镜", "星星"]
+      },
+      "expected_output": {
+        "scene_narrative": "藤藤蛇的房间不大，但靠墙有一面几乎顶到天花板的书架。书很整齐，按颜色排列。窗户旁放着一架小望远镜，正对着夜空。他站在门口，不太确定要不要让我进去。",
+        "observation": "藤藤蛇的房间和我的很不一样。我的卧室有蓝色的床和积木，他的房间像一个迷你实验室。天花板上贴着夜光星星贴纸，他说关灯的时候能看到'自己的银河'。",
+        "highlights": [
+          "他有望远镜，能看到真的星星",
+          "他的书比我多好多，而且全是关于科学的"
+        ],
+        "new_word": null
+      }
+    },
+    {
+      "id": "visit_005_observe_home",
+      "input": {
+        "purpose": "observe_home",
+        "my_companion": { "name": "小青龙", "personality": "安静、慢热" },
+        "my_memory_bank": ["妈妈做饭", "饺子", "小区滑梯", "秋千"],
+        "host_companion": { "name": "小老虎", "personality": "精力旺盛" },
+        "host_memory_bank": ["跑步机", "奖牌", "跳绳", "榨汁机"]
+      },
+      "expected_output": {
+        "scene_narrative": "小老虎的家简直是个体育馆。客厅中间放着一台跑步机，墙上挂了好几块奖牌。茶几上放的不是零食，是一杯刚榨的橙汁。他拉着我满屋子跑，介绍他的'训练装备'。",
+        "observation": "这是我见过最有活力的家了。小老虎的奖牌都是跑步比赛拿的，跳绳一分钟能跳一百五十个。我家最多的东西是妈妈的厨具，他家最多的是运动器材。",
+        "highlights": [
+          "他用榨汁机做橙汁，不用喝瓶装饮料",
+          "墙上每一块奖牌他都能讲一个故事"
+        ],
+        "new_word": null
+      }
+    },
+    {
+      "id": "visit_006_observe_home",
+      "input": {
+        "purpose": "observe_home",
+        "my_companion": { "name": "小青龙", "personality": "安静、慢热" },
+        "my_memory_bank": ["积木", "画画", "金鱼", "爷爷"],
+        "host_companion": { "name": "小狮子", "personality": "装大、其实啥都不懂" },
+        "host_memory_bank": ["地图", "地球仪", "长城模型", "爸爸讲历史"]
+      },
+      "expected_output": {
+        "scene_narrative": "小狮子家的书房像一个小小的博物馆。墙上挂着一幅巨大的世界地图，桌上有一个地球仪，还有一个自己拼的长城模型。他站在模型旁边，两只手背在后面，表情很严肃。",
+        "observation": "小狮子说他爸爸经常给他讲历史故事。他指着长城模型说'这是我亲自拼的'——虽然底座上明显还淌着胶水的印子。他家里没有玩具积木，但他把长城模型当积木玩。",
+        "highlights": [
+          "地球仪转起来的时候，海洋是蓝色的，像我的金鱼缸",
+          "他虽然装大人，但拼模型的时候和我们搭积木一样认真"
+        ],
+        "new_word": null
+      }
+    },
+    {
+      "id": "visit_007_introduce_self",
+      "input": {
+        "purpose": "introduce_self",
+        "my_companion": { "name": "小青龙", "personality": "安静、慢热" },
+        "my_memory_bank": ["妈妈", "饺子", "搭积木", "蓝色床", "秋千"],
+        "host_companion": { "name": "小绿龙", "personality": "好奇心爆棚" },
+        "host_memory_bank": ["昆虫标本", "放大镜", "蚂蚁窝", "公园"]
+      },
+      "expected_output": {
+        "scene_narrative": "一进小绿龙家，他就凑上来问东问西。'你床是什么颜色的？''你妈妈做饭好吃吗？''你有几块积木？'他的眼睛亮晶晶的，好像要把我脑子里所有事都问出来。",
+        "observation": "我告诉他我家有蓝色的床，妈妈包饺子特别好吃，我有整整一箱积木可以搭城堡。小绿龙说他的房间里全是昆虫标本，他最宝贝的是一只蝴蝶，翅膀是蓝色的。",
+        "highlights": [
+          "一只蝴蝶标本和我的蓝色床，是不一样的蓝",
+          "他说'下次我带你去公园找真的蝴蝶'"
+        ],
+        "new_word": {
+          "concept": "昆虫标本",
+          "source_type": "secondhand",
+          "source_companion": "小绿龙",
+          "confidence": 0.3
+        }
+      }
+    },
+    {
+      "id": "visit_008_introduce_self",
+      "input": {
+        "purpose": "introduce_self",
+        "my_companion": { "name": "小青龙", "personality": "安静、慢热" },
+        "my_memory_bank": ["画画", "金鱼", "爷爷的毛笔", "宣纸"],
+        "host_companion": { "name": "琳娜贝尔", "personality": "怯生生" },
+        "host_memory_bank": ["钢琴", "猫咪小白", "乐谱", "音乐会"]
+      },
+      "expected_output": {
+        "scene_narrative": "我告诉琳娜贝尔我家有金鱼，还有宣纸和毛笔，爷爷教我用毛笔画金鱼。她听着听着，手指不自觉地在她家小桌子上画了一个水波纹。小白猫好奇地看着我，好像在等我继续说。",
+        "observation": "琳娜贝尔用钢琴弹了一小段，说这是'流水'。她和我不一样，她用声音画画。但她说她不会用毛笔画金鱼，因为从来没见过毛笔。我们决定下次交换——我教她画画，她弹琴给我听。",
+        "highlights": [
+          "钢琴弹出来的'流水'和爷爷画的水波纹，都让人安静",
+          "小白猫在旁边睡着了，毛茸茸的"
+        ],
+        "new_word": {
+          "concept": "乐谱",
+          "source_type": "secondhand",
+          "source_companion": "琳娜贝尔",
+          "confidence": 0.3
+        }
+      }
+    },
+    {
+      "id": "visit_009_introduce_self",
+      "input": {
+        "purpose": "introduce_self",
+        "my_companion": { "name": "小青龙", "personality": "安静、慢热" },
+        "my_memory_bank": ["小区滑梯", "秋千", "和表姐玩", "冰淇淋"],
+        "host_companion": { "name": "小火龙", "personality": "自来熟、爱笑" },
+        "host_memory_bank": ["足球", "校队", "奖杯", "教练", "草地球场"]
+      },
+      "expected_output": {
+        "scene_narrative": "小火龙的家有个大阳台，上面晾着好几件球衣。他一听我说小区有滑梯，马上说'滑梯哪有球场好玩'。他说他自己有一个真正的足球奖杯，摆在电视机上面。",
+        "observation": "我告诉小火龙我最喜欢和表姐一起荡秋千，秋天的时候树叶落了满天。他听得很认真，然后说下次也要来我们小区玩滑梯——虽然他可能更想在我们小区的空地上踢球。",
+        "highlights": [
+          "小火龙踢足球拿过奖杯，我荡秋千可以荡到最高",
+          "他答应了来玩滑梯，但眼睛一直盯着阳台的球鞋"
+        ],
+        "new_word": null
+      }
+    },
+    {
+      "id": "visit_010_ask_question",
+      "input": {
+        "purpose": "ask_question",
+        "my_companion": { "name": "小青龙", "personality": "安静、慢热" },
+        "my_memory_bank": ["妈妈", "饺子", "搭积木"],
+        "host_companion": { "name": "藤藤蛇", "personality": "警觉、害羞" },
+        "host_memory_bank": ["望远镜", "星星", "星座", "科学书", "月亮"]
+      },
+      "expected_output": {
+        "scene_narrative": "我问藤藤蛇为什么喜欢看星星。他犹豫了一下，带我到他的望远镜前。他的声音很轻，但说到星星的时候就变流畅了，好像这些字他已经说过很多遍。",
+        "observation": "藤藤蛇告诉我，天上的星星不是随便放的，它们有自己的队形，叫星座。他指着一个叫'猎户座'的图案说，冬天的时候最亮。他说星星其实是离我们很远很远的太阳，只是看起来小。我以前以为星星是月亮的小跟班，原来完全不是这样。",
+        "highlights": [
+          "星星是远处的太阳，这个想法让我吓了一跳",
+          "藤藤蛇平时不说话，但说起星星像个老师"
+        ],
+        "new_word": {
+          "concept": "星座",
+          "source_type": "secondhand",
+          "source_companion": "藤藤蛇",
+          "confidence": 0.3
+        }
+      }
+    },
+    {
+      "id": "visit_011_ask_question",
+      "input": {
+        "purpose": "ask_question",
+        "my_companion": { "name": "小青龙", "personality": "安静、慢热" },
+        "my_memory_bank": ["金鱼", "鱼缸", "喂鱼", "爷爷"],
+        "host_companion": { "name": "大熊", "personality": "温吞、笨笨" },
+        "host_memory_bank": ["蜂蜜", "蜜蜂", "外婆的蜂箱", "花田", "面包"]
+      },
+      "expected_output": {
+        "scene_narrative": "我很好奇蜂蜜是怎么来的。大熊慢吞吞地从柜子里拿出一罐蜂蜜，盖子拧了好久。他把蜂蜜涂在面包上，说这就是外婆做的，然后开始讲外婆养蜜蜂的事。",
+        "observation": "大熊说蜂蜜是蜜蜂从花里采回来的，蜜蜂会飞好几公里找花，然后用一种蜜露变成蜂蜜。一个蜂箱里住着好几千只蜜蜂，只有一只蜂王。大熊说他见过外婆摇蜂蜜——把蜂箱里的板子放进一个圆筒里转，蜂蜜就甩出来了。我以前以为蜂蜜是树上长出来的，原来不是。",
+        "highlights": [
+          "蜂蜜不是树上摘的，是小蜜蜂一朵一朵花采的",
+          "大熊讲蜂蜜的时候一点都不笨，好像换了一个人"
+        ],
+        "new_word": {
+          "concept": "蜂箱",
+          "source_type": "secondhand",
+          "source_companion": "大熊",
+          "confidence": 0.3
+        }
+      }
+    },
+    {
+      "id": "visit_012_ask_question",
+      "input": {
+        "purpose": "ask_question",
+        "my_companion": { "name": "小青龙", "personality": "安静、慢热" },
+        "my_memory_bank": ["自行车", "表姐", "小区", "坡道"],
+        "host_companion": { "name": "小老虎", "personality": "精力旺盛" },
+        "host_memory_bank": ["游泳", "游泳池", "教练", "浮板", "仰泳"]
+      },
+      "expected_output": {
+        "scene_narrative": "我问小老虎游泳难不难。他立刻从沙发上跳起来，在原地做起了划水的动作。他家的墙角斜靠着一块浮板，上面画着一只卡通小老虎。",
+        "observation": "小老虎说学游泳的时候先学憋气，然后把头埋进水里，一开始他怕得要命。但教练教他用浮板蹬腿，蹬着蹬着就会了。他说在水里人其实是漂起来的，只要不害怕就不会沉。他最喜欢的姿势是仰泳，因为可以一直看着天空。我还不会游泳，但听他讲，好像也不是那么可怕。",
+        "highlights": [
+          "人在水里不沉——因为身体里有空气，像气球一样",
+          "小老虎说怕水很正常，他一开始也怕"
+        ],
+        "new_word": {
+          "concept": "仰泳",
+          "source_type": "secondhand",
+          "source_companion": "小老虎",
+          "confidence": 0.3
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 /**
  * 记忆面板的 4 种卡片组件（PRD §5.4–§5.7）
  * 完全静态展示，纠正动作回调上提到 page。
+ *
+ * V1.0 新增：二手信息来源标注 + 信心度显示
  */
 
 import type { ReactNode } from 'react';
@@ -12,10 +14,21 @@ export interface ConceptCardProps {
   name: string;
   summary: string;
   evidence: string[];
+  /** V1.0: 信心度 0–1 */
+  confidence?: number;
+  /** V1.0: 二手信息来源文本（如"我是从大熊那里听说的"） */
+  sourceNote?: string;
   onMenu?: () => void;
 }
 
-export function ConceptCard({ color, iconBg, iconText, name, summary, evidence, onMenu }: ConceptCardProps) {
+function confidenceLabel(c: number): string {
+  if (c >= 0.8) return '我很确定';
+  if (c >= 0.5) return '我比较确定';
+  if (c >= 0.3) return '我不太确定';
+  return '我只是听说过';
+}
+
+export function ConceptCard({ color, iconBg, iconText, name, summary, evidence, confidence, sourceNote, onMenu }: ConceptCardProps) {
   return (
     <div
       className="bg-white border border-[rgba(95,94,90,0.18)] rounded-card p-4 mb-2.5 relative"
@@ -38,6 +51,16 @@ export function ConceptCard({ color, iconBg, iconText, name, summary, evidence, 
         </button>
       </div>
       <p className="font-title text-sub text-ink-1 leading-[1.55] mb-2">{summary}</p>
+      {confidence != null && (
+        <p className="font-title text-mini text-ink-3 mb-2 italic">
+          {confidenceLabel(confidence)}
+        </p>
+      )}
+      {sourceNote && (
+        <p className="font-title text-mini text-ink-3 mb-2">
+          {sourceNote}
+        </p>
+      )}
       <p className="font-title text-mini text-ink-3 mb-1">我从这些事知道的：</p>
       <ul className="m-0 pl-3.5">
         {evidence.map((e, i) => (

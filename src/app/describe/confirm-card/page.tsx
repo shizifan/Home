@@ -1,12 +1,16 @@
 /**
- * /describe/confirm-card — 卡片确认页（V0.6.1 §4.6.2-3）
+ * /describe/confirm-card — 卡片确认页（V1.0 简化）
+ *
+ * V1.0 变更：
+ *   - 移除双图选择器（单图模式）
+ *   - 卡片右下角 ✏️ 标识在 CardConfirm 内部渲染
  *
  * 编排：
- *   1. CardConfirm 展示卡片 + 静态问句 + 选图（双图）+ 两个按钮
+ *   1. CardConfirm 展示卡片 + 静态问句 + 两个按钮
  *   2. 点"就是这样"→ 并行启动 confirmDescribe + 入墙动画 600ms
  *   3. 两端都完成 → router.replace('/home')
  *
- * 5 分钟自动确认（决议 B3）由 CardConfirm 组件内部处理。
+ * 5 分钟自动确认由 CardConfirm 组件内部处理。
  */
 
 'use client';
@@ -19,16 +23,12 @@ import { CardConfirm } from '@/components/card/CardConfirm';
 import { StickToWallTransition } from '@/components/card/StickToWallTransition';
 import { useDescribeStore } from '@/stores/describeStore';
 import { confirmDescribe, getCompanionState } from '@/lib/api/client';
-import type { ImageGenSource } from '@/lib/api/client';
 
 export default function Page() {
   const router = useRouter();
   const {
     cardId,
     imageUrl,
-    imageSource,
-    altImageUrl,
-    altImageSource,
     isFallbackTextCard,
     companionReply,
     finalText,
@@ -37,7 +37,7 @@ export default function Page() {
 
   const [companionName, setCompanionName] = useState('伙伴');
   const [submitting, setSubmitting] = useState(false);
-  /** 入墙动画期间被选中的图（双图情境下）*/
+  /** 入墙动画期间被选中的图 */
   const [stickingImage, setStickingImage] = useState<string | null>(null);
   const [animationDone, setAnimationDone] = useState(false);
   const [apiDone, setApiDone] = useState(false);
@@ -63,19 +63,13 @@ export default function Page() {
 
   const handleConfirm = async ({
     autoTimeout,
-    chosenSource,
   }: {
     autoTimeout?: boolean;
-    chosenSource: ImageGenSource | null;
   }) => {
     if (!cardId || submitting) return;
     setSubmitting(true);
 
-    // 选定的入墙图：用户选了的、或者已有的 image_url、或者 alt_image_url
-    let toStick: string | null = null;
-    if (chosenSource === imageSource) toStick = imageUrl;
-    else if (chosenSource === altImageSource) toStick = altImageUrl;
-    else toStick = imageUrl ?? altImageUrl ?? null;
+    const toStick = imageUrl;
 
     // fallback 卡片不放动画，直接结束
     if (isFallbackTextCard || !toStick) {
@@ -83,7 +77,6 @@ export default function Page() {
         await confirmDescribe({
           card_id: cardId,
           auto_timeout: autoTimeout,
-          chosen_source: chosenSource ?? undefined,
         });
         reset();
         router.replace('/home');
@@ -102,7 +95,6 @@ export default function Page() {
         await confirmDescribe({
           card_id: cardId,
           auto_timeout: autoTimeout,
-          chosen_source: chosenSource ?? undefined,
         });
       } catch (e) {
         console.error(e);
@@ -134,9 +126,6 @@ export default function Page() {
         <div className="mt-4 flex-1">
           <CardConfirm
             imageUrl={imageUrl}
-            imageSource={imageSource}
-            altImageUrl={altImageUrl}
-            altImageSource={altImageSource}
             isFallbackTextCard={isFallbackTextCard}
             fallbackDescription={finalText}
             companionName={companionName}

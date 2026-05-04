@@ -12,7 +12,6 @@ import {
   findCompanionForSingleUser,
   getCompanionById,
   getMemoryBank,
-  markPanelVisited,
 } from '@/lib/db/repos';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import { runUnknownConcepts } from '@/lib/llm/unknownConcepts';
@@ -60,9 +59,6 @@ export async function GET(req: Request) {
 
   const bank = await getMemoryBank(companionId);
 
-  // 进入面板即标记访问
-  await markPanelVisited(companionId);
-
   // 重要性排序：证据数 × 时间衰减
   const now = Date.now();
   function score(m: MemoryBankEntry): number {
@@ -87,6 +83,8 @@ export async function GET(req: Request) {
       ai_reasoning: m.ai_reasoning,
       evidence: m.evidence,
       confidence: m.confidence,
+      source_type: m.source_type,
+      source_companion_id: m.source_companion_id,
       user_corrected: m.user_corrected,
       user_correction_history: m.user_correction_history,
       last_updated: m.last_updated,

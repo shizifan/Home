@@ -132,7 +132,13 @@ export default function MemoryPanelPage() {
                 iconText={categoryLabel(c.concept_category)}
                 name={c.concept_name}
                 summary={c.ai_summary || '（还没有理解）'}
-                evidence={(c.evidence ?? []).map((e) => `Day ${e.day}: ${e.excerpt}`)}
+                evidence={(c.evidence ?? []).map((e) => `Day ${e.day}: ${e.quote}`)}
+                confidence={c.confidence}
+                sourceNote={
+                  c.source_type === 'secondhand' && c.source_companion_id
+                    ? `我是从别的小伙伴那里听说的。`
+                    : undefined
+                }
                 onMenu={() => router.push(`/memory/concept/${c.id}`)}
               />
             ))}
