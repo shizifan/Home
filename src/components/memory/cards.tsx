@@ -13,9 +13,20 @@ export interface ConceptCardProps {
   summary: string;
   evidence: string[];
   onMenu?: () => void;
+  /** P2: PRD §12.7 二手知识标识 — 来源伙伴名（'firsthand' 时不传）*/
+  secondhandFrom?: string;
 }
 
-export function ConceptCard({ color, iconBg, iconText, name, summary, evidence, onMenu }: ConceptCardProps) {
+export function ConceptCard({
+  color,
+  iconBg,
+  iconText,
+  name,
+  summary,
+  evidence,
+  onMenu,
+  secondhandFrom,
+}: ConceptCardProps) {
   return (
     <div
       className="bg-white border border-[rgba(95,94,90,0.18)] rounded-card p-4 mb-2.5 relative"
@@ -29,6 +40,14 @@ export function ConceptCard({ color, iconBg, iconText, name, summary, evidence, 
           {iconText}
         </span>
         <span className="font-title text-h3 text-ink-1 font-medium flex-1">{name}</span>
+        {secondhandFrom && (
+          <span
+            className="font-title text-mini text-amber-mid bg-amber-light/50 border border-amber-DEFAULT rounded-full px-2 py-0.5"
+            title="二手知识：从其他伙伴那里问来的，可能不准"
+          >
+            听 {secondhandFrom} 说的
+          </span>
+        )}
         <button
           onClick={onMenu}
           className="font-num text-h3 text-ink-3 tracking-[2px] cursor-pointer bg-transparent border-0 px-1"
@@ -38,6 +57,11 @@ export function ConceptCard({ color, iconBg, iconText, name, summary, evidence, 
         </button>
       </div>
       <p className="font-title text-sub text-ink-1 leading-[1.55] mb-2">{summary}</p>
+      {secondhandFrom && (
+        <p className="font-title text-mini text-amber-mid mb-2 italic">
+          ⚠ 这件事是听来的，可能不太准
+        </p>
+      )}
       <p className="font-title text-mini text-ink-3 mb-1">我从这些事知道的：</p>
       <ul className="m-0 pl-3.5">
         {evidence.map((e, i) => (

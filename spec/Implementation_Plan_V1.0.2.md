@@ -6,7 +6,7 @@
 
 ---
 
-## 0. 现状基线（V0.6.1 + P1 收口）
+## 0. 现状基线（V0.6.1 + P1 收口 + P2 朋友家闭环）
 
 ### 0.1 已完成
 
@@ -31,13 +31,18 @@
 | TaskDef.theme | 新增字段，串起跳过 set_aside 的 concept_name |
 | 已删除 | V0.5 拍照流程 `/api/photo/upload` + `client.ts::submitPhoto` |
 | 修复 | `ws` / `@types/ws` 依赖（V0.6.1 ASR client 漏装）|
+| **P2 驿站基础** | `/station` 地图 + 朋友家完整闭环（4 目的 / 4 系统预设伙伴 / 二手知识 / 等你一天 greeting）|
+| 数据库（P2） | 迁移 0004：`trips` 表 + `companions.last_active_at/graduated_at` 写入 + `memory_bank.source_type/source_companion_id` |
+| 出行 API | `POST /api/station/depart`（fire-and-forget）+ `GET /api/station/trip/[id]`（轮询）+ `POST /api/station/memory/import`（二手知识入库）+ `GET /api/station/status`（解锁/限流）|
+| LLM 调用 | 新增 `visit` callType；`prompts/visit/{system.md,examples.json}` 4 目的各 1 条 Few-shot |
+| db:migrate 修复 | 旧 script 只跑 0001，已改为按序 cat 全部迁移 |
 
 ### 0.2 缺口（按 PRD V1.0.2 对照，P1 收口后）
 
 | 模块 | 状态 |
 |---|---|
-| Day 4 语音输入（PRD §5.6 / §7.11） | 当前文字 only — **T3-followup** |
-| 整天没打开"等了你一天"（PRD §16.3 末段） | 未实现 — **T4-followup**（需 `companions.last_active_at` schema 变更）|
+| Day 4 语音输入（PRD §5.6 / §7.11） | 当前文字 only — **已挪 P7‑T8** |
+| 整天没打开"等了你一天"（PRD §16.3 末段） | 未实现 — **schema + greeting 已并入 P2‑T1 / P2‑T8** |
 | 驿站地图 / 朋友家 / 学校 / 广场 | 全部 0%（`src/components/station/` 为空目录）— P2-P5 |
 | 行囊系统（PRD §14.3） | 0% — P4 |
 | 道具池 / 5 剧本 / 系统题库 / 二手知识 | 数据资产与代码均缺失 — P3-P5 |
@@ -121,7 +126,7 @@
 - ✅ Day 5 跳过的特殊二选一提示（在 T4 完成）
 - ✅ Day 5 API 拆为 GET（Q1）+ POST（Q2，需 q1+a1）；客户端 ChoiceFlow 重写为两阶段状态机
 - ✅ `seed-graduate.ts` 跟进新接口
-- ⏸ **T3‑followup**：Day 4 语音输入支持（PRD §5.6 / §7.11 "语音/文字" 双模式）— 当前仅文字。需要把 describe/voice 的录音→ASR→编辑→提交链路裁剪掉图像生成做一个 `/answer/voice` 通道，或在 TaskOverlay TextZone 里嵌入 VoiceRecorder + 直连 `/api/voice/upload` 后落 textarea
+- ⏸ **T3‑followup → 已挪至 P7 打磨阶段**：Day 4 语音输入支持（PRD §5.6 / §7.11 "语音/文字" 双模式）— 当前仅文字。涉及 UI 改动需小朋友实测调优，与 P7 用户测试合并执行
 - **产物**：
   - 改 `src/lib/llm/day5Questions.ts`（拆 runDay5Q1 / runDay5Q2 + 新 prompt）
   - 改 `src/app/api/task/day5-questions/route.ts`（GET/POST 双模式）
@@ -134,16 +139,13 @@
 - ✅ 跳过 Day 6：单独提示 + 二选一按钮（继续跳过 / 打开看看）
 - ✅ 8 伙伴跳过台词回填（已在 `prompts/shared/fallbacks.json::skip_response_by_companion`）
 - ✅ skip 路径短路 LLM：`processInput` 对 `inputType='skipped'` 直接写 set_aside（PRD §16.4 模板，concept_name=`关于${TaskDef.theme}`）+ 取预设跳过台词，省 2 次 LLM 调用
-- ⏸ **T4‑followup**："等了你一天" 5 选 1（PRD §16.3 末段）— 需要 schema 变更（`companions.last_active_at`）+ 状态 API + 主页 greeting 逻辑，单列跟踪
+- ⏸ **T4‑followup → schema 部分合并到 P2 迁移 0004**："等了你一天" 5 选 1（PRD §16.3 末段）— `companions.last_active_at` 字段加到 P2 的 `0004_trips_and_last_active.sql`；API + 主页 greeting 逻辑在 P2 触达 `/api/companion/state` 时一起改
 - **产物**：
   - 改 `src/components/task/TaskOverlay.tsx`（新增 `SkipWarningDay6` 组件）
   - 改 `src/lib/orchestrate/processInput.ts`（skip 短路）
   - 改 `src/types/index.ts` + `src/lib/tasks/index.ts`（TaskDef 加 `theme` 字段）
 
-**P1‑T4‑followup ·"等了你一天"greeting**
-- 加迁移 `db/migrations/0004_companion_last_active.sql`：`alter table companions add column last_active_at timestamp null default null;`
-- `/api/companion/state` 内：bump `last_active_at`；同时返回 `missed_yesterday: boolean`（>24h 未访问）
-- `src/app/home/page.tsx` 主页 SpeechBubble 渲染逻辑：missed_yesterday 时优先取 `pickMissedDayLine()`，否则正常 last_companion_line
+**T4‑followup 已并入 P2**：见 §P2.2 P2‑T1 迁移与 §P2.2 P2‑T8 主页变化（毕业后）
 
 **P1‑T5 · LLM 降级链全量回填**（PRD §25.2）
 - ✅ 审计现有 7 个 LLM 调用点的失败处理：pass1 / pass2 / concept_detail / correction / day7 / keyword_extract / free_chat / day5 — **全部已与 PRD §25.2 一致**：
@@ -209,10 +211,11 @@
 
 #### P2.2 任务清单
 
-**P2‑T1 · 数据库迁移 0004：trips**
+**P2‑T1 · 数据库迁移 0004：trips + companions.last_active_at（合并 P1‑T4‑fu）**
 - 新增 `trips` 表（PRD §22.1.8 完整字段）
+- `companions` 加 `last_active_at TIMESTAMP NULL DEFAULT NULL`（P1‑T4‑fu 合并进来；用于 PRD §16.3 "等了你一天"）
 - `memory_bank` 字段确认 `source_type ENUM('firsthand','secondhand') / source_companion_id` 已存在；不存在则补 ALTER
-- **产物**：`db/migrations/0004_trips.sql`
+- **产物**：`db/migrations/0004_trips_and_last_active.sql`
 
 **P2‑T2 · 系统预设伙伴的 memory_bank 快照**（PRD §12.3）
 - 4 只：小鱼（海边）、土豆（农村）、星星（城市）、阿木（英文动画）
@@ -255,11 +258,14 @@
 - 硬约束：拜访者与被拜访者均不得凭空发明 memory_bank 之外内容
 - **产物**：`prompts/visit/`、`src/lib/llm/visit.ts`
 
-**P2‑T8 · 主页变化（毕业后）**
+**P2‑T8 · 主页变化（毕业后 + 合并 P1‑T4‑fu greeting）**
 - `current_day >= 7` 时主页底部出现 🚪 出门探索按钮
 - 朋友家解锁台词（PRD §17.6 / §18.6 八伙伴各 1 条，已在 companions.json 雏形）
 - 解锁场景的 2 张引导卡（PRD §17.6 末尾）
-- **产物**：增强 `src/components/home/*`、新增 `src/components/station/UnlockHint.tsx`
+- **合并 P1‑T4‑fu**：`/api/companion/state` 内 bump `last_active_at = now()`；返回新字段 `missed_yesterday: boolean`（旧值 < 今天 0 点）
+- **合并 P1‑T4‑fu**：主页 SpeechBubble 渲染逻辑：`missed_yesterday` 时优先取 `pickMissedDayLine()`，否则按现状取 `last_companion_line`
+- 加 E2E 单元覆盖："等了你一天"分支台词出现（mock 数据库 last_active_at 拨到昨天）
+- **产物**：增强 `src/components/home/*`、新增 `src/components/station/UnlockHint.tsx`、改 `src/app/api/companion/state/route.ts`
 
 **P2‑T9 · 二手知识在记忆面板的视觉**
 - `ConceptCard.tsx` 检测 `source_type='secondhand'` 时显示来源伙伴名 + "可能不一定准"
@@ -275,10 +281,19 @@
 
 #### P2.4 验收标准
 
-- [ ] 毕业用户可完成 4 种目的中至少 3 种（认识 / 看家 / 问问题）
-- [ ] "去问问题"返回的新词在记忆面板带 secondhand 视觉标识
-- [ ] 同日二次出门被拒绝
-- [ ] LLM 失败 2 次后展示"它好像还没回来......明天再来看看？"
+- [x] T1 迁移 0004：trips + companions.last_active_at + memory_bank.source_type
+- [x] T2 4 只系统预设伙伴 JSON + loader（小鱼/土豆/星星/阿木）
+- [x] T3 /station 地图页 + 状态 API + 解锁/限流闸门（assertCanDepart）
+- [x] T4 朋友家准备 + 等待 + fire-and-forget 异步出行
+- [x] T5 拜访汇报页 + 二手知识导入按钮
+- [x] T6 出行 API（depart / trip[id] / memory/import）+ processVisit（startVisit + finishVisit 拆分）
+- [x] T7 visit LLM Prompt + 4 目的 Few-shot；client.ts 加 'visit' callType + 降级链注释
+- [x] T8 毕业后主页 🚪 出门按钮 + missed_day_greeting 优先显示 + last_active_at bump
+- [x] T9 ConceptCard 加 secondhandFrom badge + memory bank API 返回 source_type
+- [x] T10 E2E spec/04_visit_flow：3 个流程节点用例 + 1 个 happy-path（skipped 待手动启用）
+- [ ] 毕业用户可完成 4 种目的中至少 3 种（认识 / 看家 / 问问题）— 待人工跑
+- [ ] 同日二次出门被拒绝 — 待人工跑（API 层 assertCanDepart 已实现）
+- [ ] LLM 失败 2 次后展示"它好像还没回来......明天再来看看？"— 待人工跑（finishVisit fallback 已实现）
 
 ---
 
@@ -569,6 +584,13 @@
 - 描述卡片总时长中位数 ≤ 15s（按 PRD §28.4）
 - 减少动效开关在设置中可用
 - 移动端 30fps 检查
+
+**P7‑T8 · Day 4 语音输入支持（合并 P1‑T3‑fu）**（PRD §5.6 / §7.11）
+- TaskOverlay TextZone 加"🎤 改用说话"按钮
+- 复用 `VoiceRecorder` + `/api/voice/upload`（不走图像生成）
+- ASR 文字回填到 textarea，孩子可继续编辑后提交
+- 配套 E2E：spec/08_day4_voice.spec.ts 验证语音/文字两条路径
+- **产物**：改 `src/components/task/TaskOverlay.tsx`（TextZone 嵌 VoiceRecorder mini 控件）
 
 #### P7.3 验收标准（参考 PRD §28）
 

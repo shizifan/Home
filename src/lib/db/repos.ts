@@ -16,6 +16,9 @@ import type {
   MemoryBankEntry,
   MemoryBankType,
   MemoryInputType,
+  Trip,
+  TripStatus,
+  TripType,
   VisionTags,
 } from '@/types';
 import type { CompanionPresetId } from '@/components/characters/types';
@@ -80,6 +83,33 @@ export async function advanceCompanionDay(id: string, day: DayNumber) {
 export async function markPanelVisited(id: string) {
   await execute(
     `update companions set last_panel_visit_at = current_timestamp(3) where id = :id`,
+    { id },
+  );
+}
+
+/**
+ * Bump companions.last_active_at = now()，并返回旧值（用于"等你一天"判断）。
+ * PRD §16.3 末段：last_active_at < 今天 0:00 → missed_yesterday = true
+ */
+export async function bumpAndGetLastActive(
+  id: string,
+): Promise<Date | null> {
+  const before = await queryOne<{ last_active_at: Date | null }>(
+    `select last_active_at from companions where id = :id`,
+    { id },
+  );
+  await execute(
+    `update companions set last_active_at = current_timestamp(3) where id = :id`,
+    { id },
+  );
+  return before?.last_active_at ?? null;
+}
+
+/** 首次生成 worldview 时写入毕业时间，作为 graduated 的权威信号 */
+export async function setGraduatedAtIfNull(id: string): Promise<void> {
+  await execute(
+    `update companions set graduated_at = current_timestamp(3)
+       where id = :id and graduated_at is null`,
     { id },
   );
 }
@@ -179,6 +209,7 @@ export async function getMemoryBank(
   return await query<MemoryBankEntry>(
     `select id, companion_id, type, concept_name, concept_category,
             ai_summary, ai_reasoning, evidence, confidence,
+            source_type, source_companion_id,
             user_corrected, user_correction_history, cached_detail, cache_dirty,
             display_order, last_updated, created_at
        from memory_bank where companion_id = :cid
@@ -191,6 +222,7 @@ export async function findMemoryBankById(id: string): Promise<MemoryBankEntry | 
   return await queryOne<MemoryBankEntry>(
     `select id, companion_id, type, concept_name, concept_category,
             ai_summary, ai_reasoning, evidence, confidence,
+            source_type, source_companion_id,
             user_corrected, user_correction_history, cached_detail, cache_dirty,
             display_order, last_updated, created_at
        from memory_bank where id = :id`,
@@ -207,6 +239,7 @@ export async function findMemoryBankByConcept(
   return await queryOne<MemoryBankEntry>(
     `select id, companion_id, type, concept_name, concept_category,
             ai_summary, ai_reasoning, evidence, confidence,
+            source_type, source_companion_id,
             user_corrected, user_correction_history, cached_detail, cache_dirty,
             display_order, last_updated, created_at
        from memory_bank
@@ -225,6 +258,10 @@ export interface CreateMemoryBankInput {
   aiReasoning?: string;
   evidence: Array<{ memory_id: string; day: number; excerpt: string }>;
   confidence?: number;
+  /** P2：来源标识（PRD §12.7 / §22.1.5）*/
+  sourceType?: 'firsthand' | 'secondhand';
+  /** secondhand 时记录来源伙伴 id（系统预设伙伴写 preset_id 字符串）*/
+  sourceCompanionId?: string;
 }
 
 export async function createMemoryBankEntry(
@@ -235,10 +272,12 @@ export async function createMemoryBankEntry(
     `insert into memory_bank
       (id, companion_id, type, concept_name, concept_category,
        ai_summary, ai_reasoning, evidence, confidence,
+       source_type, source_companion_id,
        user_correction_history)
      values
       (:id, :cid, :type, :cn, :cat,
        :sum, :rea, cast(:ev as json), :conf,
+       :stype, :sid,
        cast('[]' as json))`,
     {
       id,
@@ -250,6 +289,8 @@ export async function createMemoryBankEntry(
       rea: input.aiReasoning ?? null,
       ev: JSON.stringify(input.evidence),
       conf: input.confidence ?? 0.5,
+      stype: input.sourceType ?? 'firsthand',
+      sid: input.sourceCompanionId ?? null,
     },
   );
   const row = await findMemoryBankById(id);
@@ -586,4 +627,108 @@ export async function logLLMCall(args: {
       pv: args.promptVersion ?? null,
     },
   );
+}
+
+// ──────────────────── trips（P2 §22.1.8）────────────────────
+
+const TRIP_FIELDS = `
+  id, companion_id, trip_type, destination_companion_id,
+  purpose_type, purpose_question, plaza_play_id,
+  status, departed_at, returned_at,
+  report_narrative, report_data, created_at
+`;
+
+export interface CreateTripInput {
+  companionId: string;
+  tripType: TripType;
+  destinationCompanionId?: string;
+  purposeType?: string;
+  purposeQuestion?: string;
+  plazaPlayId?: string;
+}
+
+export async function createTrip(input: CreateTripInput): Promise<Trip> {
+  const id = uuid();
+  await execute(
+    `insert into trips
+       (id, companion_id, trip_type, destination_companion_id,
+        purpose_type, purpose_question, plaza_play_id,
+        status, departed_at)
+     values
+       (:id, :cid, :type, :dest,
+        :ptype, :pq, :pp,
+        'traveling', current_timestamp(3))`,
+    {
+      id,
+      cid: input.companionId,
+      type: input.tripType,
+      dest: input.destinationCompanionId ?? null,
+      ptype: input.purposeType ?? null,
+      pq: input.purposeQuestion ?? null,
+      pp: input.plazaPlayId ?? null,
+    },
+  );
+  const row = await getTripById(id);
+  if (!row) throw new Error('createTrip: row not found after insert');
+  return row;
+}
+
+export async function getTripById(id: string): Promise<Trip | null> {
+  return await queryOne<Trip>(
+    `select ${TRIP_FIELDS} from trips where id = :id`,
+    { id },
+  );
+}
+
+export async function getTripsForCompanion(
+  companionId: string,
+  limit = 50,
+): Promise<Trip[]> {
+  return await query<Trip>(
+    `select ${TRIP_FIELDS} from trips
+       where companion_id = :cid
+       order by created_at desc limit :lim`,
+    { cid: companionId, lim: limit },
+  );
+}
+
+export async function markTripReturned(args: {
+  tripId: string;
+  reportNarrative: string;
+  reportData: Record<string, unknown>;
+}): Promise<void> {
+  await execute(
+    `update trips
+       set status = 'returned',
+           returned_at = current_timestamp(3),
+           report_narrative = :n,
+           report_data = cast(:d as json)
+       where id = :id`,
+    {
+      id: args.tripId,
+      n: args.reportNarrative,
+      d: JSON.stringify(args.reportData),
+    },
+  );
+}
+
+export async function markTripStatus(
+  id: string,
+  status: TripStatus,
+): Promise<void> {
+  await execute(`update trips set status = :s where id = :id`, {
+    id,
+    s: status,
+  });
+}
+
+/** 今日是否已经出过门（任意 trip_type）— PRD §11.5 限流 */
+export async function hasTripToday(companionId: string): Promise<boolean> {
+  const r = await queryOne<{ n: number }>(
+    `select count(*) as n from trips
+       where companion_id = :cid
+         and date(created_at) = curdate()`,
+    { cid: companionId },
+  );
+  return (r?.n ?? 0) > 0;
 }

@@ -87,6 +87,9 @@ export async function GET(req: Request) {
       ai_reasoning: m.ai_reasoning,
       evidence: m.evidence,
       confidence: m.confidence,
+      // P2: PRD §12.7 二手知识来源
+      source_type: m.source_type ?? 'firsthand',
+      source_companion_id: m.source_companion_id ?? null,
       user_corrected: m.user_corrected,
       user_correction_history: m.user_correction_history,
       last_updated: m.last_updated,

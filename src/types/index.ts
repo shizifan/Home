@@ -110,6 +110,9 @@ export interface VisionTags {
 export type MemoryBankType = 'remembered' | 'uncertain' | 'set_aside' | 'unknown';
 export type ConceptCategory = 'person' | 'place' | 'food' | 'activity' | 'object' | 'emotion' | 'other';
 
+/** 记忆来源（PRD §12.7）— firsthand 是孩子直接告诉的；secondhand 是从其他伙伴问来的 */
+export type MemorySourceType = 'firsthand' | 'secondhand';
+
 export interface MemoryBankEntry {
   id: string;
   companion_id: string;
@@ -120,6 +123,10 @@ export interface MemoryBankEntry {
   ai_reasoning?: string;
   evidence: Array<{ memory_id: string; day: number; excerpt: string }>;
   confidence: number;
+  /** 来源类型，默认 'firsthand'（V1.0 P2 新增）*/
+  source_type?: MemorySourceType;
+  /** 当 source_type='secondhand' 时，记录来源伙伴的 companion_id */
+  source_companion_id?: string;
   user_corrected: boolean;
   user_correction_history: CorrectionEvent[];
   cached_detail?: {
@@ -179,4 +186,61 @@ export interface TaskDef {
   description: string;
   inputPlaceholder?: string;
   charLimit?: number;
+}
+
+// =========================================================
+// P2 驿站（PRD §11–§14）
+// =========================================================
+
+export type TripType = 'visit' | 'school' | 'plaza';
+
+/** 朋友家 4 目的（PRD §12.2）*/
+export type VisitPurposeType =
+  | 'meet_friend'      // 去认识一个新朋友
+  | 'observe_home'     // 去看看朋友家是什么样的
+  | 'introduce_self'   // 去和朋友说说你自己
+  | 'ask_question';    // 去问朋友一件你好奇的事（需 purpose_question）
+
+/** 学校 4 目的（PRD §13.2）*/
+export type SchoolPurposeType =
+  | 'attend_class'     // 去上一堂课（系统题）
+  | 'ask_my_question'  // 去问一个你想问的问题（需 purpose_question）
+  | 'observe_others'   // 去看看其他人是什么样的
+  | 'learn_new';       // 去学一个你不知道的东西
+
+export type TripStatus = 'traveling' | 'returned';
+
+export interface Trip {
+  id: string;
+  companion_id: string;
+  trip_type: TripType;
+  destination_companion_id?: string;
+  purpose_type?: VisitPurposeType | SchoolPurposeType | 'plaza_play';
+  purpose_question?: string;
+  plaza_play_id?: string;
+  status: TripStatus;
+  departed_at: string;
+  returned_at?: string;
+  report_narrative?: string;
+  report_data?: Record<string, unknown>;
+  created_at: string;
+}
+
+/** 朋友家拜访的报告数据（trips.report_data 的内容；PRD §12.6 / §23.10）*/
+export interface VisitReportData {
+  scene_narrative: string;
+  /** 仅 'ask_question' 目的时存在：从对方那里"带回"的新词（写入 memory_bank 时 source_type='secondhand'）*/
+  new_word?: {
+    concept_name: string;
+    ai_summary: string;
+    ai_reasoning: string;
+    confidence: number;
+  } | null;
+  /** 被拜访伙伴的展示信息（用于汇报页缩略图）*/
+  host?: {
+    companion_id?: string;
+    preset_id?: string;
+    display_name: string;
+    is_system_preset: boolean;
+  };
 }

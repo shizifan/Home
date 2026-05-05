@@ -10,7 +10,7 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"prompts/**/*.{md,json}\"",
-    "db:migrate": "mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} $MYSQL_DATABASE < db/migrations/0001_init.sql && mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} $MYSQL_DATABASE < db/seed.sql",
+    "db:migrate": "cat db/migrations/*.sql db/seed.sql | mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} $MYSQL_DATABASE",
     "db:reset": "mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} -e 'DROP DATABASE IF EXISTS home; CREATE DATABASE home DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;' && npm run db:migrate",
     "prompt:eval": "tsx scripts/prompt-eval.ts",
     "test:e2e": "playwright test",

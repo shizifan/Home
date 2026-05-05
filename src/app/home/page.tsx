@@ -158,10 +158,23 @@ export default function HomePage() {
       </div>
 
       <SpeechBubble
-        text={`「${state.last_companion_line ?? '......'}」`}
+        text={`「${state.missed_day_greeting ?? state.last_companion_line ?? '......'}」`}
         by={c.display_name}
         onTap={() => openOverlay('chat')}
       />
+
+      {/* 毕业后出现 "出门探索" 按钮（PRD §11.6） */}
+      {c.graduated && (
+        <div className="px-5 mt-3">
+          <button
+            onClick={() => router.push('/station')}
+            className="w-full bg-amber-light/40 border-[1.5px] border-amber-DEFAULT rounded-card px-5 py-3 flex items-center justify-between active:scale-[0.99] cursor-pointer"
+          >
+            <span className="font-title text-h3 text-amber-deep">🚪 出门探索</span>
+            <span className="font-title text-small text-amber-mid">驿站 →</span>
+          </button>
+        </div>
+      )}
 
       {/* 给 BottomNav (absolute h-84) 让出空间，否则最后一段内容会被盖住 */}
       <div className="h-[100px]" aria-hidden />

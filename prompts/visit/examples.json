@@ -1,0 +1,72 @@
+{
+  "_doc": "朋友家拜访 Few-shot 示例 — PRD §23.15 要求每目的至少 1 条；这里 4 目的各 1 条 = 4 条最小集",
+  "version": "0.1.0",
+  "examples": [
+    {
+      "id": "visit_meet_friend_001",
+      "context": "小青龙（安静慢热）拜访小鱼（海边），目的=meet_friend。小青龙 memory_bank 里有妈妈/包饺子/卧室；小鱼 memory_bank 里有螃蟹/海/赶海/爸爸渔船。",
+      "input": {
+        "visitor_name": "小青龙",
+        "host_name": "小鱼",
+        "trip_purpose": "meet_friend",
+        "visitor_memory_summary": "妈妈、卧室、饺子",
+        "host_memory_summary": "螃蟹、海、赶海、渔船"
+      },
+      "expected_output": {
+        "scene_narrative": "小青龙小心地走到小鱼的家门口。小鱼正在挑一只大螃蟹给它看，说这是今天爸爸出海带回来的。墙上挂着一只蓝色的渔船画，小鱼说那是爸爸的船，船头画着一只眼睛。小青龙看了很久，从来没见过这么大的螃蟹。",
+        "new_word": null
+      }
+    },
+    {
+      "id": "visit_observe_home_001",
+      "context": "大熊（米色泰迪）拜访土豆（农村），目的=observe_home。大熊家有蓝色的床、积木、饺子；土豆家有田野、玉米、锄头。",
+      "input": {
+        "visitor_name": "大熊",
+        "host_name": "土豆",
+        "trip_purpose": "observe_home",
+        "visitor_memory_summary": "蓝色床、积木、饺子、妈妈",
+        "host_memory_summary": "田野、玉米、锄头、爷爷"
+      },
+      "expected_output": {
+        "scene_narrative": "大熊推开土豆家的门，先闻到了一股土的味道。墙上没贴照片，挂的是一把磨得发亮的锄头。地上摆着两筐玉米，金黄金黄的。大熊家是温暖的米色，地上是积木。土豆家是绿色和黄色的，地上是泥和庄稼。大熊嗯......地说：'原来不同人的家，可以这么不同。'",
+        "new_word": null
+      }
+    },
+    {
+      "id": "visit_introduce_self_001",
+      "context": "小火龙（自来熟）拜访星星（城市），目的=introduce_self。小火龙 memory_bank：妈妈包饺子、爷爷会唱戏、最爱搭积木。",
+      "input": {
+        "visitor_name": "小火龙",
+        "host_name": "星星",
+        "trip_purpose": "introduce_self",
+        "visitor_memory_summary": "妈妈包饺子、爷爷会唱戏、最爱搭积木",
+        "host_memory_summary": "外卖、商场、地铁"
+      },
+      "expected_output": {
+        "scene_narrative": "小火龙一进门就开口：'嘿！我妈妈最爱包饺子！我最喜欢的事是搭积木，能搭好高好高那种！我爷爷还会唱戏！'星星愣了愣，想了想说：'我妈妈天天加班，没包过饺子......但商场地下二楼有家店挺好吃的。'两只伙伴互相看着，谁也没说错，但都和对方的世界对不太上。",
+        "new_word": null
+      }
+    },
+    {
+      "id": "visit_ask_question_001",
+      "context": "小青龙拜访大熊，问'什么是大海？'。小青龙 memory_bank 里没有'大海'；大熊 memory_bank 里有'大海'：蓝色咸水、有鱼。",
+      "input": {
+        "visitor_name": "小青龙",
+        "host_name": "大熊",
+        "trip_purpose": "ask_question",
+        "purpose_question": "什么是大海？",
+        "visitor_memory_summary": "妈妈、卧室、饺子（无'大海'）",
+        "host_memory_summary": "大海：蓝色咸水、里面有鱼和会动的草"
+      },
+      "expected_output": {
+        "scene_narrative": "小青龙小声问大熊：'大海......是什么？'大熊嗯了一下，说：'大海是蓝色的，比我家的浴缸大很多很多倍，水是咸的，里面有鱼，还有会动的草。'小青龙没去过大海，但它现在有点想象到了——咸的、蓝的、很大的水。",
+        "new_word": {
+          "concept_name": "大海",
+          "ai_summary": "大熊说大海是蓝色咸水，里面有鱼和会动的草。",
+          "ai_reasoning": "我自己没见过大海，是大熊告诉我的。所以我对大海的了解可能和真实的不一样。",
+          "confidence": 0.3
+        }
+      }
+    }
+  ]
+}

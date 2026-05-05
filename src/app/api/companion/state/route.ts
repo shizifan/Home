@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 
 import {
+  bumpAndGetLastActive,
   findCompanionForSingleUser,
   getRecentCompanionLine,
   isTaskDoneToday,
@@ -16,6 +17,7 @@ import { listCardsForCompanion } from '@/lib/db/cardsRepo';
 import { query } from '@/lib/db/client';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import { getTaskByDay } from '@/lib/tasks';
+import { pickMissedDayLine } from '@/lib/llm/fallbacks';
 import type { DayNumber } from '@/types';
 
 export const runtime = 'nodejs';
@@ -26,6 +28,16 @@ export async function GET() {
     return NextResponse.json({ companion: null });
   }
   const preset = getCompanionPreset(companion.preset_id);
+
+  // PRD §16.3 末段："等你一天"判断 — 旧 last_active_at 是否早于今天 0 点。
+  // 同时把 last_active_at bump 到 now()，让下次访问能正确比对。
+  const previousActive = await bumpAndGetLastActive(companion.id);
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const missedYesterday =
+    previousActive !== null && previousActive.getTime() < todayStart.getTime();
+  const missedDayGreeting = missedYesterday ? pickMissedDayLine() : null;
+
   const lastLine = await getRecentCompanionLine(companion.id);
   const recentMemories = await listRecentMemories(companion.id, 10);
   const memoryBank = await getMemoryBank(companion.id);
@@ -86,9 +98,12 @@ export async function GET() {
       display_name: companion.custom_name || preset?.name || '伙伴',
       current_day: companion.current_day,
       starting_personality: companion.starting_personality,
+      graduated: !!companion.graduated_at,
     },
     last_companion_line: lastLine?.content ?? null,
     last_companion_line_source: lastLine?.source ?? null,
+    /** P2: PRD §16.3 末段，整天没打开后的 5 选 1 台词；非缺席时为 null */
+    missed_day_greeting: missedDayGreeting,
     today_task: today
       ? {
           id: today.id,

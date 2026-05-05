@@ -12,6 +12,7 @@ import {
   getCompanionById,
   getCompanionStats,
   getMemoryBank,
+  setGraduatedAtIfNull,
   upsertWorldview,
 } from '@/lib/db/repos';
 import { getCompanionPreset } from '@/lib/companionPresets';
@@ -86,6 +87,9 @@ export async function POST(req: Request) {
     },
     rawLLMOutput: result.data,
   });
+
+  // 首次生成 worldview = 毕业时刻（PRD §11.3 朋友家解锁条件）
+  await setGraduatedAtIfNull(companion.id);
 
   return NextResponse.json({
     worldview: serialize(row),

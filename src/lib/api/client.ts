@@ -10,9 +10,13 @@ export interface CompanionStateResponse {
     display_name: string;
     current_day: number;
     starting_personality: string;
+    /** P2: 是否已毕业（worldview 已生成时为 true）*/
+    graduated?: boolean;
   } | null;
   last_companion_line: string | null;
   last_companion_line_source: string | null;
+  /** P2: 整天没打开后的"等你一天"台词；非缺席时为 null */
+  missed_day_greeting?: string | null;
   today_task: { id: string; kind: string; title: string; description: string } | null;
   today_done?: boolean;
   can_advance?: boolean;
@@ -179,6 +183,25 @@ export interface MemoryBankResponse {
   unknown: MemoryBankCardData[];
 }
 
+/**
+ * 系统预设伙伴 preset_id → 显示名映射（前端用）。
+ * 真实伙伴的 source_companion_id 是 UUID，这里查不到 → 返回 null，
+ * 由调用方降级为通用 "另一只朋友"。
+ */
+const PRESET_NAMES: Record<string, string> = {
+  xiaoyu: '小鱼',
+  tudou: '土豆',
+  xingxing: '星星',
+  amu: '阿木',
+};
+
+export function presetCompanionDisplayName(
+  presetIdOrCompanionId: string | null | undefined,
+): string | null {
+  if (!presetIdOrCompanionId) return null;
+  return PRESET_NAMES[presetIdOrCompanionId] ?? null;
+}
+
 export interface MemoryBankCardData {
   id: string;
   concept_name: string;
@@ -187,6 +210,9 @@ export interface MemoryBankCardData {
   ai_reasoning?: string;
   evidence?: Array<{ memory_id: string; day: number; excerpt: string }>;
   confidence: number;
+  /** P2: PRD §12.7 来源类型；'secondhand' 显示二手知识标识 */
+  source_type?: 'firsthand' | 'secondhand';
+  source_companion_id?: string | null;
   user_corrected: boolean;
   user_correction_history?: Array<{
     action: string;
@@ -346,6 +372,90 @@ export class Day7FailureError extends Error {
     super(message);
     this.name = 'Day7FailureError';
   }
+}
+
+// ──────────────────── 驿站（P2）────────────────────
+
+export interface StationStatusResponse {
+  companion_id: string;
+  graduated: boolean;
+  unlocked: { visit: boolean; school: boolean; plaza: boolean };
+  counts: {
+    visit_returned: number;
+    school_returned: number;
+    plaza_returned: number;
+  };
+  today_used: boolean;
+  today_limit: number;
+}
+
+export async function getStationStatus(): Promise<StationStatusResponse> {
+  const r = await fetch('/api/station/status', { cache: 'no-store' });
+  if (!r.ok) throw new Error(`station status ${r.status}`);
+  return r.json();
+}
+
+export type VisitPurpose =
+  | 'meet_friend'
+  | 'observe_home'
+  | 'introduce_self'
+  | 'ask_question';
+
+export interface DepartVisitArgs {
+  trip_type: 'visit';
+  purpose_type: VisitPurpose;
+  purpose_question?: string;
+  host_preset_id?: string;
+}
+
+export interface DepartResponse {
+  /** 立即返回的 trip 标识；后端在异步跑 LLM 写报告 */
+  trip_id: string;
+  /** 始终为 'traveling'；客户端轮询 trip[id] 直到 'returned' */
+  status: 'traveling';
+  host: {
+    preset_id: string;
+    name: string;
+    appearance: string;
+    is_system_preset: boolean;
+  };
+}
+
+export async function depart(args: DepartVisitArgs): Promise<DepartResponse> {
+  const r = await fetch('/api/station/depart', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(args),
+  });
+  if (!r.ok) {
+    const body = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `depart ${r.status}`);
+  }
+  return r.json();
+}
+
+export async function getTrip(tripId: string) {
+  const r = await fetch(`/api/station/trip/${encodeURIComponent(tripId)}`, {
+    cache: 'no-store',
+  });
+  if (!r.ok) throw new Error(`trip ${r.status}`);
+  return r.json() as Promise<{ trip: Record<string, unknown> }>;
+}
+
+export async function importTripMemory(tripId: string) {
+  const r = await fetch('/api/station/memory/import', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ trip_id: tripId }),
+  });
+  if (!r.ok) {
+    const body = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `import ${r.status}`);
+  }
+  return r.json() as Promise<{
+    memory_bank_id: string;
+    action: 'created' | 'skipped';
+  }>;
 }
 
 // ──────────────────── Day 5 选择题（PRD §5.6 双题，Q2 动态）────────────────────

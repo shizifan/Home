@@ -25,6 +25,7 @@ import {
   getMemoryBank,
   getTimeline,
   getWorldview,
+  presetCompanionDisplayName,
   type CompanionStateResponse,
   type MemoryBankResponse,
   type TimelineResponse,
@@ -325,6 +326,11 @@ function MemoryReadonlyTab({ bank }: { bank: MemoryBankResponse | null }) {
               name={c.concept_name}
               summary={c.ai_summary || ''}
               evidence={(c.evidence ?? []).map((e) => `Day ${e.day}: ${e.excerpt}`)}
+              secondhandFrom={
+                c.source_type === 'secondhand'
+                  ? presetCompanionDisplayName(c.source_companion_id) ?? '另一只朋友'
+                  : undefined
+              }
             />
           ))}
         </>

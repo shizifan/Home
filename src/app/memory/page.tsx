@@ -31,6 +31,7 @@ import {
   correctMemory,
   getCompanionState,
   getMemoryBank,
+  presetCompanionDisplayName,
   type CompanionStateResponse,
   type MemoryBankCardData,
   type MemoryBankResponse,
@@ -134,6 +135,11 @@ export default function MemoryPanelPage() {
                 summary={c.ai_summary || '（还没有理解）'}
                 evidence={(c.evidence ?? []).map((e) => `Day ${e.day}: ${e.excerpt}`)}
                 onMenu={() => router.push(`/memory/concept/${c.id}`)}
+                secondhandFrom={
+                  c.source_type === 'secondhand'
+                    ? presetCompanionDisplayName(c.source_companion_id) ?? '另一只朋友'
+                    : undefined
+                }
               />
             ))}
           </>
