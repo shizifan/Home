@@ -96,19 +96,39 @@ async function completeTextDay(companionId: string, taskId: string, day: number)
 }
 
 async function completeChoiceDay(companionId: string, taskId: string) {
-  step(`Day 5 choice: GET questions`);
-  const q = (await call(
+  step(`Day 5 choice: GET Q1`);
+  const q1Resp = (await call(
     'GET',
     `/api/task/day5-questions?companion_id=${companionId}`,
-  )) as { questions?: { question?: string }[] };
-  const recap =
-    q.questions?.map((qq, i) => `Q${i + 1}: ${qq.question ?? ''}`).join(' / ') ?? '';
-  const answer = (recap ? `${recap}\n\n` : '') + SAMPLE_DESCRIPTIONS[4];
-  step(`  → submit ${q.questions?.length ?? 0} 道答案`);
+  )) as { question?: { question?: string; options?: string[] } };
+  const q1 = q1Resp.question;
+  if (!q1?.question || !q1.options?.length) {
+    throw new Error('day5 Q1 返回异常');
+  }
+  const a1 = q1.options[0];
+  step(`  → Q1: ${q1.question} / 选 ${a1}`);
   await call('POST', '/api/text/submit', {
     companion_id: companionId,
     task_id: taskId,
-    user_text: answer,
+    user_text: `[Q1: ${q1.question}] 我选: ${a1}`,
+  });
+
+  step(`Day 5 choice: POST 拉 Q2（基于 Q1 答案）`);
+  const q2Resp = (await call('POST', '/api/task/day5-questions', {
+    companion_id: companionId,
+    q1: q1.question,
+    a1,
+  })) as { question?: { question?: string; options?: string[] } };
+  const q2 = q2Resp.question;
+  if (!q2?.question || !q2.options?.length) {
+    throw new Error('day5 Q2 返回异常');
+  }
+  const a2 = q2.options[0];
+  step(`  → Q2: ${q2.question} / 选 ${a2}`);
+  await call('POST', '/api/text/submit', {
+    companion_id: companionId,
+    task_id: taskId,
+    user_text: `[Q2: ${q2.question}] 我选: ${a2}`,
   });
 }
 

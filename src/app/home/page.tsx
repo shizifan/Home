@@ -1,6 +1,6 @@
 /**
- * 主页·小家（PRD §10.2）
- * P2：状态从 /api/companion/state 拉取；任务卡浮层通过 /api/photo|text|skip 提交。
+ * 主页·小家（PRD §20.2）
+ * 状态从 /api/companion/state 拉取；任务卡浮层通过 /api/describe|text|choice|skip 提交。
  */
 
 'use client';
@@ -94,7 +94,9 @@ export default function HomePage() {
   }
 
   const c = state.companion;
-  const task = state.today_task ?? getTaskByDay(c.current_day) ?? null;
+  // 任务定义以本地 TaskDef 为准（含 theme 等完整字段）；
+  // state.today_task 只用来确认 server 端是否认为今天有任务。
+  const task = state.today_task ? getTaskByDay(c.current_day) ?? null : null;
   const presetId = c.preset_id as CompanionPresetId;
 
   // 派生房间布局（PRD §4.4）
@@ -175,13 +177,7 @@ export default function HomePage() {
 
       {overlay === 'task' && task && !state.today_done && (
         <TaskOverlay
-          task={{
-            id: task.id,
-            day: c.current_day as 1 | 2 | 3 | 4 | 5 | 6 | 7,
-            kind: task.kind as 'photo' | 'text' | 'photo_text' | 'choice' | 'memory_review',
-            title: task.title,
-            description: task.description,
-          }}
+          task={task}
           companionId={c.id}
           companionName={c.display_name}
           onClose={() => {

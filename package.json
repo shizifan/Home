@@ -12,7 +12,9 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"prompts/**/*.{md,json}\"",
     "db:migrate": "mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} $MYSQL_DATABASE < db/migrations/0001_init.sql && mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} $MYSQL_DATABASE < db/seed.sql",
     "db:reset": "mysql -u $MYSQL_USER ${MYSQL_PASSWORD:+-p$MYSQL_PASSWORD} -e 'DROP DATABASE IF EXISTS home; CREATE DATABASE home DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;' && npm run db:migrate",
-    "prompt:eval": "tsx scripts/prompt-eval.ts"
+    "prompt:eval": "tsx scripts/prompt-eval.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -23,13 +25,16 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "server-only": "^0.0.1",
+    "ws": "^8.18.0",
     "zod": "^3.23.8",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@types/node": "^22.10.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/ws": "^8.5.13",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.16.0",
     "eslint-config-next": "^15.1.0",

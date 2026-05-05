@@ -112,24 +112,6 @@ export async function submitText(args: {
   return r.json();
 }
 
-export async function submitPhoto(args: {
-  companion_id: string;
-  task_id: string;
-  file?: File;
-  jpg_filename?: string;
-  user_text?: string;
-}): Promise<TaskSubmitResponse> {
-  const fd = new FormData();
-  fd.append('companion_id', args.companion_id);
-  fd.append('task_id', args.task_id);
-  if (args.file) fd.append('image', args.file);
-  if (args.jpg_filename) fd.append('jpg_filename', args.jpg_filename);
-  if (args.user_text) fd.append('user_text', args.user_text);
-  const r = await fetch('/api/photo/upload', { method: 'POST', body: fd });
-  if (!r.ok) throw new Error(`submit photo ${r.status}`);
-  return r.json();
-}
-
 export async function skipTask(args: {
   companion_id: string;
   task_id: string;
@@ -366,19 +348,34 @@ export class Day7FailureError extends Error {
   }
 }
 
-// ──────────────────── Day 5 选择题 ────────────────────
+// ──────────────────── Day 5 选择题（PRD §5.6 双题，Q2 动态）────────────────────
 
 export interface Day5Question {
   question: string;
   options: string[];
 }
 
-export async function getDay5Questions(): Promise<{
-  questions: Day5Question[];
+interface Day5Response {
+  question: Day5Question;
   source: 'llm' | 'fallback';
-}> {
+}
+
+export async function getDay5Q1(): Promise<Day5Response> {
   const r = await fetch('/api/task/day5-questions', { cache: 'no-store' });
-  if (!r.ok) throw new Error(`day5 ${r.status}`);
+  if (!r.ok) throw new Error(`day5 q1 ${r.status}`);
+  return r.json();
+}
+
+export async function getDay5Q2(args: {
+  q1: string;
+  a1: string;
+}): Promise<Day5Response> {
+  const r = await fetch('/api/task/day5-questions', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(args),
+  });
+  if (!r.ok) throw new Error(`day5 q2 ${r.status}`);
   return r.json();
 }
 

@@ -13,11 +13,13 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import { MobileShell } from '@/components/ui/MobileShell';
 import { Button } from '@/components/ui/Button';
 import { useCompanionStore } from '@/stores/companionStore';
 import { clearAllLocal } from '@/lib/storage/local';
+import { ParentGuard } from './_guard';
 import {
   getCompanionState,
   getMemoryBank,
@@ -50,7 +52,16 @@ const TABS: Array<{ id: Tab; label: string }> = [
 ];
 
 export default function ParentPage() {
-  const { reset } = useCompanionStore();
+  return (
+    <ParentGuard>
+      <ParentInner />
+    </ParentGuard>
+  );
+}
+
+function ParentInner() {
+  const router = useRouter();
+  const { reset, resetIntro } = useCompanionStore();
   const [tab, setTab] = useState<Tab>('overview');
   const [state, setState] = useState<CompanionStateResponse | null>(null);
   const [bank, setBank] = useState<MemoryBankResponse | null>(null);
@@ -81,6 +92,11 @@ export default function ParentPage() {
     reset();
     clearAllLocal();
     window.location.href = '/';
+  };
+
+  const onReplayIntro = () => {
+    resetIntro();
+    router.push('/intro');
   };
 
   return (
@@ -118,7 +134,9 @@ export default function ParentPage() {
         {tab === 'memory' && <MemoryReadonlyTab bank={bank} />}
         {tab === 'corrections' && <CorrectionsTab bank={bank} />}
         {tab === 'day7' && <Day7Tab worldview={worldview} />}
-        {tab === 'settings' && <SettingsTab onReset={onReset} />}
+        {tab === 'settings' && (
+          <SettingsTab onReset={onReset} onReplayIntro={onReplayIntro} />
+        )}
       </div>
     </MobileShell>
   );
@@ -198,6 +216,41 @@ function OverviewTab({
           {c.display_name} 回应了 {companionLineCount} 句
         </p>
       </section>
+
+      {state.cards && state.cards.length > 0 && (
+        <section className="bg-white/60 border border-[rgba(95,94,90,0.12)] rounded-card px-4 py-3">
+          <h3 className="font-title text-h3 text-ink-1 mb-2">
+            描述卡片（{state.cards.length}）
+          </h3>
+          <div className="grid grid-cols-3 gap-2">
+            {state.cards.map((card) => (
+              <div
+                key={card.id}
+                className="aspect-square rounded-card overflow-hidden border border-[rgba(95,94,90,0.18)] bg-bg-base relative"
+                title={card.description}
+              >
+                {card.is_fallback_text_card ? (
+                  <div className="w-full h-full p-2 flex items-center justify-center">
+                    <p className="font-title text-mini text-ink-2 leading-[1.4] line-clamp-5">
+                      {card.description}
+                    </p>
+                  </div>
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={card.image_url ?? ''}
+                    alt={card.description}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                <span className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[10px] px-1 py-0.5 font-num">
+                  Day {card.day}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -451,7 +504,13 @@ function NumStat({ n, label }: { n: number; label: string }) {
 }
 
 // ──────────────────── 设置 ────────────────────
-function SettingsTab({ onReset }: { onReset: () => void }) {
+function SettingsTab({
+  onReset,
+  onReplayIntro,
+}: {
+  onReset: () => void;
+  onReplayIntro: () => void;
+}) {
   return (
     <div className="p-5 flex flex-col gap-4" id="settings">
       <section className="bg-white/60 border border-[rgba(95,94,90,0.12)] rounded-card px-4 py-3">
@@ -463,6 +522,16 @@ function SettingsTab({ onReset }: { onReset: () => void }) {
           <br />
           正式上线前会补齐：完整的隐私政策 / 数据保留期 / 一键导出。
         </p>
+      </section>
+
+      <section className="bg-white/60 border border-[rgba(95,94,90,0.12)] rounded-card px-4 py-3">
+        <h3 className="font-title text-h3 text-ink-1 mb-2">引导</h3>
+        <p className="font-title text-small text-ink-3 mb-3">
+          把开头那 4 张引导卡片再看一遍。
+        </p>
+        <Button variant="ghost" fullWidth onClick={onReplayIntro}>
+          重看引导
+        </Button>
       </section>
 
       <section className="bg-white/60 border border-[rgba(95,94,90,0.12)] rounded-card px-4 py-3">

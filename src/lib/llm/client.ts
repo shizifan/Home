@@ -1,10 +1,23 @@
 /**
- * 统一 LLM 客户端 — 通过 OpenAI 兼容协议调 DeepSeek
+ * 统一 LLM 客户端 — 通过 OpenAI 兼容协议调下游模型
  *
- * 7 个调用点（pass1 / pass2 / concept_detail / correction / day7 / keyword_extract / style_audit）
- * 都走这一个客户端，按 callType 路由模型 / 温度 / max_tokens / timeout（PRD §14.3 表 + V0.6.1 §16）。
+ * 7 个调用点（pass1 / pass2 / concept_detail / correction / day7 / keyword_extract / free_chat）
+ * 都走这一个客户端，按 callType 路由模型 / 温度 / max_tokens / timeout（PRD §21.4 表 + V0.6.1 §16）。
+ * 注：style_audit 走多模态视觉模型，在 src/lib/imagegen/styleAudit.ts 独立实现。
  *
- * 失败行为：本层只做 1 次重试 + 透传错误；降级（备用文案 / set_aside 写入）由调用方处理。
+ * 失败行为：本层只做 maxRetries 次重试 + 透传错误；降级（备用文案 / set_aside 写入）由调用方处理。
+ *
+ * ── 降级链总览（PRD §25.2）── 修改任何调用点前请对照
+ *   pass1                maxRetries=1 → pass1FallbackSetAside（写 set_aside）
+ *   pass2                maxRetries=1 → pickFallbackPass2AfterText/Photo
+ *   concept_detail       maxRetries=1 → 显示原 evidence + 隐 reasoning（API 层处理）
+ *   correction           maxRetries=0 → companion 预设台词（correction.ts 内）
+ *   day7                 maxRetries=2 → 503 严禁预设替代（PRD §25.2）
+ *   keyword_extract      maxRetries=1 → keywordExtractFallback（用 task 标题）
+ *   free_chat            maxRetries=0 → throw（按 spec/Free_Chat_Implementation V0.2 设计）
+ *   day5_q1 / day5_q2    maxRetries=1 → DAY5_FALLBACK_Q1 / Q2
+ *
+ * skipped 输入根本不调 LLM：processInput 内短路写 set_aside + 取预设跳过台词。
  */
 
 import 'server-only';

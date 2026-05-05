@@ -89,6 +89,7 @@ const config: Config = {
         breathe: 'breathe 3s ease-in-out infinite',
         blink: 'blink 5s ease-in-out infinite',
         spin: 'spin 1.6s linear infinite',
+        'slide-in-x': 'slide-in-x 0.4s ease-out',
       },
       keyframes: {
         breathe: {
@@ -98,6 +99,10 @@ const config: Config = {
         blink: {
           '0%, 95%, 100%': { transform: 'scaleY(1)' },
           '97%': { transform: 'scaleY(0.05)' },
+        },
+        'slide-in-x': {
+          '0%': { transform: 'translateX(24%)', opacity: '0' },
+          '100%': { transform: 'translateX(0)', opacity: '1' },
         },
       },
     },

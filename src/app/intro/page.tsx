@@ -1,5 +1,5 @@
 /**
- * 30 秒引导（PRD §12.2 4 张卡片）
+ * 30 秒引导（PRD §17.2 4 张卡片）
  * 横向滑入 0.4s；右上角持续可见跳过按钮；最后一张按钮文案变「带它回家 →」。
  */
 
@@ -23,7 +23,8 @@ const CARDS = [
     cta: '往下看 →',
   },
   {
-    title: '接下来 7 天，你可以告诉它你们的故事。它会一点一点了解你的世界。',
+    // PRD §17.2 卡片 3：用「说说」明确暗示语音输入
+    title: '接下来 7 天，说说你们的故事。它会一点一点了解你的世界。',
     cta: '往下看 →',
   },
   {
@@ -76,12 +77,17 @@ export default function IntroPage() {
           </button>
         </div>
 
-        {/* 卡片画面 */}
-        <div className="flex-1 flex flex-col items-center justify-center">
-          <IntroVisual idx={idx} />
-          <p className="font-title text-h2 text-ink-1 text-center mt-10 max-w-[300px] leading-[1.7]">
-            {card.title}
-          </p>
+        {/* 卡片画面 — key={idx} 让每次切换重置动画 */}
+        <div className="flex-1 flex flex-col items-center justify-center overflow-hidden">
+          <div
+            key={idx}
+            className="flex flex-col items-center animate-slide-in-x will-change-transform"
+          >
+            <IntroVisual idx={idx} />
+            <p className="font-title text-h2 text-ink-1 text-center mt-10 max-w-[300px] leading-[1.7]">
+              {card.title}
+            </p>
+          </div>
         </div>
 
         <Button size="lg" fullWidth onClick={next}>

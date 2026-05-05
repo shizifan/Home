@@ -17,7 +17,8 @@ import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import { Button } from '@/components/ui/Button';
 import {
-  getDay5Questions,
+  getDay5Q1,
+  getDay5Q2,
   skipTask,
   submitText,
   type Day5Question,
@@ -41,14 +42,49 @@ export function TaskOverlay({ task, companionId, companionName, onClose }: Props
   const [text, setText] = useState('');
   const [reply, setReply] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [skipWarning, setSkipWarning] = useState<'first' | 'day5' | null>(null);
+  const [skipWarning, setSkipWarning] = useState<'first' | 'day5' | 'day6' | null>(null);
 
   const isText = task.kind === 'text';
   const isChoice = task.kind === 'choice';
   const isDescribe = task.kind === 'describe';
 
-  // memory_review 直接跳记忆面板
+  // memory_review 直接跳记忆面板，同时自动跳过任务标记完成（方案 A）
   if (task.kind === 'memory_review') {
+    // 跳过并进入记忆面板
+    const handleEnterBrain = async () => {
+      onClose();
+      try {
+        await skipTask({ companion_id: companionId, task_id: task.id });
+      } catch {
+        // 即使跳过失败也允许进入
+      }
+      router.push('/memory');
+    };
+
+    const handleSkip = () => {
+      // PRD §16.2 跳过 Day 6 — 永远显示二选一（不受 hasSkippedOnce 影响）
+      if (task.day === 6) {
+        setSkipWarning('day6');
+        return;
+      }
+      if (!hasSkippedOnce) {
+        setSkipWarning('first');
+        return;
+      }
+      confirmSkipForReview();
+    };
+
+    const confirmSkipForReview = async () => {
+      setSkipWarning(null);
+      markSkippedOnce();
+      try {
+        await skipTask({ companion_id: companionId, task_id: task.id });
+      } catch {
+        // ignore
+      }
+      onClose();
+    };
+
     return (
       <div className="absolute inset-0 z-40">
         <div className="absolute inset-0 bg-black/35" onClick={onClose} aria-hidden />
@@ -60,10 +96,28 @@ export function TaskOverlay({ task, companionId, companionName, onClose }: Props
           </div>
           <h2 className="font-title text-h2 text-ink-1 mb-2">{task.title}</h2>
           <p className="font-title text-body text-ink-2 mb-5">{task.description}</p>
-          <Button size="lg" fullWidth onClick={() => router.push('/memory')}>
+          <Button size="lg" fullWidth onClick={handleEnterBrain}>
             进入它的脑袋 →
           </Button>
+          <div className="flex gap-3 mt-3">
+            <Button variant="ghost" fullWidth onClick={handleSkip}>
+              跳过
+            </Button>
+          </div>
         </div>
+        {skipWarning === 'first' && (
+          <SkipWarningFirst onAck={confirmSkipForReview} />
+        )}
+        {skipWarning === 'day6' && (
+          <SkipWarningDay6
+            onCancel={() => setSkipWarning(null)}
+            onConfirm={confirmSkipForReview}
+            onOpenBrain={() => {
+              setSkipWarning(null);
+              handleEnterBrain();
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -124,7 +178,7 @@ export function TaskOverlay({ task, companionId, companionName, onClose }: Props
             <TaskIcon kind={task.kind} />
             <div>
               <p className="font-num text-mini text-ink-3 tracking-[0.16em]">
-                DAY {task.day} · {DAY_THEME[task.day - 1]}
+                DAY {task.day} · {task.theme}
               </p>
               <h2 className="font-title text-h2 text-ink-1 mt-0.5">{task.title}</h2>
             </div>
@@ -189,7 +243,7 @@ export function TaskOverlay({ task, companionId, companionName, onClose }: Props
           <TaskIcon kind={task.kind} />
           <div>
             <p className="font-num text-mini text-ink-3 tracking-[0.16em]">
-              DAY {task.day} · {DAY_THEME[task.day - 1]}
+              DAY {task.day} · {task.theme}
             </p>
             <h2 className="font-title text-h2 text-ink-1 mt-0.5">{task.title}</h2>
           </div>
@@ -315,7 +369,43 @@ function SkipWarningDay5({
   );
 }
 
-const DAY_THEME = ['搬家日', '这是我们家', '我们去过的地方', '我喜欢的事', '它问你的问题', '整理与补充', '它眼中的世界'] as const;
+/**
+ * PRD §16.2 跳过 Day 6 提示
+ * 「它有几件事拿不准，想问你。跳过的话，那些事它就一直拿不准了。还要继续吗？」
+ * 按钮：「继续跳过」 / 「打开看看」
+ */
+function SkipWarningDay6({
+  onCancel,
+  onConfirm,
+  onOpenBrain,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+  onOpenBrain: () => void;
+}) {
+  return (
+    <div className="absolute inset-0 z-[60] flex items-center justify-center px-7">
+      <div className="absolute inset-0 bg-black/40" onClick={onCancel} aria-hidden />
+      <div className="relative bg-white rounded-card border-[1.2px] border-ink-2 px-5 py-5 max-w-[320px] shadow-paper">
+        <p className="font-title text-h3 text-ink-1 mb-2">它有几件事拿不准</p>
+        <p className="font-title text-body text-ink-2 leading-relaxed mb-1">
+          想问问你。
+        </p>
+        <p className="font-title text-body text-ink-2 leading-relaxed mb-4">
+          跳过的话，那些事它就一直拿不准了。还要继续吗？
+        </p>
+        <div className="flex gap-2">
+          <Button variant="ghost" fullWidth onClick={onConfirm}>
+            继续跳过
+          </Button>
+          <Button fullWidth onClick={onOpenBrain}>
+            打开看看
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ──────────── TextZone ────────────
 function TextZone({
@@ -346,8 +436,7 @@ function TextZone({
   );
 }
 
-// ──────────── 思考中 / 回复 ────────────
-// ──────────── ChoiceFlow（Day 5）────────────
+// ──────────── ChoiceFlow（Day 5 双题，Q2 基于 Q1 答案动态生成）────────────
 function ChoiceFlow({
   companionId,
   companionName,
@@ -363,29 +452,98 @@ function ChoiceFlow({
   onAllDone: (replies: string[]) => void;
   onSkipClicked: () => void;
 }) {
-  const [questions, setQuestions] = useState<Day5Question[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [qIdx, setQIdx] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
+  const [stage, setStage] = useState<'loading-q1' | 'q1' | 'loading-q2' | 'q2' | 'submitting'>('loading-q1');
+  const [q1, setQ1] = useState<Day5Question | null>(null);
+  const [a1, setA1] = useState<string | null>(null);
+  const [q2, setQ2] = useState<Day5Question | null>(null);
   const [replies, setReplies] = useState<string[]>([]);
 
   useEffect(() => {
-    getDay5Questions()
-      .then((r) => setQuestions(r.questions))
-      .catch((e) => onError((e as Error)?.message ?? '生成问题失败'))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    getDay5Q1()
+      .then((r) => {
+        if (cancelled) return;
+        setQ1(r.question);
+        setStage('q1');
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        onError((e as Error)?.message ?? '生成问题失败');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [onError]);
 
-  if (loading) {
+  const submitAnswer = async (qIdx: 1 | 2, q: Day5Question, opt: string) => {
+    setStage('submitting');
+    try {
+      const res = await submitText({
+        companion_id: companionId,
+        task_id: taskId,
+        user_text: `[Q${qIdx}: ${q.question}] 我选: ${opt}`,
+      });
+      return res.companion_response;
+    } catch (e) {
+      onError((e as Error)?.message ?? '出了点问题');
+      throw e;
+    }
+  };
+
+  const pickQ1 = async (opt: string) => {
+    if (!q1 || stage !== 'q1') return;
+    let reply1: string;
+    try {
+      reply1 = await submitAnswer(1, q1, opt);
+    } catch {
+      // submitAnswer 已经报错，恢复到 q1
+      setStage('q1');
+      return;
+    }
+    setA1(opt);
+    setReplies([reply1]);
+    setStage('loading-q2');
+    try {
+      const r = await getDay5Q2({ q1: q1.question, a1: opt });
+      setQ2(r.question);
+      setStage('q2');
+    } catch (e) {
+      onError((e as Error)?.message ?? '追问失败');
+    }
+  };
+
+  const pickQ2 = async (opt: string) => {
+    if (!q2 || stage !== 'q2') return;
+    let reply2: string;
+    try {
+      reply2 = await submitAnswer(2, q2, opt);
+    } catch {
+      setStage('q2');
+      return;
+    }
+    onAllDone([...replies, reply2]);
+  };
+
+  if (stage === 'loading-q1' || stage === 'loading-q2') {
     return (
       <div className="py-10 flex flex-col items-center gap-3">
         <span className="block w-12 h-12 rounded-full border-[3px] border-amber-light border-t-transparent animate-spin" />
-        <p className="font-title text-body text-ink-2">{companionName}在想要问什么…</p>
+        <p className="font-title text-body text-ink-2">
+          {companionName}在想{stage === 'loading-q1' ? '要问什么' : '怎么追问'}…
+        </p>
       </div>
     );
   }
 
-  if (!questions) {
+  if (stage === 'submitting') {
+    return <ThinkingState companionName={companionName} />;
+  }
+
+  const current = stage === 'q1' ? q1 : q2;
+  const idx = stage === 'q1' ? 1 : 2;
+  const onPick = stage === 'q1' ? pickQ1 : pickQ2;
+
+  if (!current) {
     return (
       <div className="py-10 text-center">
         <p className="font-title text-body text-ink-2">出了点问题，回去再来</p>
@@ -396,46 +554,18 @@ function ChoiceFlow({
     );
   }
 
-  const q = questions[qIdx];
-
-  const pickOption = async (opt: string) => {
-    if (submitting) return;
-    setSubmitting(true);
-    try {
-      const res = await submitText({
-        companion_id: companionId,
-        task_id: taskId,
-        user_text: `[Q${qIdx + 1}: ${q.question}] 我选: ${opt}`,
-      });
-      const newReplies = [...replies, res.companion_response];
-      setReplies(newReplies);
-      if (qIdx < questions.length - 1) {
-        setQIdx(qIdx + 1);
-      } else {
-        onAllDone(newReplies);
-      }
-    } catch (e) {
-      onError((e as Error)?.message ?? '出了点问题');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
     <div>
       <div className="font-num text-mini text-ink-3 mb-2 tracking-[0.16em]">
-        第 {qIdx + 1} / {questions.length} 个问题
+        第 {idx} / 2 个问题
       </div>
-      <p className="font-title text-h3 text-ink-1 leading-[1.5] mb-4">
-        {q.question}
-      </p>
+      <p className="font-title text-h3 text-ink-1 leading-[1.5] mb-4">{current.question}</p>
       <div className="flex flex-col gap-2.5">
-        {q.options.map((opt, i) => (
+        {current.options.map((opt, i) => (
           <button
             key={i}
-            disabled={submitting}
-            onClick={() => pickOption(opt)}
-            className="bg-white border-[1.2px] border-ink-2 rounded-card px-4 py-3 font-title text-body text-ink-1 text-left cursor-pointer hover:bg-amber-light/30 active:scale-[0.99] disabled:opacity-50"
+            onClick={() => onPick(opt)}
+            className="bg-white border-[1.2px] border-ink-2 rounded-card px-4 py-3 font-title text-body text-ink-1 text-left cursor-pointer hover:bg-amber-light/30 active:scale-[0.99]"
           >
             {opt}
           </button>

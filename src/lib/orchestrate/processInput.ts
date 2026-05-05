@@ -8,6 +8,8 @@ import 'server-only';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import { runPass1, pass1FallbackSetAside } from '@/lib/llm/pass1';
 import { runPass2, pass2Fallback } from '@/lib/llm/pass2';
+import { getSkipResponse } from '@/lib/llm/fallbacks';
+import { getTaskByDay } from '@/lib/tasks';
 import {
   appendEvidenceToMemoryBank,
   getCompanionById,
@@ -55,6 +57,58 @@ export async function processInput(
   if (!preset) throw new Error(`unknown preset_id ${companion.preset_id}`);
 
   const day = companion.current_day as DayNumber;
+
+  // —— 跳过任务的短路（PRD §16.3 / §16.4） ——
+  // 跳过不需要 LLM：
+  //   · Pass 1 → 直接写一条 set_aside（PRD §16.4 模板）
+  //   · Pass 2 → 取 8 伙伴预设的跳过台词（已在 prompts/shared/fallbacks.json）
+  // 这样每次跳过省 2 次 LLM 调用 + 保证台词稳定。
+  if (input.inputType === 'skipped') {
+    const task = getTaskByDay(day);
+    const themeName = task?.theme ?? `第 ${day} 天的事`;
+    const memory = await insertMemory({
+      companionId: companion.id,
+      day,
+      type: 'skipped',
+      taskId: input.taskId,
+      taskQuestion: input.taskQuestion,
+    });
+    const skipPass1: Pass1Output = {
+      action: 'set_aside',
+      concept_name: `关于${themeName}`,
+      concept_category: 'other',
+      target_concept_id: null,
+      evidence_text: '你今天选择不告诉我这个。',
+      ai_reasoning: '你跳过了这个任务。这是你的选择，我尊重。',
+      confidence: 1.0,
+    };
+    const entry = await upsertMemoryBankEntry({
+      companionId: companion.id,
+      type: 'set_aside',
+      conceptName: skipPass1.concept_name,
+      conceptCategory: 'other',
+      aiSummary: skipPass1.evidence_text,
+      aiReasoning: skipPass1.ai_reasoning,
+      evidence: [{ memory_id: memory.id, day, excerpt: '(跳过)' }],
+      confidence: skipPass1.confidence,
+    });
+    const skipLine = getSkipResponse(preset.preset_id);
+    await insertCompanionLine({
+      companionId: companion.id,
+      day,
+      content: skipLine,
+      source: 'fallback',
+      relatedMemoryId: memory.id,
+      relatedMemoryBankId: entry.id,
+    });
+    return {
+      memory,
+      pass1: skipPass1,
+      pass2Reply: skipLine,
+      pass2Source: 'fallback',
+      memoryBankId: entry.id,
+    };
+  }
 
   // —— 输入安全过滤（PRD §17.2 第 1 层） ——
   if (input.userText) {

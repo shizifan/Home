@@ -29,6 +29,8 @@ interface CompanionState {
 
   setCompanionId: (id: string) => void;
   markIntroCompleted: () => void;
+  /** "设置 → 重看引导" 入口：仅清 introCompleted，其他状态保留（PRD §17.3）*/
+  resetIntro: () => void;
   markSkippedOnce: () => void;
   setInputPreference: (p: InputPreference) => void;
   setMicPermission: (p: MicPermission) => void;
@@ -48,6 +50,7 @@ export const useCompanionStore = create<CompanionState>()(
 
       setCompanionId: (id) => set({ companionId: id }),
       markIntroCompleted: () => set({ introCompleted: true }),
+      resetIntro: () => set({ introCompleted: false }),
       markSkippedOnce: () => set({ hasSkippedOnce: true }),
       setInputPreference: (p) => set({ inputPreference: p }),
       setMicPermission: (p) => set({ micPermission: p }),

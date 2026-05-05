@@ -173,6 +173,8 @@ export interface TaskDef {
   id: string;
   day: DayNumber;
   kind: TaskKind;
+  /** PRD §5.1 主题（搬家日 / 这是我们家 / ...）— 用于跳过 set_aside 的 concept_name */
+  theme: string;
   title: string;
   description: string;
   inputPlaceholder?: string;
