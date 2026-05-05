@@ -6,7 +6,7 @@
 
 ---
 
-## 0. 现状基线（V0.6.1 + P1 收口 + P2 朋友家闭环）
+## 0. 现状基线（V0.6.1 + P1 收口 + P2 朋友家闭环 + Day 1-7 PRD 全量对齐）
 
 ### 0.1 已完成
 
@@ -34,8 +34,11 @@
 | **P2 驿站基础** | `/station` 地图 + 朋友家完整闭环（4 目的 / 4 系统预设伙伴 / 二手知识 / 等你一天 greeting）|
 | 数据库（P2） | 迁移 0004：`trips` 表 + `companions.last_active_at/graduated_at` 写入 + `memory_bank.source_type/source_companion_id` |
 | 出行 API | `POST /api/station/depart`（fire-and-forget）+ `GET /api/station/trip/[id]`（轮询）+ `POST /api/station/memory/import`（二手知识入库）+ `GET /api/station/status`（解锁/限流）|
-| LLM 调用 | 新增 `visit` callType；`prompts/visit/{system.md,examples.json}` 4 目的各 1 条 Few-shot |
-| db:migrate 修复 | 旧 script 只跑 0001，已改为按序 cat 全部迁移 |
+| LLM 调用 | 新增 `visit` / `opening_line` callType；`prompts/visit/` + `prompts/opening_line/` |
+| db:migrate 修复 | 旧 script 只跑 0001，已改为按序 cat 全部迁移；0004 改用 stored procedure 实现 idempotent |
+| **Day 1-7 PRD 全量对齐** | 任务文案对齐 §5.6/§18.3；Day 5 选项语义改"是/不是/一半一半"；Day 2-6 LLM 生成开场白；Day 4 语音输入；Day 6 进面板做纠正才算完成；Day 7 直接进 worldview 看完即完成；Day 7 档案对跳过差异化（§9.4）；主页 missed_day/session_resume/has_pending_clarifications/should_hint_brain_panel 四档 greeting；TranscriptionConfirm < 10 字温和追问 |
+| 新 API | `POST /api/task/complete`（Day 6/7 任务完成的非跳过路径）|
+| 新 TaskKind | `memory_correct`（Day 6）+ `worldview_view`（Day 7）替代旧 `memory_review` |
 
 ### 0.2 缺口（按 PRD V1.0.2 对照，P1 收口后）
 

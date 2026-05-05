@@ -41,6 +41,8 @@ export function TranscriptionConfirm({
 
   const trimmed = text.trim();
   const canConfirm = trimmed.length > 0 && !submitting;
+  // PRD §6.7 / §7.10：< 10 字时给一句温和追问，不阻止提交
+  const showShortHint = trimmed.length > 0 && trimmed.length < 10;
 
   return (
     <div className="flex flex-col gap-4" data-testid="transcription-confirm">
@@ -85,6 +87,12 @@ export function TranscriptionConfirm({
       </div>
 
       <p className="font-title text-mini text-ink-3 mt-1">内容对吗？</p>
+
+      {showShortHint && (
+        <p className="font-title text-small text-amber-mid -mt-1">
+          再多说几个细节？比如什么颜色、有什么东西。
+        </p>
+      )}
 
       <Button
         size="lg"

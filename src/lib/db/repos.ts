@@ -90,19 +90,33 @@ export async function markPanelVisited(id: string) {
 /**
  * Bump companions.last_active_at = now()，并返回旧值（用于"等你一天"判断）。
  * PRD §16.3 末段：last_active_at < 今天 0:00 → missed_yesterday = true
+ *
+ * 容错：如果迁移 0004 没跑（column 不存在），返回 null 并静默忽略，
+ * 让 state API 仍可正常返回。日志一条警告便于排查。
  */
 export async function bumpAndGetLastActive(
   id: string,
 ): Promise<Date | null> {
-  const before = await queryOne<{ last_active_at: Date | null }>(
-    `select last_active_at from companions where id = :id`,
-    { id },
-  );
-  await execute(
-    `update companions set last_active_at = current_timestamp(3) where id = :id`,
-    { id },
-  );
-  return before?.last_active_at ?? null;
+  try {
+    const before = await queryOne<{ last_active_at: Date | null }>(
+      `select last_active_at from companions where id = :id`,
+      { id },
+    );
+    await execute(
+      `update companions set last_active_at = current_timestamp(3) where id = :id`,
+      { id },
+    );
+    return before?.last_active_at ?? null;
+  } catch (err) {
+    const code = (err as { code?: string })?.code;
+    if (code === 'ER_BAD_FIELD_ERROR') {
+      console.warn(
+        '[bumpAndGetLastActive] companions.last_active_at 不存在 — 请运行迁移 0004_trips_and_last_active.sql。本次 missed_day_greeting 静默降级。',
+      );
+      return null;
+    }
+    throw err;
+  }
 }
 
 /** 首次生成 worldview 时写入毕业时间，作为 graduated 的权威信号 */
@@ -170,6 +184,27 @@ export async function insertMemory(args: {
 }
 
 /**
+ * 标记当天 task 为完成（用于 Day 6 纠正动作 / Day 7 看完档案）。
+ * 写一条 type='choice' 的 memory 占位，user_text 用约定标记区分来源。
+ * 幂等：重复调用同一 task_id 同一天会再插一行，但 isTaskDoneToday 仍 true，无害。
+ */
+export async function markTaskCompleted(args: {
+  companionId: string;
+  day: DayNumber;
+  taskId: string;
+  marker: string;
+}): Promise<void> {
+  await insertMemory({
+    companionId: args.companionId,
+    day: args.day,
+    type: 'choice',
+    taskId: args.taskId,
+    userText: args.marker,
+    inputMethod: 'choice',
+  });
+}
+
+/**
  * 今日是否已经完成主任务（含跳过）。
  * 判定：当天 task_id 下至少有 1 条 memory（含 type=skipped）。
  */
@@ -184,6 +219,32 @@ export async function isTaskDoneToday(
     { cid: companionId, day, tid: taskId },
   );
   return Number(r?.c ?? 0) > 0;
+}
+
+/** PRD §9.4 Day 7 跳过差异化用：统计该 companion 这一周跳过的任务次数（type='skipped'）*/
+export async function countSkippedTasks(companionId: string): Promise<number> {
+  const r = await queryOne<{ n: number }>(
+    `select count(*) as n from memories
+       where companion_id = :cid and type = 'skipped'`,
+    { cid: companionId },
+  );
+  return Number(r?.n ?? 0);
+}
+
+/** 拉某一天 companion 的全部输入记录（按时间倒序） */
+export async function listMemoriesByDay(
+  companionId: string,
+  day: DayNumber,
+): Promise<Memory[]> {
+  return await query<Memory>(
+    `select id, companion_id, day, type, photo_url, vision_tags, user_text,
+            task_id, task_question, created_at,
+            input_method, voice_audio_url, asr_transcription, edited_text, regenerate_count
+       from memories
+       where companion_id = :cid and day = :day
+       order by created_at desc`,
+    { cid: companionId, day },
+  );
 }
 
 export async function listRecentMemories(

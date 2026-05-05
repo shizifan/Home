@@ -16,11 +16,14 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import { Button } from '@/components/ui/Button';
+import { VoiceRecorder } from '@/components/voice/VoiceRecorder';
 import {
   getDay5Q1,
   getDay5Q2,
   skipTask,
   submitText,
+  uploadVoice,
+  VoiceUploadError,
   type Day5Question,
 } from '@/lib/api/client';
 import { useCompanionStore } from '@/stores/companionStore';
@@ -48,33 +51,24 @@ export function TaskOverlay({ task, companionId, companionName, onClose }: Props
   const isChoice = task.kind === 'choice';
   const isDescribe = task.kind === 'describe';
 
-  // memory_review 直接跳记忆面板，同时自动跳过任务标记完成（方案 A）
-  if (task.kind === 'memory_review') {
-    // 跳过并进入记忆面板
-    const handleEnterBrain = async () => {
+  // P1 fix: Day 6 = memory_correct（进 /memory 做纠正才算完成）
+  //         Day 7 = worldview_view（进 /day7/worldview 看档案才算完成）
+  // 'memory_review' 是历史枚举值，仍按 Day 6 / Day 7 分流，避免老数据回归
+  const isDay6 = task.kind === 'memory_correct' || (task.kind === 'memory_review' && task.day === 6);
+  const isDay7 = task.kind === 'worldview_view' || (task.kind === 'memory_review' && task.day === 7);
+
+  if (isDay6 || isDay7) {
+    const targetPath = isDay7 ? '/day7/worldview' : '/memory';
+    const ctaLabel = isDay7 ? '看看它眼中的世界 →' : '打开它的脑袋 →';
+
+    const handleEnter = () => {
       onClose();
-      try {
-        await skipTask({ companion_id: companionId, task_id: task.id });
-      } catch {
-        // 即使跳过失败也允许进入
-      }
-      router.push('/memory');
+      router.push(targetPath);
+      // 不再写 skipped memory；完成由目标页内部触发 markTaskDone
     };
 
-    const handleSkip = () => {
-      // PRD §16.2 跳过 Day 6 — 永远显示二选一（不受 hasSkippedOnce 影响）
-      if (task.day === 6) {
-        setSkipWarning('day6');
-        return;
-      }
-      if (!hasSkippedOnce) {
-        setSkipWarning('first');
-        return;
-      }
-      confirmSkipForReview();
-    };
-
-    const confirmSkipForReview = async () => {
+    // Day 6/7 跳过：直接调 skipTask API 然后关闭（不走标准 flow 的 stage 状态机）
+    const confirmSkip = async () => {
       setSkipWarning(null);
       markSkippedOnce();
       try {
@@ -83,6 +77,20 @@ export function TaskOverlay({ task, companionId, companionName, onClose }: Props
         // ignore
       }
       onClose();
+    };
+
+    const handleSkip = () => {
+      // PRD §16.2 跳过 Day 6 — 永远显示二选一（不受 hasSkippedOnce 影响）
+      if (isDay6) {
+        setSkipWarning('day6');
+        return;
+      }
+      // Day 7 的 PRD §16 没有特别提示分支，按通用首次档处理
+      if (!hasSkippedOnce) {
+        setSkipWarning('first');
+        return;
+      }
+      confirmSkip();
     };
 
     return (
@@ -96,8 +104,8 @@ export function TaskOverlay({ task, companionId, companionName, onClose }: Props
           </div>
           <h2 className="font-title text-h2 text-ink-1 mb-2">{task.title}</h2>
           <p className="font-title text-body text-ink-2 mb-5">{task.description}</p>
-          <Button size="lg" fullWidth onClick={handleEnterBrain}>
-            进入它的脑袋 →
+          <Button size="lg" fullWidth onClick={handleEnter}>
+            {ctaLabel}
           </Button>
           <div className="flex gap-3 mt-3">
             <Button variant="ghost" fullWidth onClick={handleSkip}>
@@ -105,16 +113,14 @@ export function TaskOverlay({ task, companionId, companionName, onClose }: Props
             </Button>
           </div>
         </div>
-        {skipWarning === 'first' && (
-          <SkipWarningFirst onAck={confirmSkipForReview} />
-        )}
+        {skipWarning === 'first' && <SkipWarningFirst onAck={confirmSkip} />}
         {skipWarning === 'day6' && (
           <SkipWarningDay6
             onCancel={() => setSkipWarning(null)}
-            onConfirm={confirmSkipForReview}
+            onConfirm={confirmSkip}
             onOpenBrain={() => {
               setSkipWarning(null);
-              handleEnterBrain();
+              handleEnter();
             }}
           />
         )}
@@ -261,6 +267,8 @@ export function TaskOverlay({ task, companionId, companionName, onClose }: Props
               onChange={setText}
               placeholder={task.inputPlaceholder ?? '说点什么吧……'}
               charLimit={task.charLimit ?? 300}
+              // PRD §5.6 / §7.11: Day 4 开放回答支持语音输入
+              companionId={companionId}
             />
 
             {error && <p className="font-title text-small text-[#E24B4A] mt-2">{error}</p>}
@@ -413,23 +421,96 @@ function TextZone({
   onChange,
   placeholder,
   charLimit,
+  companionId,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
   charLimit: number;
+  /** 传 companionId 时启用语音输入按钮（PRD §5.6 / §7.11 — Day 4 双模） */
+  companionId?: string;
 }) {
+  // mode: 'text' = 普通文本输入；'recording' = 显示录音器；'asr' = ASR 处理中
+  type Mode = 'text' | 'recording' | 'asr';
+  const [mode, setMode] = useState<Mode>('text');
+  const [voiceErr, setVoiceErr] = useState<string | null>(null);
+
+  const handleVoiceComplete = async (blob: Blob) => {
+    if (!companionId) return;
+    setMode('asr');
+    setVoiceErr(null);
+    try {
+      const r = await uploadVoice({ companionId, blob });
+      // 把 ASR 结果填回文本框，孩子可以编辑后提交
+      const merged = (value ? value + '\n' : '') + r.transcription;
+      onChange(merged.slice(0, charLimit));
+      setMode('text');
+    } catch (e) {
+      const reason = e instanceof VoiceUploadError ? e.reason : 'http';
+      setVoiceErr(
+        reason === 'asr_empty'
+          ? '没听清，再说一次？'
+          : reason === 'asr_safety_block'
+            ? '这段我听不太懂，要不换一个说法？'
+            : '网络好像有点慢，先用打字试试？',
+      );
+      setMode('text');
+    }
+  };
+
   return (
     <div className="mt-3">
-      <textarea
-        value={value}
-        onChange={(e) => onChange(e.target.value.slice(0, charLimit))}
-        placeholder={placeholder}
-        rows={5}
-        className="w-full min-h-[130px] border-[1.5px] border-[rgba(95,94,90,0.25)] rounded-[12px] p-3.5 font-title text-h3 text-ink-1 bg-white resize-none outline-none focus:border-ink-2 leading-[1.6]"
-      />
-      <div className="flex justify-between mt-1.5 px-1">
-        <span className="font-title text-mini text-ink-3">多写一点也没关系</span>
+      {mode === 'recording' && companionId ? (
+        <div className="bg-white border-[1.5px] border-[rgba(95,94,90,0.25)] rounded-[12px] p-4 flex flex-col items-center gap-2">
+          <p className="font-title text-small text-ink-2">按住说话，松开自动停</p>
+          <VoiceRecorder
+            onComplete={handleVoiceComplete}
+            onTooShort={() => setVoiceErr('我没听清，再说一次？')}
+            onPermissionDenied={() => {
+              setVoiceErr('麦克风没开，先用打字。');
+              setMode('text');
+            }}
+          />
+          <button
+            onClick={() => setMode('text')}
+            className="font-title text-small text-ink-3 underline bg-transparent border-0 cursor-pointer mt-1"
+          >
+            ← 返回打字
+          </button>
+        </div>
+      ) : mode === 'asr' ? (
+        <div className="bg-white border-[1.5px] border-[rgba(95,94,90,0.25)] rounded-[12px] p-6 flex flex-col items-center gap-2">
+          <span className="block w-8 h-8 rounded-full border-[3px] border-amber-light border-t-transparent animate-spin" />
+          <p className="font-title text-body text-ink-2">我在听......</p>
+        </div>
+      ) : (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value.slice(0, charLimit))}
+          placeholder={placeholder}
+          rows={5}
+          className="w-full min-h-[130px] border-[1.5px] border-[rgba(95,94,90,0.25)] rounded-[12px] p-3.5 font-title text-h3 text-ink-1 bg-white resize-none outline-none focus:border-ink-2 leading-[1.6]"
+        />
+      )}
+
+      {voiceErr && mode === 'text' && (
+        <p className="font-title text-small text-[#E24B4A] mt-1.5">{voiceErr}</p>
+      )}
+
+      <div className="flex justify-between items-center mt-1.5 px-1">
+        {companionId && mode === 'text' ? (
+          <button
+            onClick={() => {
+              setVoiceErr(null);
+              setMode('recording');
+            }}
+            className="font-title text-small text-amber-mid underline bg-transparent border-0 cursor-pointer"
+          >
+            🎤 改用说话
+          </button>
+        ) : (
+          <span className="font-title text-mini text-ink-3">多写一点也没关系</span>
+        )}
         <span className="font-num text-mini text-ink-3">{value.length} / {charLimit}</span>
       </div>
     </div>

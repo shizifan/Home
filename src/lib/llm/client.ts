@@ -17,6 +17,7 @@
  *   free_chat            maxRetries=0 → throw（按 spec/Free_Chat_Implementation V0.2 设计）
  *   day5_q1 / day5_q2    maxRetries=1 → DAY5_FALLBACK_Q1 / Q2
  *   visit                maxRetries=1 → "它好像还没回来......明天再来看看？"（trip.report_data 占位）
+ *   opening_line         maxRetries=1 → openingLineFallback（personality_examples[0]）
  *
  * skipped 输入根本不调 LLM：processInput 内短路写 set_aside + 取预设跳过台词。
  */
@@ -34,7 +35,8 @@ export type LLMCallType =
   | 'day7'
   | 'keyword_extract'  // V0.6.1：从描述提取图像 prompt 内容
   | 'free_chat'        // V0.6.1+：ChatOverlay 开放问答
-  | 'visit';           // P2：朋友家拜访（PRD §23.10）
+  | 'visit'            // P2：朋友家拜访（PRD §23.10）
+  | 'opening_line';    // Day 2-6 伙伴主动开场白（PRD §5.6）
 // 注：style_audit 走通义千问-VL（DashScope），不走 DeepSeek，
 // 在 src/lib/imagegen/styleAudit.ts 独立实现。
 
@@ -55,6 +57,7 @@ const PARAMS: Record<LLMCallType, ParamSet> = {
   keyword_extract: { model: '', max_tokens: 400, temperature: 0.2, timeoutMs: 6000 },
   free_chat: { model: '', max_tokens: 120, temperature: 0.6, timeoutMs: 8000 },
   visit: { model: '', max_tokens: 600, temperature: 0.7, timeoutMs: 12000 },
+  opening_line: { model: '', max_tokens: 120, temperature: 0.7, timeoutMs: 8000 },
 };
 
 let _client: OpenAI | null = null;

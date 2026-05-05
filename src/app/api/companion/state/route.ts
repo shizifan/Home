@@ -17,7 +17,7 @@ import { listCardsForCompanion } from '@/lib/db/cardsRepo';
 import { query } from '@/lib/db/client';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import { getTaskByDay } from '@/lib/tasks';
-import { pickMissedDayLine } from '@/lib/llm/fallbacks';
+import { pickMissedDayLine, pickSessionResume } from '@/lib/llm/fallbacks';
 import type { DayNumber } from '@/types';
 
 export const runtime = 'nodejs';
@@ -29,14 +29,20 @@ export async function GET() {
   }
   const preset = getCompanionPreset(companion.preset_id);
 
-  // PRD §16.3 末段："等你一天"判断 — 旧 last_active_at 是否早于今天 0 点。
-  // 同时把 last_active_at bump 到 now()，让下次访问能正确比对。
+  // 主页 greeting 三档判定（PRD §5.5 / §16.3）
+  // 1. previousActive < 今天 0 点 → missed_day_greeting（"等你一天"5 选 1）
+  // 2. previousActive 在过去 30s‑10min 内 → session_resume_greeting（"你回来啦"3 选 1）
+  // 3. 其他（首次 / 刚刚才打开过 < 30s） → 都为 null，让 home 用 last_companion_line
   const previousActive = await bumpAndGetLastActive(companion.id);
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
-  const missedYesterday =
-    previousActive !== null && previousActive.getTime() < todayStart.getTime();
+  const now = Date.now();
+  const prevTs = previousActive?.getTime() ?? 0;
+  const missedYesterday = prevTs > 0 && prevTs < todayStart.getTime();
+  const sessionResume =
+    !missedYesterday && prevTs > 0 && now - prevTs > 30_000 && now - prevTs < 10 * 60_000;
   const missedDayGreeting = missedYesterday ? pickMissedDayLine() : null;
+  const sessionResumeGreeting = sessionResume ? pickSessionResume() : null;
 
   const lastLine = await getRecentCompanionLine(companion.id);
   const recentMemories = await listRecentMemories(companion.id, 10);
@@ -104,6 +110,16 @@ export async function GET() {
     last_companion_line_source: lastLine?.source ?? null,
     /** P2: PRD §16.3 末段，整天没打开后的 5 选 1 台词；非缺席时为 null */
     missed_day_greeting: missedDayGreeting,
+    /** PRD §5.5 / §18.2 中断恢复台词；30s‑10min 内重访才出现 */
+    session_resume_greeting: sessionResumeGreeting,
+    /** PRD §8.9 关键节点提示：拿不准 + 放下 ≥2 时主页伙伴主动打招呼 */
+    has_pending_clarifications:
+      memoryBank.filter((m) => m.type === 'uncertain').length +
+        memoryBank.filter((m) => m.type === 'set_aside').length >=
+      2,
+    /** PRD §8.9 Day 1 完成后引导：当天完成且从未访问过 panel 时显示 */
+    should_hint_brain_panel:
+      todayDone && companion.current_day === 1 && !companion.last_panel_visit_at,
     today_task: today
       ? {
           id: today.id,

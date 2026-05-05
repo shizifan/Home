@@ -5,24 +5,80 @@
 --   1. companions.last_active_at — 用于 PRD §16.3 "等了你一天" 5 选 1 台词触发
 --   2. memory_bank 加 source_type / source_companion_id — PRD §12.7 二手知识标识
 --   3. 新增 trips 表 — PRD §22.1.8
+--
+-- 幂等性：通过查 information_schema 的 stored procedure 实现，
+-- 多次运行此文件是安全的（MySQL 不支持 `ADD COLUMN IF NOT EXISTS`，须用此变通）。
 
 set names utf8mb4;
 set time_zone = '+00:00';
 
 -- =============================================================
--- companions — 加 last_active_at（PRD §16.3 / P1-T4-fu 合并进来）
+-- 用一个临时 procedure 把"列存在性 + 约束存在性"的 idempotent 检查集中处理
 -- =============================================================
-alter table companions
-  add column last_active_at datetime(3) null default null after last_panel_visit_at;
+drop procedure if exists _migrate_0004;
 
--- =============================================================
--- memory_bank — 加二手知识来源标识（PRD §12.7 / §22.1.5）
--- secondhand：从其他伙伴那里"问"来的概念，记忆面板需特殊视觉
--- =============================================================
-alter table memory_bank
-  add column source_type varchar(20) not null default 'firsthand' after confidence,
-  add column source_companion_id char(36) null after source_type,
-  add constraint chk_memory_bank_source check (source_type in ('firsthand','secondhand'));
+delimiter //
+create procedure _migrate_0004()
+begin
+  -- companions.last_active_at
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = database()
+      and table_name = 'companions'
+      and column_name = 'last_active_at'
+  ) then
+    alter table companions
+      add column last_active_at datetime(3) null default null after last_panel_visit_at;
+  end if;
+
+  -- memory_bank.source_type
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = database()
+      and table_name = 'memory_bank'
+      and column_name = 'source_type'
+  ) then
+    alter table memory_bank
+      add column source_type varchar(20) not null default 'firsthand' after confidence;
+  end if;
+
+  -- memory_bank.source_companion_id
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = database()
+      and table_name = 'memory_bank'
+      and column_name = 'source_companion_id'
+  ) then
+    alter table memory_bank
+      add column source_companion_id char(36) null after source_type;
+  end if;
+
+  -- 数据规整：把任何不属于 ('firsthand','secondhand') 的旧值（如 Qoder V1.0
+  -- 实验留下的 'direct'）统一映射为 'firsthand'。这一步必须在 add constraint 前做。
+  update memory_bank
+    set source_type = 'firsthand'
+    where source_type is null or source_type not in ('firsthand', 'secondhand');
+
+  -- 把列默认值对齐到 'firsthand'（如果之前是 'direct' 等）
+  alter table memory_bank
+    alter column source_type set default 'firsthand';
+
+  -- memory_bank chk_memory_bank_source（先 drop 再 add，保证幂等）
+  if exists (
+    select 1 from information_schema.table_constraints
+    where table_schema = database()
+      and table_name = 'memory_bank'
+      and constraint_name = 'chk_memory_bank_source'
+  ) then
+    alter table memory_bank drop constraint chk_memory_bank_source;
+  end if;
+  alter table memory_bank
+    add constraint chk_memory_bank_source check (source_type in ('firsthand','secondhand'));
+end//
+delimiter ;
+
+call _migrate_0004();
+drop procedure _migrate_0004;
 
 -- 老数据全部按 firsthand 处理（默认值已是 'firsthand'）
 
@@ -30,6 +86,7 @@ alter table memory_bank
 -- trips — 旅行表（PRD §22.1.8）
 -- 朋友家 / 学校 / 广场 三种 trip_type 共用此表
 -- 每天每 companion 最多 1 次（出行限流在 API 层控制）
+-- create table if not exists 本身幂等
 -- =============================================================
 create table if not exists trips (
   id char(36) primary key,

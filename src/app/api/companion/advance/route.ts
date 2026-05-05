@@ -10,9 +10,11 @@ import {
   findCompanionForSingleUser,
   insertCompanionLine,
   isTaskDoneToday,
+  listMemoriesByDay,
 } from '@/lib/db/repos';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import { getTaskByDay } from '@/lib/tasks';
+import { openingLineFallback, runOpeningLine } from '@/lib/llm/openingLine';
 import type { DayNumber } from '@/types';
 
 export const runtime = 'nodejs';
@@ -44,14 +46,46 @@ export async function POST() {
   const nextDay = (companion.current_day + 1) as DayNumber;
   await advanceCompanionDay(companion.id, nextDay);
 
-  // 写入下一天的伙伴开场白（按 PRD §11.3 各天主题）
-  const opening = getOpeningLine(companion.preset_id, nextDay);
+  // PRD §5.6 各天伙伴开场白：
+  //   Day 7 固定文案（不调 LLM）
+  //   Day 2-6 LLM 基于昨天输入生成；失败回退 personality_examples[0]
+  const preset = getCompanionPreset(companion.preset_id as never);
+  let opening: string | null = null;
+  let openingSource = `preset_open_day${nextDay}`;
+
+  if (nextDay === 7) {
+    opening = '我已经在小家住满 7 天了。这一周你告诉了我好多事，我也整理了好多记忆——我想给你看看，我现在眼中的世界是什么样的。你看看对不对？';
+    openingSource = 'preset_day7_fixed';
+  } else if (nextDay >= 2 && preset) {
+    // 拉昨天孩子的输入做 LLM 引子
+    const prevMems = await listMemoriesByDay(
+      companion.id,
+      companion.current_day as DayNumber,
+    );
+    try {
+      const r = await runOpeningLine(
+        { companion: preset, day: nextDay, prevDayMemories: prevMems },
+        companion.id,
+      );
+      if (r.success) {
+        opening = r.data.opening;
+        openingSource = `llm_open_day${nextDay}`;
+      }
+    } catch {
+      /* 回退到下方 fallback */
+    }
+    if (!opening) {
+      opening = openingLineFallback(preset);
+      openingSource = `fallback_open_day${nextDay}`;
+    }
+  }
+
   if (opening) {
     await insertCompanionLine({
       companionId: companion.id,
       day: nextDay,
       content: opening,
-      source: `preset_open_day${nextDay}`,
+      source: openingSource,
     });
   }
 
@@ -59,21 +93,6 @@ export async function POST() {
     ok: true,
     new_day: nextDay,
     opening,
+    opening_source: openingSource,
   });
-}
-
-/**
- * 各天的伙伴开场白
- * Day 1 用 preset.personality_examples[0]（已经在 onboarding 时写入）
- * Day 2-6 用通用的回归台词，等 P4-8 接入更精细的回归文案
- * Day 7 用 PRD §11.3 Day 7 的固定文案
- */
-function getOpeningLine(presetId: string, day: DayNumber): string | null {
-  if (day === 7) {
-    return '我已经在小家住满 7 天了。这一周你告诉了我好多事，我也整理了好多记忆——我想给你看看，我现在眼中的世界是什么样的。你看看对不对？';
-  }
-  const preset = getCompanionPreset(presetId as never);
-  if (!preset) return null;
-  // 使用 personality_examples[0]（与 Day 1 同源，作为各天的"问候开场"）
-  return preset.personality_examples[0] ?? null;
 }

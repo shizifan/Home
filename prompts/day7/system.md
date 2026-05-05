@@ -27,6 +27,11 @@
 【你还不知道的事（孩子从未提过的常见事物）】
 {{unknown_concepts_list}}
 
+【孩子这一周跳过了多少天的任务】
+{{skip_count}} 次
+
+{{skip_count_hint}}
+
 现在请你以 {{name}} 的口吻，回答下面的问题，组成一份"我眼中的世界"档案。
 
 ## {{HARD_CONSTRAINTS}}

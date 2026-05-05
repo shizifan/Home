@@ -174,7 +174,15 @@ export interface WorldviewCard {
 /** 任务定义（PRD §3 + §11.3）
  * V0.6.1：'describe' 替代 'photo' / 'photo_text'（保留旧值用于兼容期，新逻辑只用 describe）
  */
-export type TaskKind = 'photo' | 'text' | 'photo_text' | 'choice' | 'memory_review' | 'describe';
+export type TaskKind =
+  | 'photo'        // V0.5 已废弃，保留枚举兼容
+  | 'photo_text'   // V0.5 已废弃
+  | 'text'         // 开放回答（Day 4）
+  | 'choice'       // 选择题（Day 5）
+  | 'describe'     // 描述卡片（Day 1‑3）
+  | 'memory_correct'   // P1 fix: Day 6 进 /memory 做纠正
+  | 'worldview_view'   // P1 fix: Day 7 进 /day7/worldview 看档案
+  | 'memory_review';   // 历史枚举值，已被上面两个细分替代，保留兼容
 
 export interface TaskDef {
   id: string;

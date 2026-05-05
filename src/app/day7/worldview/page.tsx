@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { MobileShell } from '@/components/ui/MobileShell';
 import { Button } from '@/components/ui/Button';
 import {
+  completeTask,
   Day7FailureError,
   generateWorldview,
   getCompanionState,
@@ -126,6 +127,10 @@ export default function WorldviewPage() {
     // 全部展示后 3s → 破壁文案
     const tBw = setTimeout(() => {
       setStage({ kind: 'breakwall', showSixth });
+      // P1 fix: 看完 5(+1) 项档案即视为 Day 7 任务完成
+      completeTask({ task_id: 'day7_worldview' }).catch(() => {
+        // 标记失败不阻塞档案展示
+      });
     }, breakwallDelay);
     timersRef.current.push(tBw);
 

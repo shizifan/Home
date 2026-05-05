@@ -7,6 +7,7 @@
 
 import { NextResponse } from 'next/server';
 import {
+  countSkippedTasks,
   findCompanionForSingleUser,
   findWorldview,
   getCompanionById,
@@ -57,7 +58,11 @@ export async function POST(req: Request) {
   if (!preset) return NextResponse.json({ error: 'preset not found' }, { status: 500 });
 
   const bank = await getMemoryBank(companion.id);
-  const result = await runDay7({ companion: preset, memoryBank: bank }, companion.id);
+  const skipCount = await countSkippedTasks(companion.id);
+  const result = await runDay7(
+    { companion: preset, memoryBank: bank, skipCount },
+    companion.id,
+  );
 
   if (!result.success) {
     return NextResponse.json(

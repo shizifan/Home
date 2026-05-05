@@ -17,6 +17,12 @@ export interface CompanionStateResponse {
   last_companion_line_source: string | null;
   /** P2: 整天没打开后的"等你一天"台词；非缺席时为 null */
   missed_day_greeting?: string | null;
+  /** PRD §5.5 / §18.2 中断恢复台词；30s‑10min 内重访才有 */
+  session_resume_greeting?: string | null;
+  /** PRD §8.9 拿不准 + 放下 ≥2 时主页伙伴主动打招呼 */
+  has_pending_clarifications?: boolean;
+  /** PRD §8.9 Day 1 完成后引导孩子打开记忆面板 */
+  should_hint_brain_panel?: boolean;
   today_task: { id: string; kind: string; title: string; description: string } | null;
   today_done?: boolean;
   can_advance?: boolean;
@@ -126,6 +132,26 @@ export async function skipTask(args: {
     body: JSON.stringify(args),
   });
   if (!r.ok) throw new Error(`skip ${r.status}`);
+  return r.json();
+}
+
+/**
+ * P1 fix: Day 6 纠正动作触发 / Day 7 看完档案触发。
+ * 仅 task_id ∈ {'day6_review', 'day7_worldview'} 有效。
+ */
+export async function completeTask(args: {
+  companion_id?: string;
+  task_id: 'day6_review' | 'day7_worldview';
+}): Promise<{ ok: boolean; action: 'marked_done' | 'noop_already_done' }> {
+  const r = await fetch('/api/task/complete', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(args),
+  });
+  if (!r.ok) {
+    const body = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `complete ${r.status}`);
+  }
   return r.json();
 }
 

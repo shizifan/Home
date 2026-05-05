@@ -157,11 +157,47 @@ export default function HomePage() {
         </Room>
       </div>
 
+      {/*
+        主页 greeting 优先级（PRD §5.5 / §8.9 / §16.3）：
+          missed_day_greeting > session_resume_greeting > 关键节点提示 > last_companion_line
+      */}
       <SpeechBubble
-        text={`「${state.missed_day_greeting ?? state.last_companion_line ?? '......'}」`}
+        text={`「${
+          state.missed_day_greeting ??
+          state.session_resume_greeting ??
+          (state.has_pending_clarifications ? '我有点东西想问你......' : null) ??
+          state.last_companion_line ??
+          '......'
+        }」`}
         by={c.display_name}
         onTap={() => openOverlay('chat')}
       />
+
+      {/* PRD §8.9 Day 1 完成后引导孩子第一次打开记忆面板 */}
+      {state.should_hint_brain_panel && (
+        <div className="px-5 mt-3">
+          <button
+            onClick={() => router.push('/memory')}
+            className="w-full bg-[rgba(240,153,123,0.18)] border-[1.5px] border-m-remember rounded-card px-5 py-3 active:scale-[0.99] cursor-pointer text-left"
+          >
+            <p className="font-title text-h3 text-ink-1 mb-1">想看看我都记住了什么吗？</p>
+            <p className="font-title text-small text-ink-3">钻进它的脑袋瞧一眼 →</p>
+          </button>
+        </div>
+      )}
+
+      {/* PRD §8.9 关键节点提示：当 has_pending_clarifications=true 给一个进面板的入口 */}
+      {!state.should_hint_brain_panel && state.has_pending_clarifications && (
+        <div className="px-5 mt-3">
+          <button
+            onClick={() => router.push('/memory')}
+            className="w-full bg-[rgba(175,169,236,0.18)] border-[1.5px] border-m-uncertain rounded-card px-4 py-2.5 active:scale-[0.99] cursor-pointer text-left flex items-center justify-between"
+          >
+            <span className="font-title text-small text-ink-1">它有几件事想问你 →</span>
+            <span className="text-amber-DEFAULT" aria-hidden>●</span>
+          </button>
+        </div>
+      )}
 
       {/* 毕业后出现 "出门探索" 按钮（PRD §11.6） */}
       {c.graduated && (

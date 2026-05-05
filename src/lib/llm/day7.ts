@@ -16,6 +16,8 @@ import type { MemoryBankEntry } from '@/types';
 interface Day7Input {
   companion: CompanionPresetMeta;
   memoryBank: MemoryBankEntry[];
+  /** PRD §9.4：孩子这一周跳过的任务总数（含被动跳过 / 主动跳过）*/
+  skipCount: number;
 }
 
 function summarizeRemembered(bank: MemoryBankEntry[]): string {
@@ -27,6 +29,32 @@ function summarizeRemembered(bank: MemoryBankEntry[]): string {
       return `- ${m.concept_name}（出现 ${ev} 次，类别=${m.concept_category ?? 'other'}）：${m.ai_summary ?? ''}`;
     })
     .join('\n');
+}
+
+/**
+ * PRD §9.4 跳过差异化：
+ *   0–2 个跳过 → 档案完整生成
+ *   3–5 个跳过 → 提示训练数据较少，回答可能更笼统
+ *   ≥6 个跳过 → 第 5 项变为元反思「其实......我对你的事知道得不太多」
+ */
+function buildSkipHint(skipCount: number): string {
+  if (skipCount >= 6) {
+    return [
+      '【特别提示·关于你这次的输入】',
+      `孩子跳过了 ${skipCount} 次任务，几乎没告诉你什么具体的事。`,
+      '此时第 5 项 unknown_thing 不再用 unknown_concepts_list，',
+      '改为一句元反思：「其实......我对你的事知道得不太多。这是你给我的全部。」',
+      '其他几项尽量用现有线索，但要让孩子能感觉到 AI 在"训练数据稀疏"下的局限。',
+    ].join('\n');
+  }
+  if (skipCount >= 3) {
+    return [
+      '【特别提示·关于你这次的输入】',
+      `孩子跳过了 ${skipCount} 次任务，你的训练数据较少。`,
+      '回答可以更笼统、更短，不要硬编没有依据的细节。',
+    ].join('\n');
+  }
+  return '【你的训练数据相对完整】';
 }
 
 function summarizeRestored(bank: MemoryBankEntry[]): string {
@@ -73,6 +101,8 @@ export async function runDay7(input: Day7Input, companionId?: string) {
       user_restored_concepts_list: summarizeRestored(input.memoryBank),
       user_dismissed_concepts_list: summarizeDismissed(input.memoryBank),
       unknown_concepts_list: summarizeUnknown(input.memoryBank),
+      skip_count: String(input.skipCount),
+      skip_count_hint: buildSkipHint(input.skipCount),
     },
     fewShot,
   );

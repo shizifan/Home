@@ -28,6 +28,7 @@ import { InformDialog } from '@/components/memory/InformDialog';
 import { useCompanionStore } from '@/stores/companionStore';
 import { useUIStore } from '@/stores/uiStore';
 import {
+  completeTask,
   correctMemory,
   getCompanionState,
   getMemoryBank,
@@ -75,6 +76,14 @@ export default function MemoryPanelPage() {
     try {
       const r = await correctMemory(args);
       setFeedback(r.feedback);
+      // P1 fix: Day 6 任务的完成判定 — 任意一次纠正动作即标记完成
+      if (state?.companion?.current_day === 6 && !state.today_done) {
+        try {
+          await completeTask({ task_id: 'day6_review' });
+        } catch {
+          // 标记失败不阻塞纠正流程
+        }
+      }
       await reload();
       onAfter?.();
     } catch (e) {
@@ -107,6 +116,30 @@ export default function MemoryPanelPage() {
         className="px-4 pb-24 pt-2 overflow-y-auto"
         style={{ height: 'calc(100dvh - 44px - 56px - 70px)' }}
       >
+        {/* P1 fix: Day 6 任务横幅（PRD §5.6 / §8.9）*/}
+        {state?.companion?.current_day === 6 && !state.today_done && (
+          <div className="bg-amber-light/30 border-[1.5px] border-amber-DEFAULT rounded-card px-4 py-3 mt-2 mb-3">
+            <p className="font-num text-mini text-amber-mid tracking-[0.16em] mb-1">
+              今天的事
+            </p>
+            <p className="font-title text-h3 text-amber-deep mb-1">
+              帮{displayName}整理一下
+            </p>
+            <p className="font-title text-small text-ink-2 leading-relaxed">
+              它有些事拿不准、有些可能记错了。
+              <br />
+              做一次纠正（捡回 / 让它放下 / 解释），今天就完成了。
+            </p>
+          </div>
+        )}
+        {state?.companion?.current_day === 6 && state.today_done && (
+          <div className="bg-[rgba(151,196,89,0.18)] border border-[rgba(59,109,17,0.3)] rounded-card px-4 py-2.5 mt-2 mb-3">
+            <p className="font-title text-small text-[#3B6D11]">
+              ✓ 今天的整理任务已完成。回主页可以推进 Day 7。
+            </p>
+          </div>
+        )}
+
         {totalConcepts === 0 && (
           <div className="bg-white/60 rounded-card px-4 py-8 mt-4 text-center">
             <p className="font-title text-h3 text-ink-2 mb-2">还啥都没有呢</p>
