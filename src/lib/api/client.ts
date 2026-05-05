@@ -376,13 +376,28 @@ export async function generateWorldview(): Promise<{
   worldview: WorldviewData;
   from_cache: boolean;
 }> {
-  const r = await fetch('/api/day7/generate', { method: 'POST' });
-  if (r.status === 503) {
-    const err = (await r.json().catch(() => ({}))) as { message?: string; reason?: string };
-    throw new Day7FailureError(err.message ?? '我有点累了，等会儿再来吧');
+  // 客户端 90s 超时；后端 maxDuration=30s + 重试 3×15s + soft fallback，正常应在 60s 内返回
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 90_000);
+  try {
+    const r = await fetch('/api/day7/generate', {
+      method: 'POST',
+      signal: ctrl.signal,
+    });
+    if (r.status === 503) {
+      const err = (await r.json().catch(() => ({}))) as { message?: string };
+      throw new Day7FailureError(err.message ?? '我有点累了，等会儿再来吧');
+    }
+    if (!r.ok) throw new Error(`day7 ${r.status}`);
+    return r.json();
+  } catch (e) {
+    if ((e as Error)?.name === 'AbortError') {
+      throw new Day7FailureError('它想了好久没整理完，等一会儿再来？');
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
   }
-  if (!r.ok) throw new Error(`day7 ${r.status}`);
-  return r.json();
 }
 
 export async function getWorldview(): Promise<WorldviewData | null> {

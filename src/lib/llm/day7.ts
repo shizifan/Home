@@ -107,6 +107,10 @@ export async function runDay7(input: Day7Input, companionId?: string) {
     fewShot,
   );
 
+  const unknownNames = input.memoryBank
+    .filter((m) => m.type === 'unknown')
+    .map((m) => m.concept_name);
+
   return callLLM<Day7Output>({
     callType: 'day7',
     systemPrompt,
@@ -116,22 +120,63 @@ export async function runDay7(input: Day7Input, companionId?: string) {
       const data = parseJsonStrict(raw, Day7Schema);
       if (!data) return null;
       // 第 5 题必须命中 unknown 列表（PRD §15.6.4）
-      const unknownNames = input.memoryBank
-        .filter((m) => m.type === 'unknown')
-        .map((m) => m.concept_name);
       if (unknownNames.length > 0) {
         const hit = unknownNames.some((n) => data.unknown_thing.includes(n));
         if (!hit) {
-          // LLM 没引用任何 unknown 概念 — 验证失败
+          // LLM 没逐字引用任何 unknown 概念。两种处理：
+          //   1. 第一次失败 → 返回 null 让上层重试，希望它读到提示后改正
+          //   2. 仍然失败 → 由上层 attempt 计数兜底（见下）
+          // 这里仍然返回 null 触发重试，但兜底由 callLLM 之外的 fallback 实现。
           return null;
         }
       }
       return data;
     },
     companionId,
-    promptVersion: 'v1',
+    promptVersion: 'v2', // PRD §15.6.4 + 严格"逐字"约束
     maxRetries: 2, // 总共 3 次（PRD §15.6.4）
   });
+}
+
+/**
+ * 尝试 1：normal runDay7（3 次重试）
+ * 尝试 2：如果重试 3 次都因 validate 失败且仍然有 LLM 输出，放宽校验：
+ *         接受 LLM 的 JSON，但强制把 unknown_thing 覆盖为 unknown_concepts_list[0]，
+ *         避免无限 503。这是 PRD §25.2 "不允许预设档案" 的边界 —— 我们没用预设档案，
+ *         只用孩子真实输入里的 unknown 项强制锁定。
+ */
+export async function runDay7WithSoftFallback(
+  input: Day7Input,
+  companionId?: string,
+) {
+  const result = await runDay7(input, companionId);
+  if (result.success) return result;
+  if (result.reason !== 'validate' || !result.raw) return result;
+
+  // 尝试解析最后一次 raw，忽略 unknown 校验
+  try {
+    const parsed = JSON.parse(result.raw);
+    const data = Day7Schema.safeParse(parsed);
+    if (!data.success) return result;
+    const unknownNames = input.memoryBank
+      .filter((m) => m.type === 'unknown')
+      .map((m) => m.concept_name);
+    if (unknownNames.length === 0) {
+      return { ...result, success: true as const, data: data.data };
+    }
+    // 强制覆盖 unknown_thing 为 list[0]，让流程继续
+    const fallbackUnknown = unknownNames[0];
+    const final: Day7Output = {
+      ...data.data,
+      unknown_thing: `我从来没听过${fallbackUnknown}。`,
+    };
+    console.warn(
+      `[runDay7WithSoftFallback] LLM unknown_thing="${data.data.unknown_thing}" 不含 unknown list；强制覆盖为 "${final.unknown_thing}"`,
+    );
+    return { ...result, success: true as const, data: final };
+  } catch {
+    return result;
+  }
 }
 
 export function hasRestoredItems(bank: MemoryBankEntry[]): boolean {

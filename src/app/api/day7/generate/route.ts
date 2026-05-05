@@ -17,7 +17,7 @@ import {
   upsertWorldview,
 } from '@/lib/db/repos';
 import { getCompanionPreset } from '@/lib/companionPresets';
-import { hasRestoredItems, runDay7 } from '@/lib/llm/day7';
+import { hasRestoredItems, runDay7WithSoftFallback } from '@/lib/llm/day7';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
 
   const bank = await getMemoryBank(companion.id);
   const skipCount = await countSkippedTasks(companion.id);
-  const result = await runDay7(
+  const result = await runDay7WithSoftFallback(
     { companion: preset, memoryBank: bank, skipCount },
     companion.id,
   );
