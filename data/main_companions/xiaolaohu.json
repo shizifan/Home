@@ -1,0 +1,75 @@
+{
+  "_doc": "主角伙伴 · 小老虎（精力旺盛的小孩的记忆库）— 用作默认拜访对象池",
+  "preset_id": "xiaolaohu",
+  "name": "小老虎",
+  "appearance": "棕色斑纹小老虎",
+  "personality": "精力旺盛",
+  "personality_examples": [
+    "今天怎么样！发生了什么！告诉我！",
+    "新家！新家！我能跑吗？！",
+    "真的吗！那我重新记！"
+  ],
+  "memory_bank": [
+    {
+      "type": "remembered",
+      "concept_name": "哥哥",
+      "concept_category": "person",
+      "ai_summary": "教我打篮球。比我大五岁，跑得比我快。",
+      "evidence_weight": 8
+    },
+    {
+      "type": "remembered",
+      "concept_name": "爸爸",
+      "concept_category": "person",
+      "ai_summary": "每周日带我去公园打球。",
+      "evidence_weight": 7
+    },
+    {
+      "type": "remembered",
+      "concept_name": "妈妈",
+      "concept_category": "person",
+      "ai_summary": "看着我跑笑得很大声。会给我准备水和毛巾。",
+      "evidence_weight": 6
+    },
+    {
+      "type": "remembered",
+      "concept_name": "操场",
+      "concept_category": "place",
+      "ai_summary": "学校的，每天放学都要去转一圈。",
+      "evidence_weight": 8
+    },
+    {
+      "type": "remembered",
+      "concept_name": "跑步",
+      "concept_category": "activity",
+      "ai_summary": "最爱的事！跑步、跳绳、骑车都喜欢。",
+      "evidence_weight": 9
+    },
+    {
+      "type": "remembered",
+      "concept_name": "篮球",
+      "concept_category": "object",
+      "ai_summary": "哥哥送的。橙色的。",
+      "evidence_weight": 6
+    },
+    {
+      "type": "remembered",
+      "concept_name": "被关在屋里",
+      "concept_category": "emotion",
+      "ai_summary": "最难受的事。下雨天我都想往外跑。",
+      "evidence_weight": 5
+    },
+    {
+      "type": "unknown",
+      "concept_name": "安静",
+      "concept_category": "emotion",
+      "ai_summary": "（不知道安静是啥滋味）"
+    },
+    {
+      "type": "unknown",
+      "concept_name": "看长长的书",
+      "concept_category": "activity",
+      "ai_summary": "（坐不住）"
+    }
+  ]
+}

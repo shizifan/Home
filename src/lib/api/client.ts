@@ -210,15 +210,26 @@ export interface MemoryBankResponse {
 }
 
 /**
- * 系统预设伙伴 preset_id → 显示名映射（前端用）。
- * 真实伙伴的 source_companion_id 是 UUID，这里查不到 → 返回 null，
+ * 拜访池伙伴 preset_id → 显示名映射（前端用）。
+ * 包含 4 系统预设伙伴 + 8 主角伙伴。
+ * 真实毕业用户的 source_companion_id 是 UUID，这里查不到 → 返回 null，
  * 由调用方降级为通用 "另一只朋友"。
  */
 const PRESET_NAMES: Record<string, string> = {
+  // 系统预设池（4 只极端对照组）
   xiaoyu: '小鱼',
   tudou: '土豆',
   xingxing: '星星',
   amu: '阿木',
+  // 主角池（8 只）
+  xiaoqinglong: '小青龙',
+  dabear: '大熊',
+  xiaohuolong: '小火龙',
+  tengtengshe: '藤藤蛇',
+  xiaolvlong: '小绿龙',
+  linnabel: '琳娜贝尔',
+  xiaolaohu: '小老虎',
+  xiaoshizi: '小狮子',
 };
 
 export function presetCompanionDisplayName(

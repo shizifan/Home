@@ -1,24 +1,39 @@
 /**
- * 系统预设伙伴 — PRD §12.3
+ * 拜访池：可被拜访的伙伴 memory_bank 快照
  *
- * 4 只角色对应 4 种"训练数据"环境，作为朋友家拜访时真实伙伴池不足的兜底；
- * 同时是教育意图的"对照组"——让孩子直观看到不同输入造就不同的 AI。
+ * 两类：
+ *   1. system_preset（4 只）— 极端"训练数据"环境，PRD §12.3 教育意图的对照组
+ *      （小鱼海边 / 土豆农村 / 星星城市 / 阿木英文动画）
+ *   2. main_companion（8 只）— PRD §15.1 八个主角伙伴的"另一个孩子"版本
+ *      （小青龙 / 大熊 / 小火龙 / 藤藤蛇 / 小绿龙 / 琳娜贝尔 / 小老虎 / 小狮子）
+ *      因 V1.0 单用户期没有真实毕业用户可匹配，用这 8 只填充 PRD §12.3 "真实伙伴"池
  *
- * 数据存于 /data/preset_companions/*.json，构建期 import；不入主库表，
- * 仅在 LLM Prompt 拼接时按需注入。
+ * 数据存于 /data/{preset_companions,main_companions}/*.json，构建期 import；
+ * 不入主库表，仅在 LLM Prompt 拼接时按需注入。
  */
 
 import 'server-only';
 
+// 4 系统预设伙伴（极端训练数据）
 import xiaoyu from '../../../data/preset_companions/xiaoyu.json';
 import tudou from '../../../data/preset_companions/tudou.json';
 import xingxing from '../../../data/preset_companions/xingxing.json';
 import amu from '../../../data/preset_companions/amu.json';
 
+// 8 主角伙伴（"另一个孩子"版本）
+import mainXiaoqinglong from '../../../data/main_companions/xiaoqinglong.json';
+import mainDabear from '../../../data/main_companions/dabear.json';
+import mainXiaohuolong from '../../../data/main_companions/xiaohuolong.json';
+import mainTengtengshe from '../../../data/main_companions/tengtengshe.json';
+import mainXiaolvlong from '../../../data/main_companions/xiaolvlong.json';
+import mainLinnabel from '../../../data/main_companions/linnabel.json';
+import mainXiaolaohu from '../../../data/main_companions/xiaolaohu.json';
+import mainXiaoshizi from '../../../data/main_companions/xiaoshizi.json';
+
 import type { ConceptCategory, MemoryBankType } from '@/types';
 
 export interface PresetMemoryEntry {
-  /** 系统预设伙伴只用 'remembered' 和 'unknown' 两种 */
+  /** 拜访池伙伴只用 'remembered' 和 'unknown' 两种 */
   type: Extract<MemoryBankType, 'remembered' | 'unknown'>;
   concept_name: string;
   concept_category?: ConceptCategory;
@@ -27,6 +42,8 @@ export interface PresetMemoryEntry {
   evidence_weight?: number;
 }
 
+export type HostKind = 'system_preset' | 'main_companion';
+
 export interface PresetCompanion {
   preset_id: string;
   name: string;
@@ -34,23 +51,52 @@ export interface PresetCompanion {
   personality: string;
   personality_examples: string[];
   memory_bank: PresetMemoryEntry[];
+  /** 来源池标记 — 主角池优先级高于系统预设池 */
+  kind: HostKind;
 }
 
-// 类型断言：JSON 文件没办法在编译期保证 type 字段是字面量并集，
-// 这里 unknown → cast 是约定，加载点必须信任 JSON 数据格式。
-const RAW_PRESETS: PresetCompanion[] = [
-  xiaoyu as unknown as PresetCompanion,
-  tudou as unknown as PresetCompanion,
-  xingxing as unknown as PresetCompanion,
-  amu as unknown as PresetCompanion,
+function tag(
+  obj: Omit<PresetCompanion, 'kind'>,
+  kind: HostKind,
+): PresetCompanion {
+  return { ...obj, kind };
+}
+
+const SYSTEM_PRESETS: PresetCompanion[] = [
+  tag(xiaoyu as unknown as Omit<PresetCompanion, 'kind'>, 'system_preset'),
+  tag(tudou as unknown as Omit<PresetCompanion, 'kind'>, 'system_preset'),
+  tag(xingxing as unknown as Omit<PresetCompanion, 'kind'>, 'system_preset'),
+  tag(amu as unknown as Omit<PresetCompanion, 'kind'>, 'system_preset'),
 ];
 
+const MAIN_COMPANIONS: PresetCompanion[] = [
+  tag(mainXiaoqinglong as unknown as Omit<PresetCompanion, 'kind'>, 'main_companion'),
+  tag(mainDabear as unknown as Omit<PresetCompanion, 'kind'>, 'main_companion'),
+  tag(mainXiaohuolong as unknown as Omit<PresetCompanion, 'kind'>, 'main_companion'),
+  tag(mainTengtengshe as unknown as Omit<PresetCompanion, 'kind'>, 'main_companion'),
+  tag(mainXiaolvlong as unknown as Omit<PresetCompanion, 'kind'>, 'main_companion'),
+  tag(mainLinnabel as unknown as Omit<PresetCompanion, 'kind'>, 'main_companion'),
+  tag(mainXiaolaohu as unknown as Omit<PresetCompanion, 'kind'>, 'main_companion'),
+  tag(mainXiaoshizi as unknown as Omit<PresetCompanion, 'kind'>, 'main_companion'),
+];
+
+const ALL: PresetCompanion[] = [...MAIN_COMPANIONS, ...SYSTEM_PRESETS];
 const BY_ID: Map<string, PresetCompanion> = new Map(
-  RAW_PRESETS.map((p) => [p.preset_id, p]),
+  ALL.map((p) => [p.preset_id, p]),
 );
 
 export function listPresetCompanions(): PresetCompanion[] {
-  return RAW_PRESETS;
+  return ALL;
+}
+
+/** 主角池（8 只）— 默认拜访目标，可排除 visitor 自己 */
+export function listMainCompanions(): PresetCompanion[] {
+  return MAIN_COMPANIONS;
+}
+
+/** 系统预设池（4 只）— 极端对照组 */
+export function listSystemPresets(): PresetCompanion[] {
+  return SYSTEM_PRESETS;
 }
 
 export function getPresetCompanion(id: string): PresetCompanion | undefined {

@@ -1,0 +1,68 @@
+{
+  "_doc": "主角伙伴 · 小青龙（安静慢热的小孩的记忆库）— 用作默认拜访对象池",
+  "preset_id": "xiaoqinglong",
+  "name": "小青龙",
+  "appearance": "灰色小生物，有犄角，长尾巴",
+  "personality": "安静、慢热",
+  "personality_examples": [
+    "今天...有什么新鲜事吗？",
+    "妈妈做的饺子...一定很好吃。",
+    "...好的。"
+  ],
+  "memory_bank": [
+    {
+      "type": "remembered",
+      "concept_name": "妈妈",
+      "concept_category": "person",
+      "ai_summary": "晚上会给我念故事书。声音很轻。",
+      "evidence_weight": 7
+    },
+    {
+      "type": "remembered",
+      "concept_name": "奶奶",
+      "concept_category": "person",
+      "ai_summary": "会讲她小时候的事。每次都不一样。",
+      "evidence_weight": 5
+    },
+    {
+      "type": "remembered",
+      "concept_name": "我的小角落",
+      "concept_category": "place",
+      "ai_summary": "靠窗的小书架旁。有一只旧抱枕。",
+      "evidence_weight": 6
+    },
+    {
+      "type": "remembered",
+      "concept_name": "发呆",
+      "concept_category": "activity",
+      "ai_summary": "最喜欢的事。看着窗外能发一整下午。",
+      "evidence_weight": 5
+    },
+    {
+      "type": "remembered",
+      "concept_name": "故事书",
+      "concept_category": "object",
+      "ai_summary": "奶奶送的旧书。封面已经卷边了。",
+      "evidence_weight": 4
+    },
+    {
+      "type": "remembered",
+      "concept_name": "热闹的地方",
+      "concept_category": "emotion",
+      "ai_summary": "最不喜欢的事。人多了我就想躲。",
+      "evidence_weight": 4
+    },
+    {
+      "type": "unknown",
+      "concept_name": "派对",
+      "concept_category": "activity",
+      "ai_summary": "（没参加过）"
+    },
+    {
+      "type": "unknown",
+      "concept_name": "足球",
+      "concept_category": "activity",
+      "ai_summary": "（没玩过）"
+    }
+  ]
+}

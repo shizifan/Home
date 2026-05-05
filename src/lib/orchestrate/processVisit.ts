@@ -20,7 +20,8 @@ import { getCompanionPreset } from '@/lib/companionPresets';
 import { assertCanDepart } from '@/lib/station/status';
 import {
   getPresetCompanion,
-  listPresetCompanions,
+  listMainCompanions,
+  listSystemPresets,
   type PresetCompanion,
 } from '@/lib/station/presetCompanions';
 import {
@@ -60,23 +61,51 @@ export interface ProcessVisitResult {
   };
 }
 
+/**
+ * 拜访池挑选策略（PRD §12.3 改写以适配 V1.0 单用户期）：
+ *   1. 优先 main_companion 池（8 主角"另一个孩子"），排除 visitor 自己
+ *   2. 哈希轮换前两天用过的，让连续几天的拜访不重复
+ *   3. 大约每 3 天一次回到 system_preset 池（极端对照组）
+ *   4. hint 直接覆盖（dev / 测试用）
+ */
 function pickHostByDate(
   visitorPresetId: string,
   hint?: string,
 ): PresetCompanion {
-  const all = listPresetCompanions();
   if (hint) {
     const found = getPresetCompanion(hint);
     if (found) return found;
   }
-  // 简单哈希：(visitor + 当日) → 索引；保证同一天同一拜访者每次匹配同一只
+
+  // 当日哈希：(visitor + date) → 索引
   const today = new Date().toISOString().slice(0, 10);
   const seed = `${visitorPresetId}-${today}`;
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   }
-  return all[hash % all.length];
+
+  // 每 3 天有 1 次落到系统预设池（极端对照组）；2 天落主角池
+  // 用日期序号 mod 3 作分流
+  const day = new Date();
+  const dayOfYear = Math.floor(
+    (day.getTime() - new Date(day.getFullYear(), 0, 0).getTime()) / 86400_000,
+  );
+  const useSystemPreset = dayOfYear % 3 === 0;
+
+  if (useSystemPreset) {
+    const pool = listSystemPresets();
+    return pool[hash % pool.length];
+  }
+
+  const pool = listMainCompanions().filter(
+    (p) => p.preset_id !== visitorPresetId,
+  );
+  if (pool.length === 0) {
+    // 不太可能（visitorPresetId 不在 8 主角列表里），保险兜底
+    return listSystemPresets()[hash % 4];
+  }
+  return pool[hash % pool.length];
 }
 
 /**
