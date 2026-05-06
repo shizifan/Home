@@ -1,0 +1,61 @@
+{
+  "_doc": "广场剧本单幕 Few-shot — 5 剧本各 1 条 = 5 条最小集（PRD §23.15）",
+  "version": "0.1.0",
+  "examples": [
+    {
+      "id": "plaza_act_water_disaster_1",
+      "context": "剧本=水患治理；幕=1（朝堂议事）；选道具=《治水图》。",
+      "expected_output": {
+        "scene_narrative": "国王看向小青龙：'丞相怎么看？'武将和大臣都安静了。小青龙翻开《治水图》，慢慢说出图上记的：黄河堤坝最弱在三处，先固这三处，其余的等水退了再修。国王点头：'丞相所言有理。但五千民夫从哪来？'",
+        "small_blue_dragon_speech": "陛下，臣看图上记载——黄河堤坝最弱在三处。先固这三处，其余的等水退了再修。",
+        "other_response": "国王点头：'丞相所言有理。但五千民夫从哪来？'",
+        "next_act_hook": "民夫从哪来——这是丞相要去灾区探查的真问题。",
+        "item_use_quality": "natural"
+      }
+    },
+    {
+      "id": "plaza_act_envoy_visit_2",
+      "context": "剧本=使节来访；幕=2（宴请使节）；选道具=《观人之眼》。",
+      "expected_output": {
+        "scene_narrative": "宴会上酒过三巡，使节话锋一转：'听闻贵国南方水患，朕心不安......'小青龙用《观人之眼》看了一眼对方眉宇间的神色——他在试探我们是否分了兵。小青龙端起酒杯：'多谢挂念。我国民夫已自南方返回，国境无虞。'使节笑了，但笑得有点僵。",
+        "small_blue_dragon_speech": "多谢挂念。我国民夫已自南方返回，国境无虞。",
+        "other_response": "使节笑了，但笑得有点僵——他没问到想要的答案。",
+        "next_act_hook": "宴会结束，邻国究竟想做什么，要在第三幕给国王一个判断。",
+        "item_use_quality": "natural"
+      }
+    },
+    {
+      "id": "plaza_act_plague_outbreak_1",
+      "context": "剧本=瘟疫蔓延；幕=1（朝堂议事）；选道具=《医书残卷》。",
+      "expected_output": {
+        "scene_narrative": "朝堂上人人面露惊惶。医女说要先找病源。国王问丞相：'有何良策？'小青龙翻开《医书残卷》，找到一段关于水源传播的方子：'陛下，残卷上记着——这种病多从水井起。请先封三日内取过水的城外几口井，再让百姓只取活水。'医女连连点头。",
+        "small_blue_dragon_speech": "请先封三日内取过水的城外几口井，再让百姓只取活水。",
+        "other_response": "医女连连点头：'丞相说得对，臣这就去办。'",
+        "next_act_hook": "井封了，但真正的病源还得现场查——丞相该亲自去医师营。",
+        "item_use_quality": "natural"
+      }
+    },
+    {
+      "id": "plaza_act_court_intrigue_3",
+      "context": "剧本=朝堂谋略；幕=3（朝堂揭晓）；选道具=国王赐的玉印。",
+      "expected_output": {
+        "scene_narrative": "朝堂之上，所有大臣都看着小青龙。它从袖中取出国王赐的玉印——满堂瞬间安静。'陛下，臣循三日所查，已得实据。'它把那封旧信件呈上，又把暗访所记一一陈述。涉事大臣脸色发白，国王脸色凝重：'此事，朕亲断。'",
+        "small_blue_dragon_speech": "陛下，臣循三日所查，已得实据。",
+        "other_response": "国王脸色凝重：'此事，朕亲断。' 涉事大臣脸色发白。",
+        "next_act_hook": "",
+        "item_use_quality": "natural"
+      }
+    },
+    {
+      "id": "plaza_act_border_alarm_2",
+      "context": "剧本=边境警报；幕=2（边境视察）；选道具=《邻国风物志》（适配差，stretched）。",
+      "expected_output": {
+        "scene_narrative": "丞相站在烽火台上，看着远处敌营的炊烟。武将问：'打吗？' 小青龙摸了摸怀里的《邻国风物志》——它记载的是邻国的礼俗，不是兵法。'我本来想拿出《邻国风物志》......但好像和眼前这事没关系。' 它转头说：'我们先派一名使者去问问，看对方究竟为何而来。'武将怔了一下。",
+        "small_blue_dragon_speech": "我们先派一名使者去问问，看对方究竟为何而来。",
+        "other_response": "武将怔了一下：'丞相不打？臣......领命。'",
+        "next_act_hook": "使者会带回什么消息，决定了第三幕该是战是议。",
+        "item_use_quality": "stretched"
+      }
+    }
+  ]
+}

@@ -6,7 +6,7 @@
 
 ---
 
-## 0. 现状基线（V0.6.1 + P1 + P2 朋友家 + Day 1-7 + P3 学校 + P4 行囊&广场基础）
+## 0. 现状基线（V0.6.1 + P1 + P2 + Day 1-7 + P3 + P4 + P5 广场剧本完整闭环）
 
 ### 0.1 已完成
 
@@ -49,6 +49,10 @@
 | 广场准备 | `/station/plaza/prepare`：今日剧本（按哈希 + 排除最近 2 次）+ 角色分配 + 选 3 道具（适用项 ● 高亮）|
 | 主页变化 | BottomNav 玩过 1 次广场后多"行囊"第 5 Tab；state API 加 `has_played_plaza` 字段 |
 | **关键说明** | P4 完成的是行囊基础与广场入口；剧本进行流程（3 幕 + 结局 + 道具奖励）留给 P5 |
+| **P5 广场剧本** | 5 剧本完整 3 幕 + 结局 + 奖励落库 + 升级触发；剧本进行页 `/station/plaza/play/[id]/act/[n]` + 结局页 `/ending`；占位插画 SVG（P7 替换真资产）|
+| LLM | 加 `plaza_act` + `plaza_ending` callType + 5 剧本各 1 条 Few-shot；act 模式 max=500/temp=0.6/12s，ending 模式 max=600/temp=0.5/15s |
+| 道具升级 | rewardEngine 检测 perfect + natural + upgrade_to → 自动把基础版替换升级版（如《治水图》→《治水十策》）|
+| 复玩台词 | 第 2 次"这次试试不一样的道具？"/ 第 3 次"我每次都能想出不同的办法"（PRD §14.5.3）|
 
 ### 0.2 缺口（按 PRD V1.0.2 对照，P1 收口后）
 
@@ -498,9 +502,16 @@
 
 #### P5.3 验收标准
 
-- [ ] 5 个剧本各跑通至少 1 次
-- [ ] 道具升级路径触发正确（手工跑 3 次水患剧本验证）
-- [ ] LLM 生成 act 失败 2 次后正确降级"它在路上遇到点麻烦，明天再去吧。"
+- [x] T3 plaza_act + plaza_ending Prompt + Few-shot 各 5 条；新增 callType 'plaza_act' / 'plaza_ending'
+- [x] T5 rewardEngine：computeFinalRewards（合并 LLM + scenario.rewards 兜底）+ grantRewards（落 inventory）+ 升级触发（perfect+natural+upgrade_to）+ getRepeatPlayHint（第 2 次"试试不一样的道具"/ 第 3 次"我每次都能想出不同的办法"）
+- [x] T4 API：POST /api/station/plaza/play 三 action（start / act / finish）+ GET 查 state；fire-and-forget LLM；act 强校验"out_of_order_act"
+- [x] T1 剧本进行页 `/station/plaza/play/[id]/act/[n]`：插画占位 + scene 文本 + 决策点 + 道具列表（适用项 ● 高亮 + 不用道具凭直觉）+ LLM 回来后渲染 small_blue_dragon_speech 高亮 + others 反应 + stretched/skipped 元台词
+- [x] T2 结局页 `/station/plaza/play/[id]/ending`：自动 finish → 结局等级 chip + ending_narrative + 国王评价 + 奖励列表（is_upgrade ✨高亮）+ "再玩一次/回家"双按钮
+- [x] T6 插画占位 ScenarioIllustration：5 剧本各自色调 + emoji 标 act；P7 替换真资产时只改 component
+- [x] T7 E2E spec/07_plaza_full：2 路由节点 + 1 happy-path（skipped）
+- [ ] 5 个剧本各跑通至少 1 次 — 待人工跑
+- [ ] 道具升级路径触发正确（手工跑 3 次水患剧本验证）— 待人工跑
+- [ ] LLM 失败时降级稳定 — 待人工跑（plazaActFallback / plazaEndingFallback 已实现）
 
 ---
 

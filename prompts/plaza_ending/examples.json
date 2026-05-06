@@ -1,0 +1,111 @@
+{
+  "_doc": "广场剧本结局 Few-shot — 5 剧本各 1 条 = 5 条最小集",
+  "version": "0.1.0",
+  "examples": [
+    {
+      "id": "plaza_ending_water_disaster_perfect",
+      "context": "剧本=水患治理；3 次都 natural（《治水图》→金子→说话之术）；ending=perfect；触发《治水图》升级",
+      "expected_output": {
+        "ending_type": "perfect",
+        "ending_narrative": "半月后，洪水退去。在小青龙的建议下，黄河堤坝得到加固，邻国借来的粮食解了灾民燃眉之急。那位被一壶酒善待过的老人带着乡亲来到朝堂，献上了亲手编的草鞋。国王在大殿上赞许：'丞相智深谋远，朕心甚慰。'",
+        "king_evaluation": "丞相智深谋远，朕心甚慰。",
+        "earned_items": [
+          {
+            "item_id": "villager_straw_shoes",
+            "item_name": "乡亲送的草鞋",
+            "acquisition_reason": "你善待了灾区的乡亲，他们送来这双草鞋。"
+          },
+          {
+            "item_id": "treatise_water_control_advanced",
+            "item_name": "《治水十策》",
+            "acquisition_reason": "你三次都用对了《治水图》——它升级成了《治水十策》。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "plaza_ending_envoy_visit_good",
+      "context": "剧本=使节来访；2 次 natural + 1 次 stretched；ending=good",
+      "expected_output": {
+        "ending_type": "good",
+        "ending_narrative": "宴会结束后第三日，邻国使节启程返国。临行前他对国王留下一句：'贵国丞相，确是难得。' 两国关系暂时回稳。但礼宾官说，宴会上有一段话原本可以说得更圆满——使节注意到了那个小小的犹豫。",
+        "king_evaluation": "丞相做得不错。下次能再多想一步，便万无一失。",
+        "earned_items": [
+          {
+            "item_id": "gift_companion",
+            "item_name": "给小伙伴的礼物",
+            "acquisition_reason": "外交场合用心了，礼宾官送你一份小心意。"
+          },
+          {
+            "item_id": "object_jade",
+            "item_name": "一块玉佩",
+            "acquisition_reason": "邻国使节临行前赠予的玉佩——带着对你的认可。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "plaza_ending_plague_outbreak_barely",
+      "context": "剧本=瘟疫蔓延；0 次 natural（道具都不太合适）；ending=barely",
+      "expected_output": {
+        "ending_type": "barely",
+        "ending_narrative": "瘟疫终于止住了——但城外的村子还是死了七个老人。医女对丞相摇头：'若早三日发下告示，结果会不一样。' 国王没有怪罪丞相，但所有人都知道：这一次，丞相的方略本可以更准。",
+        "king_evaluation": "丞相辛苦了。下次......愿你能更早一步。",
+        "earned_items": [
+          {
+            "item_id": "gift_villager",
+            "item_name": "给村民的物资",
+            "acquisition_reason": "灾后物资还有剩余——下次你可以提前用上。"
+          },
+          {
+            "item_id": "ability_calm",
+            "item_name": "《镇定符》",
+            "acquisition_reason": "经历过一次混乱后，国师送你一道镇定符。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "plaza_ending_court_intrigue_perfect",
+      "context": "剧本=朝堂谋略；3 次 natural；ending=perfect",
+      "expected_output": {
+        "ending_type": "perfect",
+        "ending_narrative": "朝堂之上，结党的大臣被剥夺了官职。国王把那枚玉印从丞相手里轻轻收回——不是收回信任，而是要在群臣面前再次赐下：'丞相忠勤，朕信你三十年。'",
+        "king_evaluation": "丞相忠勤，朕信你三十年。",
+        "earned_items": [
+          {
+            "item_id": "object_letter",
+            "item_name": "一封旧信件",
+            "acquisition_reason": "调查中的关键证物，国王让你留作纪念。"
+          },
+          {
+            "item_id": "king_jade_seal",
+            "item_name": "国王赐的玉印",
+            "acquisition_reason": "国王在群臣面前再次赐下玉印——你下次说话最被听。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "plaza_ending_border_alarm_good",
+      "context": "剧本=边境警报；2 次 natural；ending=good",
+      "expected_output": {
+        "ending_type": "good",
+        "ending_narrative": "敌兵在使者带回'误会'之后退兵。边境又安静了下来。武将拔剑入鞘，看丞相的眼神不一样了——这一次，没打就胜了。但连绵的烽火台还要日夜值守，有些事不是一次议和就能彻底了结。",
+        "king_evaluation": "丞相不战而屈人之兵，可喜可贺。",
+        "earned_items": [
+          {
+            "item_id": "object_sword",
+            "item_name": "一把宝剑",
+            "acquisition_reason": "武将敬你不动而善谋，赠了一把好剑。"
+          },
+          {
+            "item_id": "ability_wisdom",
+            "item_name": "《智慧卷》",
+            "acquisition_reason": "你这次想得很远——这是国师认可你的智慧。"
+          }
+        ]
+      }
+    }
+  ]
+}

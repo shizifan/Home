@@ -499,6 +499,140 @@ export interface PlazaPrepareResponse {
   starter_pack_granted: string[] | null;
 }
 
+// ─── 广场剧本进行 ───
+
+export interface PlazaStartResponse {
+  play_id: string;
+  trip_id: string;
+  scenario: {
+    id: string;
+    title: string;
+    background: string;
+    intro: string;
+  };
+  selected_items: Array<{
+    inventory_row_id: string;
+    item_id: string;
+    item_name: string;
+  }>;
+  repeat_hint: string | null;
+  played_times_before: number;
+}
+
+export async function startPlazaPlay(args: {
+  scenario_id: string;
+  item_row_ids: [string, string, string];
+}): Promise<PlazaStartResponse> {
+  const r = await fetch('/api/station/plaza/play', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'start', ...args }),
+  });
+  if (!r.ok) {
+    const body = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `plaza start ${r.status}`);
+  }
+  return r.json();
+}
+
+export interface PlazaActResponse {
+  act: {
+    scene_narrative: string;
+    small_blue_dragon_speech: string;
+    other_response: string;
+    next_act_hook: string;
+    item_use_quality: 'natural' | 'stretched' | 'skipped';
+  };
+  is_final_act: boolean;
+  selected_item: {
+    inventory_row_id: string;
+    item_id: string;
+    item_name: string;
+  } | null;
+}
+
+export async function runPlazaAct(args: {
+  play_id: string;
+  act_number: 1 | 2 | 3;
+  item_row_id: string | null;
+}): Promise<PlazaActResponse> {
+  const r = await fetch('/api/station/plaza/play', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'act', ...args }),
+  });
+  if (!r.ok) {
+    const body = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `plaza act ${r.status}`);
+  }
+  return r.json();
+}
+
+export interface PlazaEndingResponse {
+  ending: {
+    ending_type: 'perfect' | 'good' | 'barely';
+    ending_narrative: string;
+    king_evaluation: string;
+    earned_items: Array<{
+      item_id: string;
+      item_name: string;
+      acquisition_reason: string;
+    }>;
+  };
+  earned_items: Array<{
+    item_id: string;
+    item_name: string;
+    acquisition_reason: string;
+    inventory_row_id: string;
+    is_new: boolean;
+    is_upgrade?: boolean;
+  }>;
+  source: 'llm' | 'fallback';
+}
+
+export async function finishPlazaPlay(playId: string): Promise<PlazaEndingResponse> {
+  const r = await fetch('/api/station/plaza/play', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'finish', play_id: playId }),
+  });
+  if (!r.ok) {
+    const body = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `plaza finish ${r.status}`);
+  }
+  return r.json();
+}
+
+export interface PlazaPlayStateResponse {
+  play_id: string;
+  scenario_id: string;
+  scenario_title: string | null;
+  acts_done: number;
+  acts: Array<{
+    act: 1 | 2 | 3;
+    item_id: string | null;
+    quality?: 'natural' | 'stretched' | 'skipped';
+    narrative?: string;
+    small_blue_dragon_speech?: string;
+    other_response?: string;
+    next_act_hook?: string;
+  }>;
+  finished: boolean;
+  ending_type: string | null;
+  ending_narrative: string | null;
+}
+
+export async function getPlazaPlayState(
+  playId: string,
+): Promise<PlazaPlayStateResponse> {
+  const r = await fetch(
+    `/api/station/plaza/play?play_id=${encodeURIComponent(playId)}`,
+    { cache: 'no-store' },
+  );
+  if (!r.ok) throw new Error(`plaza state ${r.status}`);
+  return r.json();
+}
+
 export async function getPlazaPrepare(): Promise<PlazaPrepareResponse> {
   const r = await fetch('/api/station/plaza/prepare', { cache: 'no-store' });
   if (!r.ok) {

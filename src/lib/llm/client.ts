@@ -19,6 +19,8 @@
  *   visit                maxRetries=1 → "它好像还没回来......明天再来看看？"（trip.report_data 占位）
  *   opening_line         maxRetries=1 → openingLineFallback（personality_examples[0]）
  *   school               maxRetries=1 → schoolFallbackOutput（每只伙伴说"今天有点累了"占位）
+ *   plaza_act            maxRetries=1 → plazaActFallback（"这一幕剧情卡了一下..."）
+ *   plaza_ending         maxRetries=1 → plazaEndingFallback（按 quality 计数推断 ending_type + always 道具）
  *
  * skipped 输入根本不调 LLM：processInput 内短路写 set_aside + 取预设跳过台词。
  */
@@ -38,7 +40,9 @@ export type LLMCallType =
   | 'free_chat'        // V0.6.1+：ChatOverlay 开放问答
   | 'visit'            // P2：朋友家拜访（PRD §23.10）
   | 'opening_line'     // Day 2-6 伙伴主动开场白（PRD §5.6）
-  | 'school';          // P3：学校课堂（PRD §23.11）
+  | 'school'           // P3：学校课堂（PRD §23.11）
+  | 'plaza_act'        // P5：广场剧本单幕（PRD §23.12）
+  | 'plaza_ending';    // P5：广场剧本结局（PRD §23.13）
 // 注：style_audit 走通义千问-VL（DashScope），不走 DeepSeek，
 // 在 src/lib/imagegen/styleAudit.ts 独立实现。
 
@@ -61,6 +65,8 @@ const PARAMS: Record<LLMCallType, ParamSet> = {
   visit: { model: '', max_tokens: 600, temperature: 0.7, timeoutMs: 12000 },
   opening_line: { model: '', max_tokens: 120, temperature: 0.7, timeoutMs: 8000 },
   school: { model: '', max_tokens: 700, temperature: 0.5, timeoutMs: 12000 },
+  plaza_act: { model: '', max_tokens: 500, temperature: 0.6, timeoutMs: 12000 },
+  plaza_ending: { model: '', max_tokens: 600, temperature: 0.5, timeoutMs: 15000 },
 };
 
 let _client: OpenAI | null = null;

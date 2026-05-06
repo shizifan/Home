@@ -20,6 +20,7 @@ import { MobileShell } from '@/components/ui/MobileShell';
 import { Button } from '@/components/ui/Button';
 import {
   getPlazaPrepare,
+  startPlazaPlay,
   type InventoryItemView,
   type PlazaPrepareResponse,
 } from '@/lib/api/client';
@@ -51,14 +52,29 @@ function PlazaPrepareInner() {
     });
   };
 
-  const onDepart = () => {
-    if (!data || picked.length !== REQUIRED_PICKS) return;
-    // P5 实装真实出发逻辑；此处先把选择 query 化跳到剧本页占位路径
-    const params = new URLSearchParams({
-      scenario_id: data.scenario.id,
-      items: picked.join(','),
-    });
-    router.push(`/station/plaza/play?${params.toString()}`);
+  const [departing, setDeparting] = useState(false);
+  const onDepart = async () => {
+    if (!data || picked.length !== REQUIRED_PICKS || departing) return;
+    setDeparting(true);
+    try {
+      const r = await startPlazaPlay({
+        scenario_id: data.scenario.id,
+        item_row_ids: picked as [string, string, string],
+      });
+      router.push(`/station/plaza/play/${encodeURIComponent(r.play_id)}/act/1`);
+    } catch (e) {
+      const msg = (e as Error)?.message ?? 'unknown';
+      setError({
+        msg,
+        hint:
+          msg === 'daily_limit_reached'
+            ? '今天已经出过门啦。'
+            : msg.startsWith('locked:')
+              ? '广场还没解锁。'
+              : '出了点问题，再试一次？',
+      });
+      setDeparting(false);
+    }
   };
 
   if (loading) {
@@ -199,11 +215,13 @@ function PlazaPrepareInner() {
           size="lg"
           fullWidth
           onClick={onDepart}
-          disabled={picked.length !== REQUIRED_PICKS}
+          disabled={picked.length !== REQUIRED_PICKS || departing}
         >
-          {picked.length === REQUIRED_PICKS
-            ? '出发 →'
-            : `还差 ${REQUIRED_PICKS - picked.length} 件`}
+          {departing
+            ? '出发中......'
+            : picked.length === REQUIRED_PICKS
+              ? '出发 →'
+              : `还差 ${REQUIRED_PICKS - picked.length} 件`}
         </Button>
       </div>
     </MobileShell>
