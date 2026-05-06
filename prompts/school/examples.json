@@ -1,0 +1,62 @@
+{
+  "_doc": "学校课堂 Few-shot — PRD §23.15 要求每目的至少 1 条；这里 4 目的各 1 条 = 4 条最小集",
+  "version": "0.1.0",
+  "examples": [
+    {
+      "id": "school_attend_class_001",
+      "context": "attend_class 目的，问题=最好的食物。在场：小青龙（饺子）、小鱼（螃蟹）、土豆（玉米）。",
+      "expected_output": {
+        "question": "最好的食物是什么？",
+        "answers": [
+          { "companion_name": "小青龙", "answer": "...妈妈包的饺子。" },
+          { "companion_name": "小鱼", "answer": "螃蟹！蒸的最好吃。" },
+          { "companion_name": "土豆", "answer": "玉米。秋天满地都是。" }
+        ],
+        "highlight": "大家说的食物完全不同，因为大家家里做的不一样。",
+        "teaching_moment": "如果问一个只在海边长大的 AI \"最好吃的是什么\"，它会说鱼。"
+      }
+    },
+    {
+      "id": "school_ask_my_question_001",
+      "context": "ask_my_question 目的，孩子出的题=公园是什么样子。在场：小青龙（没去过公园）、星星（城市，常去）、土豆（没听过）。",
+      "expected_output": {
+        "question": "公园是什么样子？",
+        "answers": [
+          { "companion_name": "小青龙", "answer": "公园......我不知道那是什么。" },
+          { "companion_name": "星星", "answer": "我家楼下就有，有滑梯和秋千。" },
+          { "companion_name": "土豆", "answer": "村里没有公园。是地方吗？" }
+        ],
+        "highlight": "公园是个常见的地方，但不是每个孩子都见过。",
+        "teaching_moment": "小青龙不知道公园，不是因为它笨，是因为没人告诉过它。"
+      }
+    },
+    {
+      "id": "school_observe_others_001",
+      "context": "observe_others 目的，问题=妈妈通常在做什么。在场：小青龙（妈妈讲故事）、星星（妈妈加班）、阿木（Peppa 的妈妈烤蛋糕）。",
+      "expected_output": {
+        "question": "妈妈通常在做什么？",
+        "answers": [
+          { "companion_name": "小青龙", "answer": "晚上给我念故事。" },
+          { "companion_name": "星星", "answer": "妈妈天天加班，很晚才回。" },
+          { "companion_name": "阿木", "answer": "Peppa 的 mommy 在烤 cake。" }
+        ],
+        "highlight": "三个人的妈妈过着完全不同的一天。",
+        "teaching_moment": "每只伙伴只知道它见过的世界。AI 也是。"
+      }
+    },
+    {
+      "id": "school_learn_new_001",
+      "context": "learn_new 目的，问题=最远去过的地方。在场：小青龙（去过外婆家）、小鱼（船上）、小老虎（公园操场都去）。",
+      "expected_output": {
+        "question": "你知道的最远的地方是哪里？",
+        "answers": [
+          { "companion_name": "小青龙", "answer": "...外婆家，坐车一小时。" },
+          { "companion_name": "小鱼", "answer": "爸爸的船，能开到很远的海上。" },
+          { "companion_name": "小老虎", "answer": "上次去山里露营！特别远！" }
+        ],
+        "highlight": "每个人的'远'，是自己脚走过的最远那一步。",
+        "teaching_moment": "AI 看世界，是从它读过的故事里看的。"
+      }
+    }
+  ]
+}

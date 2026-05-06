@@ -453,6 +453,12 @@ export type VisitPurpose =
   | 'introduce_self'
   | 'ask_question';
 
+export type SchoolPurpose =
+  | 'attend_class'
+  | 'ask_my_question'
+  | 'observe_others'
+  | 'learn_new';
+
 export interface DepartVisitArgs {
   trip_type: 'visit';
   purpose_type: VisitPurpose;
@@ -460,10 +466,14 @@ export interface DepartVisitArgs {
   host_preset_id?: string;
 }
 
-export interface DepartResponse {
-  /** 立即返回的 trip 标识；后端在异步跑 LLM 写报告 */
+export interface DepartSchoolArgs {
+  trip_type: 'school';
+  purpose_type: SchoolPurpose;
+  purpose_question?: string;
+}
+
+export interface DepartVisitResponse {
   trip_id: string;
-  /** 始终为 'traveling'；客户端轮询 trip[id] 直到 'returned' */
   status: 'traveling';
   host: {
     preset_id: string;
@@ -473,18 +483,36 @@ export interface DepartResponse {
   };
 }
 
-export async function depart(args: DepartVisitArgs): Promise<DepartResponse> {
+export interface DepartSchoolResponse {
+  trip_id: string;
+  status: 'traveling';
+  classmate_names: string[];
+  question_text: string;
+  question_source: 'system' | 'child';
+}
+
+export async function depart(args: DepartVisitArgs): Promise<DepartVisitResponse>;
+export async function depart(args: DepartSchoolArgs): Promise<DepartSchoolResponse>;
+export async function depart(
+  args: DepartVisitArgs | DepartSchoolArgs,
+): Promise<DepartVisitResponse | DepartSchoolResponse> {
   const r = await fetch('/api/station/depart', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args),
   });
   if (!r.ok) {
-    const body = (await r.json().catch(() => ({}))) as { error?: string };
-    throw new Error(body.error ?? `depart ${r.status}`);
+    const body = (await r.json().catch(() => ({}))) as { error?: string; message?: string };
+    const e = new Error(body.error ?? `depart ${r.status}`);
+    // 把 server 的 friendly message 暴露给前端用
+    (e as Error & { friendlyMessage?: string }).friendlyMessage = body.message;
+    throw e;
   }
   return r.json();
 }
+
+/** @deprecated 留给历史调用兼容；新代码直接用 depart() 重载 */
+export type DepartResponse = DepartVisitResponse;
 
 export async function getTrip(tripId: string) {
   const r = await fetch(`/api/station/trip/${encodeURIComponent(tripId)}`, {

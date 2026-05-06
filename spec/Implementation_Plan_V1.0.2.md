@@ -6,7 +6,7 @@
 
 ---
 
-## 0. 现状基线（V0.6.1 + P1 收口 + P2 朋友家闭环 + Day 1-7 PRD 全量对齐）
+## 0. 现状基线（V0.6.1 + P1 收口 + P2 朋友家 + Day 1-7 PRD 对齐 + P3 学校）
 
 ### 0.1 已完成
 
@@ -39,6 +39,11 @@
 | **Day 1-7 PRD 全量对齐** | 任务文案对齐 §5.6/§18.3；Day 5 选项语义改"是/不是/一半一半"；Day 2-6 LLM 生成开场白；Day 4 语音输入；Day 6 进面板做纠正才算完成；Day 7 直接进 worldview 看完即完成；Day 7 档案对跳过差异化（§9.4）；主页 missed_day/session_resume/has_pending_clarifications/should_hint_brain_panel 四档 greeting；TranscriptionConfirm < 10 字温和追问 |
 | 新 API | `POST /api/task/complete`（Day 6/7 任务完成的非跳过路径）|
 | 新 TaskKind | `memory_correct`（Day 6）+ `worldview_view`（Day 7）替代旧 `memory_review` |
+| **P3 学校** | `/station/school/{prepare,question}` + `/station/report/school` + 40 题系统题库 + 20 条教学时刻 + 班级轮换（visitor 必入 + 1 系统预设 + 2-3 主角） |
+| LLM 调用 | 加 `school` callType；`prompts/school/{system.md,examples.json}` 4 目的 Few-shot |
+| 出题安全 | depart route ask_my_question 分支前置 `filterChildInput`，触发返回"这个问题我不太好传达..." |
+| 教育张力 | "小青龙不会答"分支：visitor 答案含"不知道"等关键词 → 课堂回放底部"现在告诉它"按钮跳记忆面板（PRD §13.6）|
+| 拜访池 | 12 只（4 系统预设 + 8 主角"另一个孩子"版），visit/school 共用；visitor 自己排除 |
 
 ### 0.2 缺口（按 PRD V1.0.2 对照，P1 收口后）
 
@@ -350,9 +355,17 @@
 
 #### P3.3 验收标准
 
-- [ ] 学校在拜访 2 次后才亮起
-- [ ] A/B 类题目交替出现（连续 3 次同类提示设计层规避）
-- [ ] 当题目击中 small_companion 盲区时，正确触发"现在告诉它"入口
+- [x] T1 系统题库 40 题（A 24 + B 16）+ 教学时刻 20 条（PRD §13.4 / §13.5）
+- [x] T4 班级轮换 `pickClassRoster`：visitor 必入 + 1 系统预设 + 2-3 主角
+- [x] T5 学校 LLM Prompt + 4 目的 Few-shot（`prompts/school/`）+ `src/lib/llm/school.ts`（callType='school'）
+- [x] T6 学校 API：扩 `depart` route 加 school 分支 + 出题 `filterChildInput` 敏感词过滤
+- [x] T2 学校准备页 + 出题页（4 目的，ask_my_question 跳出题页）
+- [x] T3 课堂回放页：答案逐条 600ms 出现 + highlight + 教学小蓝字 + visitor_doesnt_know "现在告诉它"入口
+- [x] T7 解锁路径：visit_count>=2 已在 P2-T3 status 实现；traveling 页 returned 跳转扩支持 school
+- [x] T8 E2E spec/05_school_flow：2 流程节点 + 2 happy-path（skipped 待手动启用）
+- [ ] 学校在拜访 2 次后才亮起 — 待人工跑
+- [ ] A/B 类题目交替出现（dayOfYear%3 切换池）— 待人工跑多日验证
+- [ ] 题目击中盲区 → "现在告诉它"入口可用 — 待人工跑
 
 ---
 

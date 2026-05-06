@@ -43,7 +43,9 @@ function TravelingInner() {
           const dest =
             trip.trip_type === 'visit'
               ? `/station/report/visit?trip_id=${encodeURIComponent(tripId)}`
-              : '/station';
+              : trip.trip_type === 'school'
+                ? `/station/report/school?trip_id=${encodeURIComponent(tripId)}`
+                : '/station';
           router.replace(dest);
           return;
         }
