@@ -1,0 +1,55 @@
+{
+  "_doc": "能力类道具（卷轴类）— PRD §14.3 + 附录 D；共 6 件",
+  "version": "0.1.0",
+  "category": "ability",
+  "items": [
+    {
+      "id": "ability_speech",
+      "name": "《说话之术》",
+      "icon": "📜",
+      "description": "一卷怎么说话能让人听进去的心法。",
+      "detailed_description": "用了它，小青龙的台词会更有说服力——重要的话会先铺一句开场，关键的字会被强调。",
+      "applicable_scenarios": ["water_disaster", "envoy_visit", "court_intrigue", "border_alarm"]
+    },
+    {
+      "id": "ability_observation",
+      "name": "《观人之眼》",
+      "icon": "👁️",
+      "description": "能看穿对方心里在想什么。",
+      "detailed_description": "用了它，小青龙能在剧本里读到某个角色没说出口的真实想法——可能是喜悦，可能是隐瞒，可能是恐惧。",
+      "applicable_scenarios": ["court_intrigue", "envoy_visit"]
+    },
+    {
+      "id": "ability_calm",
+      "name": "《镇定符》",
+      "icon": "☯️",
+      "description": "紧张场景里不慌乱。",
+      "detailed_description": "贴在身上能让心不乱。瘟疫、战争、谋反，越是乱越能稳。",
+      "applicable_scenarios": ["plague_outbreak", "border_alarm", "court_intrigue"]
+    },
+    {
+      "id": "ability_flexibility",
+      "name": "《灵活之策》",
+      "icon": "🌀",
+      "description": "让小青龙能绕开一个棘手问题。",
+      "detailed_description": "正面答不出来的时候，可以用它绕一下——避开正面冲突，从侧面化解。",
+      "applicable_scenarios": ["envoy_visit", "court_intrigue", "border_alarm"]
+    },
+    {
+      "id": "ability_courage",
+      "name": "《勇气符》",
+      "icon": "🔥",
+      "description": "危险场景里敢往前一步。",
+      "detailed_description": "面前是大水、是敌兵、是密谋，都能往前迈那一步。",
+      "applicable_scenarios": ["water_disaster", "border_alarm"]
+    },
+    {
+      "id": "ability_wisdom",
+      "name": "《智慧卷》",
+      "icon": "🌟",
+      "description": "复杂决策里能想得更远。",
+      "detailed_description": "用了它，小青龙的选择会顾及更长远的后果——不止眼前的事。",
+      "applicable_scenarios": ["water_disaster", "court_intrigue", "border_alarm"]
+    }
+  ]
+}

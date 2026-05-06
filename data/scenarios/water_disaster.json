@@ -1,0 +1,54 @@
+{
+  "_doc": "广场剧本 · 水患治理（PRD 附录 B.1 标杆样本）",
+  "id": "water_disaster",
+  "title": "水患治理",
+  "type": "治国",
+  "background": "大梁国南方刚下了七天大雨。黄河决了堤，洪水冲垮了下游三个村子。国王召集众人商议如何应对。",
+  "intro": "南方告急——这是国王今早派人传来的消息。所有人都被叫到朝堂上等议事。",
+  "roles": {
+    "xiaoqinglong": "丞相",
+    "dabear": "国王",
+    "xiaohuolong": "武将",
+    "xiaoshizi": "大臣"
+  },
+  "applicable_items": [
+    "treatise_water_control_basic",
+    "treatise_water_control_advanced",
+    "treatise_agriculture",
+    "object_money",
+    "object_wine",
+    "object_seal",
+    "gift_villager",
+    "ability_speech",
+    "ability_courage"
+  ],
+  "acts": [
+    {
+      "number": 1,
+      "name": "朝堂议事",
+      "scene": "朝堂之上，国王坐在中央。武将主张带兵护送物资，大臣提醒国库空虚。国王看向丞相：'丞相怎么看？'",
+      "decision_prompt": "你要让小青龙说什么？从行囊里选一件道具帮它思考。",
+      "expected_quality_hint": "知识类（《治水图》《农事记录》）能给出最直接的方案；金钱可以悬赏招民夫；酒可以慰问。"
+    },
+    {
+      "number": 2,
+      "name": "灾区视察",
+      "scene": "丞相带人到灾区，看见流离失所的村民和断了的堤坝。村里一位老人拉住小青龙的衣袖说话。",
+      "decision_prompt": "现场该怎么应对？再选一件道具。",
+      "expected_quality_hint": "酒 / 给村民的物资能直接安抚民心；治水十策能给出加固方案；勇气符能往断堤前再走一步。"
+    },
+    {
+      "number": 3,
+      "name": "回朝呈策",
+      "scene": "回朝复命。国王已经听了三方意见，要做最后决断。",
+      "decision_prompt": "怎么把刚才看到的呈给国王？再选一件道具。",
+      "expected_quality_hint": "说话之术能让奏疏更有说服力；印章可以直接发布命令；智慧卷能想到长远的事。"
+    }
+  ],
+  "rewards": {
+    "always": ["villager_straw_shoes"],
+    "perfect": ["treatise_water_control_advanced"],
+    "good": ["object_seal"],
+    "barely": ["object_wine"]
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "_doc": "物品类道具 — PRD §14.3 + 附录 D；共 7 件",
+  "version": "0.1.0",
+  "category": "object",
+  "items": [
+    {
+      "id": "object_letter",
+      "name": "一封旧信件",
+      "icon": "✉️",
+      "description": "封口已经发黄。出示能改变某些剧情走向。",
+      "detailed_description": "信里到底写了什么，得在合适的场合才能掀开看。",
+      "applicable_scenarios": ["court_intrigue"]
+    },
+    {
+      "id": "object_money",
+      "name": "一袋金子",
+      "icon": "💰",
+      "description": "几十个金疙瘩。可以贿赂、捐献、悬赏。",
+      "detailed_description": "在水患剧本里可以悬赏招募民夫；在外交里可以送给使节；在瘟疫里可以买药。",
+      "applicable_scenarios": ["water_disaster", "envoy_visit", "plague_outbreak"]
+    },
+    {
+      "id": "object_jade",
+      "name": "一块玉佩",
+      "icon": "🟢",
+      "description": "白玉凤纹。是身份的信物，也可以做礼物。",
+      "detailed_description": "在朝堂上拿出来，能证明身份。在外交里送出去，是一种敬意。",
+      "applicable_scenarios": ["envoy_visit", "court_intrigue"]
+    },
+    {
+      "id": "object_wine",
+      "name": "一壶酒",
+      "icon": "🍶",
+      "description": "陈年米酒。宴饮、谈判、慰问都能用。",
+      "detailed_description": "在水患后慰问灾民，会成为最被记住的细节；在外交宴上敬使节，是心意。",
+      "applicable_scenarios": ["water_disaster", "envoy_visit", "plague_outbreak"]
+    },
+    {
+      "id": "object_sword",
+      "name": "一把宝剑",
+      "icon": "🗡️",
+      "description": "出鞘有霜气。武力威慑或保护用。",
+      "detailed_description": "不是用来杀人的——是用来让人安心的。腰间悬着它，对方就知道你是有备而来的。",
+      "applicable_scenarios": ["border_alarm", "court_intrigue"]
+    },
+    {
+      "id": "object_seal",
+      "name": "一枚印章",
+      "icon": "🔖",
+      "description": "可以盖章发布命令。代表权威。",
+      "detailed_description": "印一下，那张纸就生效了——召集民夫、调动粮草、发布告示，都需要它。",
+      "applicable_scenarios": ["water_disaster", "border_alarm"]
+    },
+    {
+      "id": "villager_straw_shoes",
+      "name": "乡亲送的草鞋",
+      "icon": "🥾",
+      "description": "村里的老人亲手编的。在民生类剧本中能增加民心。",
+      "detailed_description": "这双草鞋是水患后乡亲们送的。穿过的人都说它合脚。带在行囊里，下次遇到老百姓就有共同话题了。",
+      "applicable_scenarios": ["plague_outbreak", "water_disaster"]
+    }
+  ]
+}

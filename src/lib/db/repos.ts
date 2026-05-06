@@ -7,15 +7,20 @@ import 'server-only';
 
 import { execute, query, queryOne, SINGLE_USER_ID, uuid } from './client';
 import type {
+  ActChoice,
   Companion,
   ConceptCategory,
   ConversationLine,
   CorrectionEvent,
   DayNumber,
+  EndingType,
+  InventoryItem,
+  ItemCategory,
   Memory,
   MemoryBankEntry,
   MemoryBankType,
   MemoryInputType,
+  PlazaPlay,
   Trip,
   TripStatus,
   TripType,
@@ -792,4 +797,219 @@ export async function hasTripToday(companionId: string): Promise<boolean> {
     { cid: companionId },
   );
   return (r?.n ?? 0) > 0;
+}
+
+// ──────────────────── inventory_items（P4 §22.1.9）────────────────────
+
+const INVENTORY_FIELDS = `
+  id, companion_id, item_id, item_name, item_category, item_subcategory,
+  item_description, item_detailed_description,
+  acquired_at, acquired_from, use_count, last_used_at,
+  is_upgraded_from, created_at
+`;
+
+export interface GrantItemInput {
+  companionId: string;
+  itemId: string;
+  itemName: string;
+  itemCategory: ItemCategory;
+  itemSubcategory?: string;
+  itemDescription?: string;
+  itemDetailedDescription?: string;
+  acquiredFrom?: string;
+  isUpgradedFrom?: string;
+}
+
+/**
+ * 给伙伴授予一件道具。
+ * 幂等：同 (companion_id, item_id) 已有 → 不插，返回已有行（PRD §14.3.2 道具不消耗，不重复获得）。
+ */
+export async function grantInventoryItem(
+  input: GrantItemInput,
+): Promise<{ row: InventoryItem; created: boolean }> {
+  const existing = await queryOne<InventoryItem>(
+    `select ${INVENTORY_FIELDS} from inventory_items
+       where companion_id = :cid and item_id = :iid`,
+    { cid: input.companionId, iid: input.itemId },
+  );
+  if (existing) {
+    return { row: existing, created: false };
+  }
+  const id = uuid();
+  await execute(
+    `insert into inventory_items
+       (id, companion_id, item_id, item_name, item_category, item_subcategory,
+        item_description, item_detailed_description, acquired_from, is_upgraded_from)
+     values
+       (:id, :cid, :iid, :name, :cat, :sub,
+        :desc, :ddesc, :from, :up)`,
+    {
+      id,
+      cid: input.companionId,
+      iid: input.itemId,
+      name: input.itemName,
+      cat: input.itemCategory,
+      sub: input.itemSubcategory ?? null,
+      desc: input.itemDescription ?? null,
+      ddesc: input.itemDetailedDescription ?? null,
+      from: input.acquiredFrom ?? null,
+      up: input.isUpgradedFrom ?? null,
+    },
+  );
+  const row = await queryOne<InventoryItem>(
+    `select ${INVENTORY_FIELDS} from inventory_items where id = :id`,
+    { id },
+  );
+  if (!row) throw new Error('grantInventoryItem: row missing after insert');
+  return { row, created: true };
+}
+
+export async function listInventory(companionId: string): Promise<InventoryItem[]> {
+  return await query<InventoryItem>(
+    `select ${INVENTORY_FIELDS} from inventory_items
+       where companion_id = :cid
+       order by item_category asc, acquired_at desc`,
+    { cid: companionId },
+  );
+}
+
+export async function findInventoryById(id: string): Promise<InventoryItem | null> {
+  return await queryOne<InventoryItem>(
+    `select ${INVENTORY_FIELDS} from inventory_items where id = :id`,
+    { id },
+  );
+}
+
+export async function findInventoryByItemId(
+  companionId: string,
+  itemId: string,
+): Promise<InventoryItem | null> {
+  return await queryOne<InventoryItem>(
+    `select ${INVENTORY_FIELDS} from inventory_items
+       where companion_id = :cid and item_id = :iid`,
+    { cid: companionId, iid: itemId },
+  );
+}
+
+export async function bumpItemUseCount(rowId: string): Promise<void> {
+  await execute(
+    `update inventory_items
+       set use_count = use_count + 1, last_used_at = current_timestamp(3)
+       where id = :id`,
+    { id: rowId },
+  );
+}
+
+// ──────────────────── plaza_plays（P4 §22.1.10）────────────────────
+
+const PLAZA_PLAY_FIELDS = `
+  id, companion_id, trip_id, scenario_id, scenario_title,
+  act_choices, ending_type, ending_narrative, earned_items,
+  played_at, finished_at
+`;
+
+export async function createPlazaPlay(args: {
+  companionId: string;
+  tripId?: string;
+  scenarioId: string;
+  scenarioTitle?: string;
+}): Promise<PlazaPlay> {
+  const id = uuid();
+  await execute(
+    `insert into plaza_plays
+       (id, companion_id, trip_id, scenario_id, scenario_title)
+     values
+       (:id, :cid, :tid, :sid, :title)`,
+    {
+      id,
+      cid: args.companionId,
+      tid: args.tripId ?? null,
+      sid: args.scenarioId,
+      title: args.scenarioTitle ?? null,
+    },
+  );
+  const row = await queryOne<PlazaPlay>(
+    `select ${PLAZA_PLAY_FIELDS} from plaza_plays where id = :id`,
+    { id },
+  );
+  if (!row) throw new Error('createPlazaPlay: row missing');
+  return row;
+}
+
+export async function appendPlazaPlayChoice(args: {
+  playId: string;
+  choice: ActChoice;
+}): Promise<void> {
+  await execute(
+    `update plaza_plays
+       set act_choices = json_array_append(coalesce(act_choices, cast('[]' as json)), '$', cast(:c as json))
+       where id = :id`,
+    { id: args.playId, c: JSON.stringify(args.choice) },
+  );
+}
+
+export async function finishPlazaPlay(args: {
+  playId: string;
+  endingType: EndingType;
+  endingNarrative: string;
+  earnedItems: string[];
+}): Promise<void> {
+  await execute(
+    `update plaza_plays
+       set ending_type = :type,
+           ending_narrative = :narr,
+           earned_items = cast(:items as json),
+           finished_at = current_timestamp(3)
+       where id = :id`,
+    {
+      id: args.playId,
+      type: args.endingType,
+      narr: args.endingNarrative,
+      items: JSON.stringify(args.earnedItems),
+    },
+  );
+}
+
+export async function getPlazaPlayById(id: string): Promise<PlazaPlay | null> {
+  return await queryOne<PlazaPlay>(
+    `select ${PLAZA_PLAY_FIELDS} from plaza_plays where id = :id`,
+    { id },
+  );
+}
+
+/** 同 companion 玩过广场（任意剧本）总次数 — 用于"玩过 1 次广场"的 BottomNav 行囊入口判断 */
+export async function countPlazaPlaysAll(companionId: string): Promise<number> {
+  const r = await queryOne<{ n: number }>(
+    `select count(*) as n from plaza_plays where companion_id = :cid`,
+    { cid: companionId },
+  );
+  return r?.n ?? 0;
+}
+
+/** 同 companion 玩过该剧本的次数（用于第 N 次台词差异 PRD §14.5.3）*/
+export async function countPlazaPlaysByScenario(
+  companionId: string,
+  scenarioId: string,
+): Promise<number> {
+  const r = await queryOne<{ n: number }>(
+    `select count(*) as n from plaza_plays
+       where companion_id = :cid and scenario_id = :sid`,
+    { cid: companionId, sid: scenarioId },
+  );
+  return r?.n ?? 0;
+}
+
+/** 最近玩过的剧本 id 列表（用于挑选时去重避免连续）*/
+export async function listRecentPlazaScenarios(
+  companionId: string,
+  limit = 2,
+): Promise<string[]> {
+  const lim = Math.max(1, Math.min(10, Math.floor(limit)));
+  const rows = await query<{ scenario_id: string }>(
+    `select scenario_id from plaza_plays
+       where companion_id = :cid
+       order by played_at desc limit ${lim}`,
+    { cid: companionId },
+  );
+  return rows.map((r) => r.scenario_id);
 }

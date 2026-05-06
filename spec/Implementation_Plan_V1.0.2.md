@@ -6,7 +6,7 @@
 
 ---
 
-## 0. 现状基线（V0.6.1 + P1 收口 + P2 朋友家 + Day 1-7 PRD 对齐 + P3 学校）
+## 0. 现状基线（V0.6.1 + P1 + P2 朋友家 + Day 1-7 + P3 学校 + P4 行囊&广场基础）
 
 ### 0.1 已完成
 
@@ -44,6 +44,11 @@
 | 出题安全 | depart route ask_my_question 分支前置 `filterChildInput`，触发返回"这个问题我不太好传达..." |
 | 教育张力 | "小青龙不会答"分支：visitor 答案含"不知道"等关键词 → 课堂回放底部"现在告诉它"按钮跳记忆面板（PRD §13.6）|
 | 拜访池 | 12 只（4 系统预设 + 8 主角"另一个孩子"版），visit/school 共用；visitor 自己排除 |
+| **P4 行囊 + 广场基础** | 迁移 0005（inventory_items + plaza_plays）+ 27 件道具池 + 5 剧本骨架 + 新手礼包逻辑 |
+| 行囊系统 | `/inventory` + `/inventory/[id]` + 4 类分组 + 适用剧本标签 + 来源记录 |
+| 广场准备 | `/station/plaza/prepare`：今日剧本（按哈希 + 排除最近 2 次）+ 角色分配 + 选 3 道具（适用项 ● 高亮）|
+| 主页变化 | BottomNav 玩过 1 次广场后多"行囊"第 5 Tab；state API 加 `has_played_plaza` 字段 |
+| **关键说明** | P4 完成的是行囊基础与广场入口；剧本进行流程（3 幕 + 结局 + 道具奖励）留给 P5 |
 
 ### 0.2 缺口（按 PRD V1.0.2 对照，P1 收口后）
 
@@ -427,9 +432,18 @@
 
 #### P4.3 验收标准
 
-- [ ] 27 件道具全部入库可查
-- [ ] 5 个剧本 JSON 可被 LLM Prompt 拼接成功
-- [ ] 角色分配在 5 次随机测试下，伙伴选择合理（思考型→丞相 etc.）
+- [x] T1 迁移 0005：inventory_items + plaza_plays（幂等 stored procedure 风格 + check constraints）
+- [x] T2 道具池 27 件 JSON 资产（知识 8 + 物品 7 + 礼物 6 + 能力 6）
+- [x] T3 5 个剧本骨架 JSON（水患 / 使节 / 瘟疫 / 朝堂 / 边境）
+- [x] T4 行囊页 + 道具详情页（按 4 类分组 + 适用剧本标签）
+- [x] T5 行囊 API：GET /api/inventory + GET /api/inventory/[id]
+- [x] T6 新手礼包：第一次进 plaza/prepare 自动发 3 件基础道具（《治水图》+ 一袋金子 + 一壶酒）+ 角色分配（剧本骨架 roles 字段直读）
+- [x] T7 广场准备页：剧本简介 + 角色 + 选 3 道具（applicable_item_ids 高亮 ●）+ 出发按钮置灰直到选满
+- [x] T8 解锁路径：school_count≥1 已在 P2-T3 status 实现；BottomNav 加 "行囊" 第 5 个 Tab（玩过 1 次广场后出现）
+- [x] T9 E2E spec/06_plaza_prepare：1 路由节点 + 2 happy-path（skipped 待手动启用）
+- [ ] 27 件道具全部入库可查 — 待人工跑（grant 流通后）
+- [ ] 5 个剧本 JSON 可被 LLM Prompt 拼接成功 — 待 P5 实装剧本 LLM 后验证
+- [ ] 角色分配合理 — P5 实装角色分配 LLM 时再做更动态的分配；当前剧本骨架预定 roles
 
 ---
 

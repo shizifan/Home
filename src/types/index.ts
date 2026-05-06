@@ -252,3 +252,89 @@ export interface VisitReportData {
     is_system_preset: boolean;
   };
 }
+
+// =========================================================
+// P4 行囊 + 广场（PRD §14 / §22.1.9 / §22.1.10）
+// =========================================================
+
+export type ItemCategory = 'knowledge' | 'object' | 'gift' | 'ability';
+
+/** 道具池定义（来自 data/items/*.json，不入库）*/
+export interface ItemDef {
+  id: string;
+  name: string;
+  icon?: string;
+  description: string;
+  detailed_description?: string;
+  applicable_scenarios: string[];
+  upgrade_to?: string;
+}
+
+export interface InventoryItem {
+  id: string;
+  companion_id: string;
+  item_id: string;
+  item_name: string;
+  item_category: ItemCategory;
+  item_subcategory?: string;
+  item_description?: string;
+  item_detailed_description?: string;
+  acquired_at: string;
+  acquired_from?: string;
+  use_count: number;
+  last_used_at?: string;
+  is_upgraded_from?: string;
+  created_at: string;
+}
+
+/** 广场剧本骨架（来自 data/scenarios/*.json）*/
+export interface ScenarioAct {
+  number: 1 | 2 | 3;
+  name: string;
+  scene: string;
+  decision_prompt: string;
+  expected_quality_hint: string;
+}
+
+export interface ScenarioRewards {
+  always: string[];
+  perfect: string[];
+  good: string[];
+  barely: string[];
+}
+
+export interface Scenario {
+  id: string;
+  title: string;
+  type: string;
+  background: string;
+  intro: string;
+  roles: Record<string, string>;
+  applicable_items: string[];
+  acts: ScenarioAct[];
+  rewards: ScenarioRewards;
+}
+
+/** 广场剧本玩法记录 */
+export type EndingType = 'perfect' | 'good' | 'barely';
+export type ItemUseQuality = 'natural' | 'stretched' | 'skipped';
+
+export interface ActChoice {
+  act: 1 | 2 | 3;
+  item_id: string | null; // null = 不用道具
+  quality?: ItemUseQuality;
+}
+
+export interface PlazaPlay {
+  id: string;
+  companion_id: string;
+  trip_id?: string;
+  scenario_id: string;
+  scenario_title?: string;
+  act_choices?: ActChoice[];
+  ending_type?: EndingType;
+  ending_narrative?: string;
+  earned_items?: string[];
+  played_at: string;
+  finished_at?: string;
+}

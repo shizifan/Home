@@ -1,0 +1,55 @@
+{
+  "_doc": "广场剧本 · 边境警报（PRD 附录 B.5）",
+  "id": "border_alarm",
+  "title": "边境警报",
+  "type": "军事",
+  "background": "边境传来敌军调动的消息，国王召集大家讨论应对策略。",
+  "intro": "驿使从边关连夜赶到。'敌兵已经在三十里外集结。' 朝堂上一时静得听得到呼吸。",
+  "roles": {
+    "xiaoqinglong": "丞相",
+    "dabear": "国王",
+    "xiaohuolong": "武将",
+    "xiaolaohu": "侍卫"
+  },
+  "applicable_items": [
+    "treatise_military",
+    "treatise_map",
+    "object_sword",
+    "object_seal",
+    "object_money",
+    "ability_courage",
+    "ability_speech",
+    "ability_calm",
+    "ability_wisdom",
+    "king_jade_seal"
+  ],
+  "acts": [
+    {
+      "number": 1,
+      "name": "紧急议事",
+      "scene": "武将主张立即出兵，'先发制人'。大臣劝慎重。国王一时拿不准。",
+      "decision_prompt": "丞相要怎么出主意？",
+      "expected_quality_hint": "《兵法精要》给出原则——什么时候打、什么时候等；《镇定符》让朝堂不至于乱；《说话之术》让丞相的意见被听进去。"
+    },
+    {
+      "number": 2,
+      "name": "边境视察",
+      "scene": "丞相亲自去边境。看到的是连绵的烽火台和远处的敌营。武将问：'打吗？'",
+      "decision_prompt": "现场怎么决断？",
+      "expected_quality_hint": "《古代地图》能看出哪里能伏击；宝剑让自己有底气说话；勇气符决定要不要靠近敌营探查；智慧卷让你想到议和的可能。"
+    },
+    {
+      "number": 3,
+      "name": "抵御方案",
+      "scene": "回朝。要把方案呈给国王，决定是战是守是议。",
+      "decision_prompt": "怎么呈方案？再选一件道具。",
+      "expected_quality_hint": "印章直接发兵令；金钱可以买粮草；《说话之术》让方案被接受；国王赐的玉印让你说话最被听。"
+    }
+  ],
+  "rewards": {
+    "always": ["object_sword"],
+    "perfect": ["treatise_military"],
+    "good": ["ability_wisdom"],
+    "barely": ["object_money"]
+  }
+}

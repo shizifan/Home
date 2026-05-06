@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 
 import {
   bumpAndGetLastActive,
+  countPlazaPlaysAll,
   findCompanionForSingleUser,
   getRecentCompanionLine,
   isTaskDoneToday,
@@ -105,6 +106,8 @@ export async function GET() {
       current_day: companion.current_day,
       starting_personality: companion.starting_personality,
       graduated: !!companion.graduated_at,
+      /** PRD §11.6：玩过 1 次广场后底部导航多"行囊"入口 */
+      has_played_plaza: (await countPlazaPlaysAll(companion.id)) > 0,
     },
     last_companion_line: lastLine?.content ?? null,
     last_companion_line_source: lastLine?.source ?? null,

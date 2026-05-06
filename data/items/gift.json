@@ -1,0 +1,55 @@
+{
+  "_doc": "礼物类道具 — PRD §14.3 + 附录 D；共 6 件",
+  "version": "0.1.0",
+  "category": "gift",
+  "items": [
+    {
+      "id": "gift_companion",
+      "name": "给小伙伴的礼物",
+      "icon": "🎁",
+      "description": "一件能让某个角色心生好感的小物。",
+      "detailed_description": "送对了人，下面的对话会顺很多——他也许会替你说话，也许会偷偷帮你一把。",
+      "applicable_scenarios": ["court_intrigue", "envoy_visit"]
+    },
+    {
+      "id": "gift_king",
+      "name": "给国王的贡品",
+      "icon": "👑",
+      "description": "用绢布包好的精致礼物。能让你说话有分量。",
+      "detailed_description": "国王不缺钱不缺东西，但会记住谁送的东西最用心。带上这个，下面发言别人会更愿意听完。",
+      "applicable_scenarios": ["water_disaster", "envoy_visit", "court_intrigue"]
+    },
+    {
+      "id": "gift_villager",
+      "name": "给村民的物资",
+      "icon": "🌾",
+      "description": "几袋粮食、几件衣裳。给灾民最实在的东西。",
+      "detailed_description": "灾年里，一袋粮比一句话管用一百倍。把它送出去，能换回真心。",
+      "applicable_scenarios": ["water_disaster", "plague_outbreak"]
+    },
+    {
+      "id": "gift_candy",
+      "name": "一袋糖果",
+      "icon": "🍬",
+      "description": "甜的东西。在紧张的场合能让大家放松。",
+      "detailed_description": "议事议得太紧张了，掏出一袋糖分给大家，气氛就会缓下来。小孩也能用，老人也能用。",
+      "applicable_scenarios": ["envoy_visit", "court_intrigue"]
+    },
+    {
+      "id": "gift_flower",
+      "name": "一束鲜花",
+      "icon": "💐",
+      "description": "一束新鲜的野花。表达善意。",
+      "detailed_description": "不一定是名贵的花——是路边随手摘的，但收到的人能感觉到诚意。",
+      "applicable_scenarios": ["envoy_visit", "plague_outbreak"]
+    },
+    {
+      "id": "king_jade_seal",
+      "name": "国王赐的玉印",
+      "icon": "🔱",
+      "description": "国王亲赐的一枚玉印。在朝堂上能让你说话最被听。",
+      "detailed_description": "握着它出现在朝堂，谁都得让一让。这是上一次朝堂表现好得来的奖励。",
+      "applicable_scenarios": ["court_intrigue", "border_alarm"]
+    }
+  ]
+}

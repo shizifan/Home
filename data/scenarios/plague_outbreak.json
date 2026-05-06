@@ -1,0 +1,54 @@
+{
+  "_doc": "广场剧本 · 瘟疫蔓延（PRD 附录 B.3）",
+  "id": "plague_outbreak",
+  "title": "瘟疫蔓延",
+  "type": "民生",
+  "background": "国都附近爆发瘟疫，民众恐慌。国王召集大家寻找应对方法。",
+  "intro": "城里飘着一种说不清的味道。家家户户都关了门，街上几乎没人。",
+  "roles": {
+    "xiaoqinglong": "丞相",
+    "dabear": "国王",
+    "linnabel": "医女",
+    "xiaolaohu": "侍卫"
+  },
+  "applicable_items": [
+    "treatise_medicine",
+    "treatise_agriculture",
+    "object_money",
+    "object_wine",
+    "gift_villager",
+    "villager_straw_shoes",
+    "ability_calm",
+    "ability_courage",
+    "ability_speech"
+  ],
+  "acts": [
+    {
+      "number": 1,
+      "name": "朝堂议事",
+      "scene": "国王惊慌：'这病传得快，三日就到三个村子。怎么办？' 医女说要先找到病源。",
+      "decision_prompt": "应该先做什么？选一件道具。",
+      "expected_quality_hint": "《医书残卷》能给出救命的方子；《镇定符》让丞相不慌；金钱可以买药；草鞋让人感到丞相懂民间疾苦。"
+    },
+    {
+      "number": 2,
+      "name": "医师营探查",
+      "scene": "丞相带人到医师营。营里的医师们累得趴下了。城外有传言说病是从一口井里来的。",
+      "decision_prompt": "怎么查清病源？",
+      "expected_quality_hint": "《医书残卷》提供线索；《农事记录》能查到那口井是什么时候挖的；勇气符让丞相敢去看那口井；说话之术能让医师听话。"
+    },
+    {
+      "number": 3,
+      "name": "颁布政令",
+      "scene": "病源查清了。国王要丞相起草告示，告诉百姓怎么办。",
+      "decision_prompt": "怎么起草告示？再选一件道具。",
+      "expected_quality_hint": "《说话之术》让告示让百姓相信；给村民的物资同时随告示分发；草鞋让告示更有人味。"
+    }
+  ],
+  "rewards": {
+    "always": ["gift_villager"],
+    "perfect": ["treatise_medicine"],
+    "good": ["villager_straw_shoes"],
+    "barely": ["ability_calm"]
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "_doc": "广场剧本 · 朝堂谋略（PRD 附录 B.4）",
+  "id": "court_intrigue",
+  "title": "朝堂谋略",
+  "type": "政治",
+  "background": "朝堂上有大臣暗中结党，国王怀疑但找不到证据，请丞相调查。",
+  "intro": "国王把丞相留在了内殿。'有人在背后做文章。我看不清是谁。'",
+  "roles": {
+    "xiaoqinglong": "丞相",
+    "dabear": "国王",
+    "tengtengshe": "探子",
+    "xiaoshizi": "大臣"
+  },
+  "applicable_items": [
+    "treatise_etiquette",
+    "object_letter",
+    "object_jade",
+    "object_seal",
+    "gift_companion",
+    "gift_king",
+    "king_jade_seal",
+    "ability_observation",
+    "ability_speech",
+    "ability_flexibility",
+    "ability_calm",
+    "ability_wisdom"
+  ],
+  "acts": [
+    {
+      "number": 1,
+      "name": "暗访宫廷",
+      "scene": "丞相在宫里悄悄走了一圈。每个人都笑脸相迎，但每个笑都不太像。",
+      "decision_prompt": "怎么从这一圈里找到线索？",
+      "expected_quality_hint": "《观人之眼》能看穿笑的真假；玉佩可以让人放下戒备；《说话之术》让对方多说几句；《镇定符》让丞相不被表面骗到。"
+    },
+    {
+      "number": 2,
+      "name": "发现线索",
+      "scene": "探子带来一封信。信里没署名，但字迹有点眼熟。",
+      "decision_prompt": "怎么把这封信用到点子上？",
+      "expected_quality_hint": "旧信件可以做对比佐证；《灵活之策》决定要不要直接戳穿；给小伙伴的礼物能让某个角色替你说话；《智慧卷》决定是否一次摊牌。"
+    },
+    {
+      "number": 3,
+      "name": "朝堂揭晓",
+      "scene": "朝堂上，丞相要把所有线索串起来呈给国王。所有大臣都在看。",
+      "decision_prompt": "怎么揭晓？再选一件道具。",
+      "expected_quality_hint": "国王赐的玉印让你说话最有分量；印章能直接发布命令；《说话之术》让揭晓不留把柄；给国王的贡品让国王听完你说的全部。"
+    }
+  ],
+  "rewards": {
+    "always": ["object_letter"],
+    "perfect": ["king_jade_seal"],
+    "good": ["ability_wisdom"],
+    "barely": ["object_seal"]
+  }
+}

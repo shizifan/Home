@@ -1,0 +1,72 @@
+{
+  "_doc": "知识类道具（书卷类）— PRD §14.3 + 附录 D；共 8 件",
+  "version": "0.1.0",
+  "category": "knowledge",
+  "items": [
+    {
+      "id": "treatise_water_control_basic",
+      "name": "《治水图》",
+      "icon": "📖",
+      "description": "记着黄河历代决堤位置和加固办法的薄册子。",
+      "detailed_description": "翻开这本册子，能看到密密麻麻的小字和河道图。哪里堤坝最弱、什么时候该疏浚、什么时候该加固——都写得清清楚楚。",
+      "applicable_scenarios": ["water_disaster"],
+      "upgrade_to": "treatise_water_control_advanced"
+    },
+    {
+      "id": "treatise_water_control_advanced",
+      "name": "《治水十策》",
+      "icon": "📜",
+      "description": "《治水图》的升级版。多次治水积累出来的更精微的方案。",
+      "detailed_description": "比《治水图》多了十条具体策略：分洪、改道、围堰、退耕……在水患剧本里能让小青龙说出更具体的话。",
+      "applicable_scenarios": ["water_disaster"]
+    },
+    {
+      "id": "treatise_agriculture",
+      "name": "《农事记录》",
+      "icon": "🌾",
+      "description": "什么时候播种、什么时候收割、闹饥荒怎么办。",
+      "detailed_description": "记录了从惊蛰到冬至每一个节气的农事活动。荒年的时候，哪里能找到野菜，哪里能挖到红薯，都标得很细。",
+      "applicable_scenarios": ["water_disaster", "plague_outbreak"]
+    },
+    {
+      "id": "treatise_diplomacy",
+      "name": "《邻国风物志》",
+      "icon": "🗺️",
+      "description": "邻国的风俗、语言、礼节都记在里面。",
+      "detailed_description": "翻开它，能看到邻国人喜欢什么、忌讳什么，逢年过节怎么过。带着这本书去见使节，能避开很多不必要的尴尬。",
+      "applicable_scenarios": ["envoy_visit"]
+    },
+    {
+      "id": "treatise_medicine",
+      "name": "《医书残卷》",
+      "icon": "📕",
+      "description": "残破的医书，但记着几个救命的方子。",
+      "detailed_description": "纸页都黄了，但里面记的方子是真管用——遇到瘟疫、伤寒、外伤都能找到对应的药方。",
+      "applicable_scenarios": ["plague_outbreak"]
+    },
+    {
+      "id": "treatise_military",
+      "name": "《兵法精要》",
+      "icon": "⚔️",
+      "description": "古代将军们打过的硬仗，写成了几条精要。",
+      "detailed_description": "里面没有具体的招数，只有几个原则：地形、士气、后勤、时机。打仗时先看这本书，再看地图。",
+      "applicable_scenarios": ["border_alarm"]
+    },
+    {
+      "id": "treatise_etiquette",
+      "name": "《古代礼仪》",
+      "icon": "🎎",
+      "description": "朝堂上怎么站、怎么说、怎么行礼。",
+      "detailed_description": "在皇帝面前低三分头还是低四分头都有讲究。这本书里写得分毫不差。穿戴也都对应不同的场合。",
+      "applicable_scenarios": ["envoy_visit", "court_intrigue"]
+    },
+    {
+      "id": "treatise_map",
+      "name": "《古代地图》",
+      "icon": "🗾",
+      "description": "国境内外的山川河流地名的记录。",
+      "detailed_description": "山在哪、河在哪、关隘在哪。打仗、行路、找人，都得先看这张图。",
+      "applicable_scenarios": ["border_alarm"]
+    }
+  ]
+}

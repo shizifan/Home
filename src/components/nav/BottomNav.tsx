@@ -1,20 +1,24 @@
 /**
- * 主页底部 4 Tab 导航（PRD §10.2）
- * 顺序：今日任务 / 它的脑袋（红点）/ 日记 / 设置
+ * 主页底部 Tab 导航（PRD §11.6）
+ * 默认 4 项：今日任务 / 它的脑袋（红点）/ 日记 / 设置
+ * 玩过 1 次广场后会插入"行囊"= 5 项（PRD §11.6 第二行）
  */
 
 'use client';
 
 import clsx from 'clsx';
 
-export type NavTab = 'task' | 'brain' | 'diary' | 'gear';
+export type NavTab = 'task' | 'brain' | 'inventory' | 'diary' | 'gear';
 
 interface Props {
   active?: NavTab;
   hasTaskBadge?: boolean;
   hasBrainRedDot?: boolean;
+  /** 玩过 1 次广场后置 true → 显示"行囊"按钮 */
+  showInventory?: boolean;
   onTask?: () => void;
   onBrain?: () => void;
+  onInventory?: () => void;
   onDiary?: () => void;
   onGear?: () => void;
 }
@@ -23,22 +27,34 @@ export function BottomNav({
   active,
   hasTaskBadge,
   hasBrainRedDot,
+  showInventory,
   onTask,
   onBrain,
+  onInventory,
   onDiary,
   onGear,
 }: Props) {
+  const cols = showInventory ? 'grid-cols-5' : 'grid-cols-4';
   return (
     <nav
       className={clsx(
         'absolute left-0 right-0 bottom-0 h-[84px] pb-[18px]',
         'bg-[#FFF8EA] border-t border-[rgba(95,94,90,0.15)]',
-        'grid grid-cols-4',
+        'grid',
+        cols,
       )}
       aria-label="底部导航"
     >
       <NavBtn icon="task" label="今日任务" active={active === 'task'} badge={hasTaskBadge ? 1 : 0} onClick={onTask} />
       <NavBtn icon="brain" label="它的脑袋" active={active === 'brain'} reddot={hasBrainRedDot} onClick={onBrain} />
+      {showInventory && (
+        <NavBtn
+          icon="inventory"
+          label="行囊"
+          active={active === 'inventory'}
+          onClick={onInventory}
+        />
+      )}
       <NavBtn icon="diary" label="日记" active={active === 'diary'} onClick={onDiary} />
       <NavBtn icon="gear" label="设置" active={active === 'gear'} onClick={onGear} />
     </nav>
@@ -102,6 +118,17 @@ function NavIcon({ kind }: { kind: NavTab }) {
           strokeWidth="1.5"
         />
         <path d="M11 12 Q13 14 11 16 M19 12 Q17 14 19 16" stroke="#5F5E5A" strokeWidth="1" fill="none" />
+      </svg>
+    );
+  }
+  if (kind === 'inventory') {
+    return (
+      <svg viewBox="0 0 30 30" width="30" height="30" aria-hidden>
+        {/* 木盒 / 背包 */}
+        <path d="M6 11 L24 11 L24 24 Q24 25 23 25 L7 25 Q6 25 6 24 Z" fill="#A8773D" stroke="#5F5E5A" strokeWidth="1.5" />
+        <path d="M6 11 L24 11 L22 7 L8 7 Z" fill="#C8955A" stroke="#5F5E5A" strokeWidth="1.5" />
+        <line x1="6" y1="16" x2="24" y2="16" stroke="#5F5E5A" strokeWidth="1" />
+        <circle cx="15" cy="20" r="1.5" fill="#5F5E5A" />
       </svg>
     );
   }

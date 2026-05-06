@@ -12,6 +12,8 @@ export interface CompanionStateResponse {
     starting_personality: string;
     /** P2: 是否已毕业（worldview 已生成时为 true）*/
     graduated?: boolean;
+    /** P4: 玩过 1 次广场后置 true → 主页 BottomNav 显示"行囊"入口（PRD §11.6）*/
+    has_played_plaza?: boolean;
   } | null;
   last_companion_line: string | null;
   last_companion_line_source: string | null;
@@ -424,6 +426,91 @@ export class Day7FailureError extends Error {
     super(message);
     this.name = 'Day7FailureError';
   }
+}
+
+// ──────────────────── 行囊（P4）────────────────────
+
+export type ItemCategoryClient = 'knowledge' | 'object' | 'gift' | 'ability';
+
+export interface InventoryItemView {
+  id: string; // inventory_items.id
+  item_id: string;
+  name: string;
+  category: ItemCategoryClient;
+  description: string;
+  detailed_description: string;
+  icon: string;
+  use_count: number;
+  last_used_at?: string | null;
+  acquired_at: string;
+  acquired_from?: string | null;
+  is_upgraded_from?: string | null;
+}
+
+export interface InventoryResponse {
+  companion_id: string;
+  items: InventoryItemView[];
+  grouped: {
+    knowledge: InventoryItemView[];
+    object: InventoryItemView[];
+    gift: InventoryItemView[];
+    ability: InventoryItemView[];
+  };
+}
+
+export async function getInventory(): Promise<InventoryResponse> {
+  const r = await fetch('/api/inventory', { cache: 'no-store' });
+  if (!r.ok) throw new Error(`inventory ${r.status}`);
+  return r.json();
+}
+
+export async function getInventoryItem(id: string) {
+  const r = await fetch(`/api/inventory/${encodeURIComponent(id)}`, {
+    cache: 'no-store',
+  });
+  if (!r.ok) throw new Error(`inventory item ${r.status}`);
+  return r.json() as Promise<{
+    item: InventoryItemView;
+    applicable_scenarios: string[];
+    upgrade_to: string | null;
+  }>;
+}
+
+// ──────────────────── 广场（P4 准备页 / P5 剧本进行）────────────────────
+
+export interface PlazaPrepareResponse {
+  today_used: boolean;
+  scenario: {
+    id: string;
+    title: string;
+    type: string;
+    background: string;
+    intro: string;
+    played_times: number;
+  };
+  roles: Array<{
+    preset_id: string;
+    role: string;
+    name: string;
+    appearance: string;
+  }>;
+  inventory: InventoryResponse;
+  applicable_item_ids: string[];
+  starter_pack_granted: string[] | null;
+}
+
+export async function getPlazaPrepare(): Promise<PlazaPrepareResponse> {
+  const r = await fetch('/api/station/plaza/prepare', { cache: 'no-store' });
+  if (!r.ok) {
+    const body = (await r.json().catch(() => ({}))) as {
+      error?: string;
+      hint?: string;
+    };
+    const e = new Error(body.error ?? `plaza prepare ${r.status}`);
+    (e as Error & { hint?: string }).hint = body.hint;
+    throw e;
+  }
+  return r.json();
 }
 
 // ──────────────────── 驿站（P2）────────────────────

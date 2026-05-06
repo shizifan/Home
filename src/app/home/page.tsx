@@ -218,8 +218,10 @@ export default function HomePage() {
       <BottomNav
         hasTaskBadge={!!task && !state.today_done}
         hasBrainRedDot={state.has_unread_memory}
+        showInventory={!!c.has_played_plaza}
         onTask={() => openOverlay('task')}
         onBrain={() => router.push('/memory')}
+        onInventory={() => router.push('/inventory')}
         onDiary={() => router.push('/parent')}
         onGear={() => router.push('/parent#settings')}
       />

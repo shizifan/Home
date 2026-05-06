@@ -1,0 +1,55 @@
+{
+  "_doc": "广场剧本 · 使节来访（PRD 附录 B.2）",
+  "id": "envoy_visit",
+  "title": "使节来访",
+  "type": "外交",
+  "background": "邻国突然派使节来访，带来一份神秘礼物，意图不明。国王召集大家商议如何接待。",
+  "intro": "宫门外停着一辆漆黑的马车，邻国旗帜飘着。礼宾官说使节要见的不是国王，而是丞相。",
+  "roles": {
+    "xiaoqinglong": "丞相",
+    "dabear": "国王",
+    "xiaolvlong": "礼宾官",
+    "xiaoshizi": "大臣"
+  },
+  "applicable_items": [
+    "treatise_diplomacy",
+    "treatise_etiquette",
+    "object_jade",
+    "gift_king",
+    "gift_companion",
+    "gift_flower",
+    "object_wine",
+    "ability_observation",
+    "ability_speech",
+    "ability_flexibility"
+  ],
+  "acts": [
+    {
+      "number": 1,
+      "name": "朝堂议事",
+      "scene": "国王问大家：'邻国为什么突然派使节来？' 大臣怀疑是来探虚实，礼宾官说要按礼节接待。",
+      "decision_prompt": "丞相要给出怎样的判断？选一件道具。",
+      "expected_quality_hint": "《邻国风物志》能给出最准确的推测；《古代礼仪》决定接待规格；玉佩可以做信物；说话之术能让推断更动听。"
+    },
+    {
+      "number": 2,
+      "name": "宴请使节",
+      "scene": "宴会上，使节言谈中藏着试探。看不清对方究竟是来交好还是来挑拨。",
+      "decision_prompt": "要看穿对方的意图，需要什么？",
+      "expected_quality_hint": "《观人之眼》能看穿真意；酒能拉近距离；说话之术让你回应得体；玉佩可以表心意。"
+    },
+    {
+      "number": 3,
+      "name": "决定回应",
+      "scene": "宴会结束后，国王要决定如何回应邻国。所有人都看着丞相。",
+      "decision_prompt": "要给一个怎样的回应？再选一件道具。",
+      "expected_quality_hint": "贡品 / 玉佩传递友好；《说话之术》让回话不卑不亢；《灵活之策》能避开正面冲突。"
+    }
+  ],
+  "rewards": {
+    "always": ["gift_companion"],
+    "perfect": ["king_jade_seal"],
+    "good": ["object_jade"],
+    "barely": ["gift_flower"]
+  }
+}
