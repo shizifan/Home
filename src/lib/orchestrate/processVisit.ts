@@ -62,11 +62,15 @@ export interface ProcessVisitResult {
 }
 
 /**
- * 拜访池挑选策略（PRD §12.3 改写以适配 V1.0 单用户期）：
- *   1. 优先 main_companion 池（8 主角"另一个孩子"），排除 visitor 自己
- *   2. 哈希轮换前两天用过的，让连续几天的拜访不重复
- *   3. 大约每 3 天一次回到 system_preset 池（极端对照组）
- *   4. hint 直接覆盖（dev / 测试用）
+ * 拜访池挑选策略（V1.0 单用户期 — 用户决议 2026-05-06）：
+ *   1. 仅 main_companion 池（8 主角"另一个孩子"），排除 visitor 自己 → 永远是 7 只
+ *   2. 哈希按 (visitor + 当日) 选具体哪只，今日同一拜访者不重复，第二天换
+ *   3. hint 直接覆盖（dev / 测试用）
+ *
+ * 与 PRD §12.3 的偏离：
+ *   PRD 设计 1/3 出现系统预设（小鱼/土豆/星星/阿木）做"极端训练数据对照"。
+ *   单用户体验下"只见外星人"违和；用户明确决定 visit 池只用熟悉的 8 主角。
+ *   系统预设池留给学校（保持课堂"同题不同答"的对照张力）和后续多用户阶段。
  */
 function pickHostByDate(
   visitorPresetId: string,
@@ -85,24 +89,11 @@ function pickHostByDate(
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   }
 
-  // 每 3 天有 1 次落到系统预设池（极端对照组）；2 天落主角池
-  // 用日期序号 mod 3 作分流
-  const day = new Date();
-  const dayOfYear = Math.floor(
-    (day.getTime() - new Date(day.getFullYear(), 0, 0).getTime()) / 86400_000,
-  );
-  const useSystemPreset = dayOfYear % 3 === 0;
-
-  if (useSystemPreset) {
-    const pool = listSystemPresets();
-    return pool[hash % pool.length];
-  }
-
   const pool = listMainCompanions().filter(
     (p) => p.preset_id !== visitorPresetId,
   );
   if (pool.length === 0) {
-    // 不太可能（visitorPresetId 不在 8 主角列表里），保险兜底
+    // 理论不可能（visitorPresetId 不在 8 主角列表里），保险兜底回系统预设
     return listSystemPresets()[hash % 4];
   }
   return pool[hash % pool.length];
