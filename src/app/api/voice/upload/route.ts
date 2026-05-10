@@ -19,6 +19,11 @@ import { saveUploadedAudio } from '@/lib/storage/upload';
 import { recognizeAudioFile, isASRResult } from '@/lib/asr/client';
 import { getCompanionById } from '@/lib/db/repos';
 import { filterChildInput } from '@/lib/safety/filters';
+import { resolveCurrentUser } from '@/lib/auth/session';
+import {
+  assertCompanionOwnedByUser,
+  NotFoundOrForbiddenError,
+} from '@/lib/auth/ownership';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -45,6 +50,16 @@ export async function POST(req: Request) {
       );
     }
 
+    const user = await resolveCurrentUser();
+    if (!user) return NextResponse.json({ error: 'no_user' }, { status: 401 });
+    try {
+      await assertCompanionOwnedByUser(companionId, user.id);
+    } catch (e) {
+      if (e instanceof NotFoundOrForbiddenError) {
+        return NextResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+      throw e;
+    }
     const companion = await getCompanionById(companionId);
     if (!companion) {
       return NextResponse.json({ error: 'companion not found' }, { status: 404 });

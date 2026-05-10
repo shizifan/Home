@@ -6,7 +6,7 @@
 
 ---
 
-## 0. 现状基线（V0.6.1 + P1 + P2 + Day 1-7 + P3 + P4 + P5 广场剧本完整闭环）
+## 0. 现状基线（V0.6.1 + P1‑P5 + P6 多用户软隔离 + Docker 部署就绪）
 
 ### 0.1 已完成
 
@@ -571,11 +571,20 @@
 
 #### P6.3 验收标准
 
-- [ ] 公网域名可访问
-- [ ] 不同浏览器同名昵称数据互不可见
-- [ ] `/admin?key=...` 看板可看到 3+ 测试用户
-- [ ] 触发 IP 限流后看到友好提示
-- [ ] 备份脚本在阿里云上每日凌晨自动跑
+- [x] T1 昵称软隔离：迁移 0006 + 新 `auth/{session,clientFingerprint,apiGuard,ownership,rateLimit,adminGuard}` + `/start` 页 + `/api/auth/{start,me,lookup,resume}`
+- [x] T2 数据隔离：14+ API 路由全部接入 `resolveCurrentUser` + `assertCompanionOwnedByUser`；跨用户访问返 404（伪 404 不泄露存在性）
+- [x] T3 管理员看板：`/admin?key=...` 列表 + `/admin/users/[id]?key=...` 详情只读；GET API `key` 比较用常时长比较防短路
+- [x] T4 限流：IP 限流（1h/5）+ 全局每日上限（50）+ 单用户日 LLM（30）；in-memory 默认 + Redis 自动接入（`REDIS_URL`）；接进 `/api/auth/start` + `/api/chat/ask` + `/api/describe/submit`
+- [x] T5 Docker：multi-stage Dockerfile（standalone 模式）+ docker-compose（app + mysql + redis）+ `.dockerignore`；`next.config.mjs` 加 `output:'standalone'`
+- [x] T6 部署文档：`infra/deploy.md` 涵盖 ICP 备案 / 阿里云资源 / Docker 一台机方案 / nginx HTTPS 反代 / 升级 / V1.1 升级路径
+- [x] T7 备份：`scripts/backup.sh` + crontab 范例 + 可选 ossutil 上传 + 30 天滚动清理
+- [x] T8 监控：`scripts/daily-monitor.sh` 每日 9:00 跑统计（用户活跃 / LLM 调用 / Day7 失败 / 卡片 / 出门），输出文本可 pipe 给企业微信
+- [x] T9 隐私 + ToS：`/legal/{privacy,tos}` 简版页面，欢迎页底部链接
+- [ ] 公网域名可访问 — 待人工部署
+- [ ] 不同浏览器同名昵称数据互不可见 — 待人工跑
+- [ ] `/admin?key=...` 看板可看到 3+ 测试用户 — 待人工跑
+- [ ] 触发 IP 限流后看到友好提示 — 待人工跑
+- [ ] 备份脚本在阿里云上每日凌晨自动跑 — 待人工部署
 
 ---
 

@@ -1,32 +1,25 @@
 /**
  * GET /api/inventory[?companion_id=...]
  *
- * 返回当前 companion 的行囊：按 4 类分组 + 道具池中"未拥有"项灰显（前端可选）。
+ * 返回当前 companion 的行囊：按 4 类分组。
  */
 
 import { NextResponse } from 'next/server';
-import {
-  findCompanionForSingleUser,
-  getCompanionById,
-  listInventory,
-} from '@/lib/db/repos';
+import { listInventory } from '@/lib/db/repos';
 import { inventoryItemToDef } from '@/lib/orchestrate/grantInventory';
+import { guardWithCompanion, guardErrorResponse } from '@/lib/auth/apiGuard';
 
 export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const cid = url.searchParams.get('companion_id');
-  const companion = cid
-    ? await getCompanionById(cid)
-    : await findCompanionForSingleUser();
-  if (!companion) {
-    return NextResponse.json({ error: 'no_companion' }, { status: 404 });
-  }
-  const rows = await listInventory(companion.id);
+  const guard = await guardWithCompanion(cid);
+  if (!guard.ok) return guardErrorResponse(guard.code);
+  const rows = await listInventory(guard.companion.id);
   const items = rows.map(inventoryItemToDef);
   return NextResponse.json({
-    companion_id: companion.id,
+    companion_id: guard.companion.id,
     items,
     grouped: {
       knowledge: items.filter((i) => i.category === 'knowledge'),

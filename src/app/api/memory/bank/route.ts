@@ -9,13 +9,13 @@ import { NextResponse } from 'next/server';
 import {
   bulkInsertUnknown,
   countByType,
-  findCompanionForSingleUser,
   getCompanionById,
   getMemoryBank,
   markPanelVisited,
 } from '@/lib/db/repos';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import { runUnknownConcepts } from '@/lib/llm/unknownConcepts';
+import { guardWithCompanion, guardErrorResponse } from '@/lib/auth/apiGuard';
 import type { MemoryBankEntry } from '@/types';
 
 export const runtime = 'nodejs';
@@ -25,16 +25,11 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const companionIdParam = url.searchParams.get('companion_id');
 
-  let companionId = companionIdParam;
-  let companion = null;
-  if (!companionId) {
-    companion = await findCompanionForSingleUser();
-    if (!companion) return NextResponse.json({ error: 'no companion' }, { status: 404 });
-    companionId = companion.id;
-  } else {
-    companion = await getCompanionById(companionId);
-    if (!companion) return NextResponse.json({ error: 'companion not found' }, { status: 404 });
-  }
+  const guard = await guardWithCompanion(companionIdParam);
+  if (!guard.ok) return guardErrorResponse(guard.code);
+  const companionId = guard.companion.id;
+  const companion = await getCompanionById(companionId);
+  if (!companion) return NextResponse.json({ error: 'companion not found' }, { status: 404 });
 
   // —— 自动生成 unknown（如果空）——
   const unknownCount = await countByType(companionId, 'unknown');

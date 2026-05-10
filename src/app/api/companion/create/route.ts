@@ -12,11 +12,15 @@ import {
 } from '@/lib/db/repos';
 import { COMPANION_PRESET_IDS } from '@/components/characters/types';
 import { getCompanionPreset } from '@/lib/companionPresets';
+import { resolveCurrentUser } from '@/lib/auth/session';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
+    const user = await resolveCurrentUser();
+    if (!user) return NextResponse.json({ error: 'no_user' }, { status: 401 });
+
     const body = await req.json();
     const presetId: string = body.preset_id;
     if (!COMPANION_PRESET_IDS.includes(presetId as typeof COMPANION_PRESET_IDS[number])) {
@@ -27,7 +31,8 @@ export async function POST(req: Request) {
 
     const companion = await createCompanion({
       presetId: preset.preset_id,
-      startingPersonality: preset.personality, // 用 personality 作 starting_personality 文字
+      startingPersonality: preset.personality,
+      userId: user.id,
     });
 
     const customName = (body.custom_name ?? '').toString().trim();

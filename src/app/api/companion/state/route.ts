@@ -8,12 +8,13 @@ import { NextResponse } from 'next/server';
 import {
   bumpAndGetLastActive,
   countPlazaPlaysAll,
-  findCompanionForSingleUser,
+  findCompanionByUserId,
   getRecentCompanionLine,
   isTaskDoneToday,
   listRecentMemories,
   getMemoryBank,
 } from '@/lib/db/repos';
+import { resolveCurrentUser } from '@/lib/auth/session';
 import { listCardsForCompanion } from '@/lib/db/cardsRepo';
 import { query } from '@/lib/db/client';
 import { getCompanionPreset } from '@/lib/companionPresets';
@@ -24,7 +25,11 @@ import type { DayNumber } from '@/types';
 export const runtime = 'nodejs';
 
 export async function GET() {
-  const companion = await findCompanionForSingleUser();
+  const user = await resolveCurrentUser();
+  if (!user) {
+    return NextResponse.json({ companion: null, no_user: true });
+  }
+  const companion = await findCompanionByUserId(user.id);
   if (!companion) {
     return NextResponse.json({ companion: null });
   }

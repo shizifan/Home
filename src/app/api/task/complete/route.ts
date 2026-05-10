@@ -12,12 +12,12 @@
 import { NextResponse } from 'next/server';
 
 import {
-  findCompanionForSingleUser,
   getCompanionById,
   isTaskDoneToday,
   markTaskCompleted,
 } from '@/lib/db/repos';
 import { getTaskByDay } from '@/lib/tasks';
+import { guardWithCompanion, guardErrorResponse } from '@/lib/auth/apiGuard';
 import type { DayNumber } from '@/types';
 
 export const runtime = 'nodejs';
@@ -43,9 +43,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const companion = body.companion_id
-    ? await getCompanionById(body.companion_id)
-    : await findCompanionForSingleUser();
+  const guard = await guardWithCompanion(body.companion_id ?? null);
+  if (!guard.ok) return guardErrorResponse(guard.code);
+  const companion = await getCompanionById(guard.companion.id);
   if (!companion) {
     return NextResponse.json({ error: 'no_companion' }, { status: 404 });
   }

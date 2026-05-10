@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // P6 Docker 部署：output:'standalone' 让 Next.js 把运行需要的最小依赖
+  // 输出到 .next/standalone/，Dockerfile 里直接 COPY。
+  output: 'standalone',
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '*.supabase.co' },

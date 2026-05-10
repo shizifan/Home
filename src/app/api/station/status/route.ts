@@ -6,23 +6,19 @@
  */
 
 import { NextResponse } from 'next/server';
-import { findCompanionForSingleUser, getCompanionById } from '@/lib/db/repos';
 import { getStationStatus } from '@/lib/station/status';
+import { guardWithCompanion, guardErrorResponse } from '@/lib/auth/apiGuard';
 
 export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const cid = url.searchParams.get('companion_id');
-  const companion = cid
-    ? await getCompanionById(cid)
-    : await findCompanionForSingleUser();
-  if (!companion) {
-    return NextResponse.json({ error: 'no companion' }, { status: 404 });
-  }
-  const status = await getStationStatus(companion.id);
+  const guard = await guardWithCompanion(cid);
+  if (!guard.ok) return guardErrorResponse(guard.code);
+  const status = await getStationStatus(guard.companion.id);
   return NextResponse.json({
-    companion_id: companion.id,
+    companion_id: guard.companion.id,
     ...status,
   });
 }

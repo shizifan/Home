@@ -13,7 +13,8 @@
 
 import { NextResponse } from 'next/server';
 
-import { findCompanionForSingleUser, getCompanionById } from '@/lib/db/repos';
+import { getCompanionById } from '@/lib/db/repos';
+import { guardWithCompanion, guardErrorResponse } from '@/lib/auth/apiGuard';
 import { startVisit, finishVisit } from '@/lib/orchestrate/processVisit';
 import { startSchool, finishSchool } from '@/lib/orchestrate/processSchool';
 import { filterChildInput, getInputRejectionLine } from '@/lib/safety/filters';
@@ -64,9 +65,9 @@ export async function POST(req: Request) {
     });
   }
 
-  const companion = body.companion_id
-    ? await getCompanionById(body.companion_id)
-    : await findCompanionForSingleUser();
+  const guard = await guardWithCompanion(body.companion_id ?? null);
+  if (!guard.ok) return guardErrorResponse(guard.code);
+  const companion = await getCompanionById(guard.companion.id);
   if (!companion) {
     return NextResponse.json({ error: 'no_companion' }, { status: 404 });
   }

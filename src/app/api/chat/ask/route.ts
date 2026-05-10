@@ -18,13 +18,14 @@ import { NextResponse } from 'next/server';
 
 import { runFreeChat } from '@/lib/llm/freeChat';
 import {
-  findCompanionForSingleUser,
+  findCompanionByUserId,
   getMemoryBank,
   insertChildLine,
   insertCompanionLine,
   listRecentConversations,
 } from '@/lib/db/repos';
 import { getCompanionPreset } from '@/lib/companionPresets';
+import { resolveCurrentUser } from '@/lib/auth/session';
 import {
   filterChildInput,
   filterCompanionOutput,
@@ -49,7 +50,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'question too long' }, { status: 400 });
     }
 
-    const companion = await findCompanionForSingleUser();
+    const user = await resolveCurrentUser();
+    if (!user) return NextResponse.json({ error: 'no_user' }, { status: 401 });
+
+    // PRD §27.4 单用户日 LLM 调用上限
+    const { checkUserDailyLLM } = await import('@/lib/auth/rateLimit');
+    const llmCheck = await checkUserDailyLLM(user.id);
+    if (!llmCheck.ok) {
+      return NextResponse.json(
+        { error: llmCheck.reason, message: llmCheck.message },
+        { status: 429 },
+      );
+    }
+
+    const companion = await findCompanionByUserId(user.id);
     if (!companion) {
       return NextResponse.json({ error: 'companion not found' }, { status: 404 });
     }

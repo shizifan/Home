@@ -1,0 +1,89 @@
+# Home V1.0 P6 — 临时上线 docker compose
+#
+# 服务：
+#   app   — Next.js 应用（standalone 输出）
+#   mysql — 数据存储（MySQL 8）
+#   redis — 限流（可选；不起 Redis 时业务退到 in-memory）
+#
+# 用法：
+#   1. 复制 .env.example → .env.production，填好数据库密码 / API key / ADMIN_KEY
+#   2. docker compose up -d
+#   3. 第一次跑迁移：docker compose exec app sh -c \
+#        "for f in db/migrations/*.sql; do mysql -h mysql -u root -p$MYSQL_PASSWORD $MYSQL_DATABASE < $f; done"
+#   4. 浏览器访问 http://<host>:3000
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:?required}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-home}
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      # 仅当宿主机想直连 MySQL 时打开；线上建议注释掉，只让 app 容器访问
+      - '127.0.0.1:3306:3306'
+    healthcheck:
+      test:
+        ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p${MYSQL_PASSWORD}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--save', '60', '1', '--loglevel', 'warning']
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      MYSQL_HOST: mysql
+      MYSQL_PORT: '3306'
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?required}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-home}
+      REDIS_URL: redis://redis:6379
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:?required}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com/v1}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-chat}
+      DEEPSEEK_MODEL_DAY7: ${DEEPSEEK_MODEL_DAY7:-deepseek-chat}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:?required}
+      ADMIN_KEY: ${ADMIN_KEY:?required}
+      RESOLVE_USER_REQUIRE_COOKIE: '1'
+      RATE_IP_CREATE_USER_LIMIT: ${RATE_IP_CREATE_USER_LIMIT:-5}
+      RATE_GLOBAL_DAILY_USER_LIMIT: ${RATE_GLOBAL_DAILY_USER_LIMIT:-50}
+      RATE_USER_DAILY_LLM_LIMIT: ${RATE_USER_DAILY_LLM_LIMIT:-30}
+    volumes:
+      # 上传文件持久化（语音 / 旧 photo）
+      - app_uploads:/app/public/uploads
+      - app_uploads_voice:/app/public/uploads_voice
+    ports:
+      - '3000:3000'
+
+volumes:
+  mysql_data:
+  redis_data:
+  app_uploads:
+  app_uploads_voice:

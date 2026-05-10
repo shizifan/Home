@@ -8,6 +8,11 @@ import { NextResponse } from 'next/server';
 import { processInput } from '@/lib/orchestrate/processInput';
 import { getCompanionById } from '@/lib/db/repos';
 import { getTaskByDay } from '@/lib/tasks';
+import { resolveCurrentUser } from '@/lib/auth/session';
+import {
+  assertCompanionOwnedByUser,
+  NotFoundOrForbiddenError,
+} from '@/lib/auth/ownership';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -29,6 +34,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'text too long' }, { status: 400 });
     }
 
+    const user = await resolveCurrentUser();
+    if (!user) return NextResponse.json({ error: 'no_user' }, { status: 401 });
+    try {
+      await assertCompanionOwnedByUser(companionId, user.id);
+    } catch (e) {
+      if (e instanceof NotFoundOrForbiddenError) {
+        return NextResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+      throw e;
+    }
     const companion = await getCompanionById(companionId);
     if (!companion) return NextResponse.json({ error: 'not found' }, { status: 404 });
     const task = getTaskByDay(companion.current_day);

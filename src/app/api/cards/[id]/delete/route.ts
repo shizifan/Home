@@ -8,6 +8,11 @@
 import { NextResponse } from 'next/server';
 
 import { getCardById, setCardInactive } from '@/lib/db/cardsRepo';
+import { resolveCurrentUser } from '@/lib/auth/session';
+import {
+  assertCompanionOwnedByUser,
+  NotFoundOrForbiddenError,
+} from '@/lib/auth/ownership';
 
 export const runtime = 'nodejs';
 
@@ -23,6 +28,17 @@ export async function POST(
     const card = await getCardById(id);
     if (!card) {
       return NextResponse.json({ error: 'not found' }, { status: 404 });
+    }
+    // P6 Ownership 校验
+    const user = await resolveCurrentUser();
+    if (!user) return NextResponse.json({ error: 'no_user' }, { status: 401 });
+    try {
+      await assertCompanionOwnedByUser(card.companion_id, user.id);
+    } catch (e) {
+      if (e instanceof NotFoundOrForbiddenError) {
+        return NextResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+      throw e;
     }
     await setCardInactive(id);
     return NextResponse.json({ ok: true });

@@ -17,6 +17,12 @@
 
 import { NextResponse } from 'next/server';
 import { correctMemory } from '@/lib/orchestrate/correctMemory';
+import { findMemoryBankById } from '@/lib/db/repos';
+import { resolveCurrentUser } from '@/lib/auth/session';
+import {
+  assertCompanionOwnedByUser,
+  NotFoundOrForbiddenError,
+} from '@/lib/auth/ownership';
 import type { CorrectionAction } from '@/types';
 
 export const runtime = 'nodejs';
@@ -42,6 +48,22 @@ export async function POST(req: Request) {
     }
     if (!VALID_ACTIONS.includes(action)) {
       return NextResponse.json({ error: 'invalid action' }, { status: 400 });
+    }
+
+    // P6 Ownership 校验：通过 memory_bank 行的 companion_id 反查
+    const entry = await findMemoryBankById(memoryId);
+    if (!entry) {
+      return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    }
+    const user = await resolveCurrentUser();
+    if (!user) return NextResponse.json({ error: 'no_user' }, { status: 401 });
+    try {
+      await assertCompanionOwnedByUser(entry.companion_id, user.id);
+    } catch (e) {
+      if (e instanceof NotFoundOrForbiddenError) {
+        return NextResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+      throw e;
     }
 
     const result = await correctMemory({

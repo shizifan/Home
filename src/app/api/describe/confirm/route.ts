@@ -26,6 +26,11 @@ import {
   swapCardPrimaryImage,
 } from '@/lib/db/cardsRepo';
 import { getCompanionById, insertCompanionLine } from '@/lib/db/repos';
+import { resolveCurrentUser } from '@/lib/auth/session';
+import {
+  assertCompanionOwnedByUser,
+  NotFoundOrForbiddenError,
+} from '@/lib/auth/ownership';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import type { DayNumber } from '@/types';
 
@@ -64,6 +69,18 @@ export async function POST(req: Request) {
     const card = await getCardById(cardId);
     if (!card) {
       return NextResponse.json({ error: 'card not found' }, { status: 404 });
+    }
+
+    // P6 Ownership 校验：当前用户必须拥有 card.companion_id
+    const user = await resolveCurrentUser();
+    if (!user) return NextResponse.json({ error: 'no_user' }, { status: 401 });
+    try {
+      await assertCompanionOwnedByUser(card.companion_id, user.id);
+    } catch (e) {
+      if (e instanceof NotFoundOrForbiddenError) {
+        return NextResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+      throw e;
     }
 
     // 双图测试期：孩子选了 alt 那张 → 把 image_url ↔ alt_image_url 互换

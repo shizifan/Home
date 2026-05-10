@@ -4,10 +4,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import {
-  findCompanionForSingleUser,
-  getCompanionById,
-} from '@/lib/db/repos';
+import { getCompanionById } from '@/lib/db/repos';
+import { guardWithCompanion, guardErrorResponse } from '@/lib/auth/apiGuard';
 import { query } from '@/lib/db/client';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import { TASKS } from '@/lib/tasks';
@@ -53,9 +51,9 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const cidParam = url.searchParams.get('companion_id');
 
-  const companion = cidParam
-    ? await getCompanionById(cidParam)
-    : await findCompanionForSingleUser();
+  const guard = await guardWithCompanion(cidParam);
+  if (!guard.ok) return guardErrorResponse(guard.code);
+  const companion = await getCompanionById(guard.companion.id);
   if (!companion) {
     return NextResponse.json({ error: 'no companion' }, { status: 404 });
   }

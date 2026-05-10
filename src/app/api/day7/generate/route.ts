@@ -8,14 +8,16 @@
 import { NextResponse } from 'next/server';
 import {
   countSkippedTasks,
-  findCompanionForSingleUser,
   findWorldview,
-  getCompanionById,
   getCompanionStats,
   getMemoryBank,
   setGraduatedAtIfNull,
   upsertWorldview,
 } from '@/lib/db/repos';
+import {
+  guardWithCompanion,
+  guardErrorResponse,
+} from '@/lib/auth/apiGuard';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import { hasRestoredItems, runDay7WithSoftFallback } from '@/lib/llm/day7';
 
@@ -31,9 +33,10 @@ export async function POST(req: Request) {
     /* ignore */
   }
 
-  const companion = companionId
-    ? await getCompanionById(companionId)
-    : await findCompanionForSingleUser();
+  const guard = await guardWithCompanion(companionId);
+  if (!guard.ok) return guardErrorResponse(guard.code);
+  const { getCompanionById } = await import('@/lib/db/repos');
+  const companion = await getCompanionById(guard.companion.id);
   if (!companion) {
     return NextResponse.json({ error: 'no companion' }, { status: 404 });
   }
@@ -104,9 +107,9 @@ export async function POST(req: Request) {
 
 export async function GET() {
   // GET 等价于"读缓存"，没缓存返回 404
-  const companion = await findCompanionForSingleUser();
-  if (!companion) return NextResponse.json({ error: 'no companion' }, { status: 404 });
-  const cached = await findWorldview(companion.id);
+  const guard = await guardWithCompanion(null);
+  if (!guard.ok) return guardErrorResponse(guard.code);
+  const cached = await findWorldview(guard.companion.id);
   if (!cached) return NextResponse.json({ error: 'not generated yet' }, { status: 404 });
   return NextResponse.json({ worldview: serialize(cached), from_cache: true });
 }

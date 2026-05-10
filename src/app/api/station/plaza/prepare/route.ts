@@ -16,7 +16,6 @@ import { NextResponse } from 'next/server';
 
 import {
   countPlazaPlaysByScenario,
-  findCompanionForSingleUser,
   getCompanionById,
   listInventory,
   listRecentPlazaScenarios,
@@ -28,15 +27,16 @@ import {
   grantStarterPack,
   inventoryItemToDef,
 } from '@/lib/orchestrate/grantInventory';
+import { guardWithCompanion, guardErrorResponse } from '@/lib/auth/apiGuard';
 
 export const runtime = 'nodejs';
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const cid = url.searchParams.get('companion_id');
-  const companion = cid
-    ? await getCompanionById(cid)
-    : await findCompanionForSingleUser();
+  const guard = await guardWithCompanion(cid);
+  if (!guard.ok) return guardErrorResponse(guard.code);
+  const companion = await getCompanionById(guard.companion.id);
   if (!companion) {
     return NextResponse.json({ error: 'no_companion' }, { status: 404 });
   }

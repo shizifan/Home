@@ -7,7 +7,7 @@
 import { NextResponse } from 'next/server';
 import {
   advanceCompanionDay,
-  findCompanionForSingleUser,
+  findCompanionByUserId,
   insertCompanionLine,
   isTaskDoneToday,
   listMemoriesByDay,
@@ -15,12 +15,15 @@ import {
 import { getCompanionPreset } from '@/lib/companionPresets';
 import { getTaskByDay } from '@/lib/tasks';
 import { openingLineFallback, runOpeningLine } from '@/lib/llm/openingLine';
+import { resolveCurrentUser } from '@/lib/auth/session';
 import type { DayNumber } from '@/types';
 
 export const runtime = 'nodejs';
 
 export async function POST() {
-  const companion = await findCompanionForSingleUser();
+  const user = await resolveCurrentUser();
+  if (!user) return NextResponse.json({ error: 'no_user' }, { status: 401 });
+  const companion = await findCompanionByUserId(user.id);
   if (!companion) {
     return NextResponse.json({ error: 'no companion' }, { status: 404 });
   }

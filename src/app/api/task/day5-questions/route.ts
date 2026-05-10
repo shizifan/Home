@@ -10,11 +10,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import {
-  findCompanionForSingleUser,
-  getCompanionById,
-  getMemoryBank,
-} from '@/lib/db/repos';
+import { getCompanionById, getMemoryBank } from '@/lib/db/repos';
 import { getCompanionPreset } from '@/lib/companionPresets';
 import {
   DAY5_FALLBACK_Q1,
@@ -22,12 +18,15 @@ import {
   runDay5Q1,
   runDay5Q2,
 } from '@/lib/llm/day5Questions';
+import { guardWithCompanion, guardErrorResponse } from '@/lib/auth/apiGuard';
 
 export const runtime = 'nodejs';
 export const maxDuration = 12;
 
 async function resolveCompanion(idHint: string | null) {
-  return idHint ? await getCompanionById(idHint) : await findCompanionForSingleUser();
+  const guard = await guardWithCompanion(idHint);
+  if (!guard.ok) return null;
+  return await getCompanionById(guard.companion.id);
 }
 
 export async function GET(req: Request) {

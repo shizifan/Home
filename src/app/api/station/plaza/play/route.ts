@@ -82,12 +82,13 @@ export async function POST(req: Request) {
 
   if (body.action === 'start') {
     const cid = body.companion_id;
-    const { findCompanionForSingleUser, getCompanionById } = await import(
-      '@/lib/db/repos'
+    const { guardWithCompanion, guardErrorResponse } = await import(
+      '@/lib/auth/apiGuard'
     );
-    const companion = cid
-      ? await getCompanionById(cid)
-      : await findCompanionForSingleUser();
+    const guard = await guardWithCompanion(cid ?? null);
+    if (!guard.ok) return guardErrorResponse(guard.code);
+    const { getCompanionById } = await import('@/lib/db/repos');
+    const companion = await getCompanionById(guard.companion.id);
     if (!companion) {
       return NextResponse.json({ error: 'no_companion' }, { status: 404 });
     }

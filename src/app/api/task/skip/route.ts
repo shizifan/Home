@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 
 import { processInput } from '@/lib/orchestrate/processInput';
 import { getCompanionById } from '@/lib/db/repos';
+import { guardWithCompanion, guardErrorResponse } from '@/lib/auth/apiGuard';
 import { getTaskByDay } from '@/lib/tasks';
 
 export const runtime = 'nodejs';
@@ -21,6 +22,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'missing fields' }, { status: 400 });
     }
 
+    const guard = await guardWithCompanion(companionId);
+    if (!guard.ok) return guardErrorResponse(guard.code);
     const companion = await getCompanionById(companionId);
     if (!companion) return NextResponse.json({ error: 'not found' }, { status: 404 });
     const task = getTaskByDay(companion.current_day);

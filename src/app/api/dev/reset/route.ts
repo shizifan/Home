@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server';
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
 import { execute, query, SINGLE_USER_ID } from '@/lib/db/client';
+import { resolveCurrentUser } from '@/lib/auth/session';
 
 export const runtime = 'nodejs';
 
@@ -15,10 +16,12 @@ export async function POST() {
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json({ error: 'disabled in prod' }, { status: 403 });
   }
-  // 找到所有 companion id
+  // dev only：优先用当前 cookie 用户，回落 SINGLE_USER_ID（保持 seed-graduate 兼容）
+  const u = await resolveCurrentUser();
+  const uid = u?.id ?? SINGLE_USER_ID;
   const rows = await query<{ id: string }>(
     `select id from companions where user_id = :uid`,
-    { uid: SINGLE_USER_ID },
+    { uid },
   );
   for (const r of rows) {
     // 顺序删（外键 cascade 会带走 memories / memory_bank / conversations / worldview / cards）

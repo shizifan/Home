@@ -19,6 +19,11 @@ import { NextResponse } from 'next/server';
 import { processDescribe } from '@/lib/orchestrate/processDescribe';
 import { getCompanionById } from '@/lib/db/repos';
 import { getTaskByDay } from '@/lib/tasks';
+import { resolveCurrentUser } from '@/lib/auth/session';
+import {
+  assertCompanionOwnedByUser,
+  NotFoundOrForbiddenError,
+} from '@/lib/auth/ownership';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -50,9 +55,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'description too long' }, { status: 400 });
     }
 
+    const user = await resolveCurrentUser();
+    if (!user) return NextResponse.json({ error: 'no_user' }, { status: 401 });
+
+    // PRD §27.4 单用户日 LLM 调用上限
+    const { checkUserDailyLLM } = await import('@/lib/auth/rateLimit');
+    const llmCheck = await checkUserDailyLLM(user.id);
+    if (!llmCheck.ok) {
+      return NextResponse.json(
+        { error: llmCheck.reason, message: llmCheck.message },
+        { status: 429 },
+      );
+    }
+
+    try {
+      await assertCompanionOwnedByUser(companionId, user.id);
+    } catch (e) {
+      if (e instanceof NotFoundOrForbiddenError) {
+        return NextResponse.json({ error: 'not_found' }, { status: 404 });
+      }
+      throw e;
+    }
     const companion = await getCompanionById(companionId);
     if (!companion) {
-      console.error('[describe/submit] companion not found, id=', companionId);
       return NextResponse.json({ error: 'companion not found' }, { status: 404 });
     }
 

@@ -30,14 +30,26 @@ import type { CompanionPresetId } from '@/components/characters/types';
 
 // ──────────────────── companions ────────────────────
 
+/**
+ * 已废弃命名：旧单用户实现入口。
+ * 新代码请用 findCompanionByUserId(userId)；
+ * 这里保留作 dev / E2E 的兜底（默认 SINGLE_USER_ID）。
+ */
 export async function findCompanionForSingleUser(): Promise<Companion | null> {
+  return await findCompanionByUserId(SINGLE_USER_ID);
+}
+
+/** 拉某用户最新的 companion（多用户路径） */
+export async function findCompanionByUserId(
+  userId: string,
+): Promise<Companion | null> {
   return await queryOne<Companion>(
     `select id, user_id, preset_id, custom_name, starting_personality,
             current_day, last_panel_visit_at, personality_weight,
             created_at, graduated_at
        from companions where user_id = :uid
        order by created_at desc limit 1`,
-    { uid: SINGLE_USER_ID },
+    { uid: userId },
   );
 }
 
@@ -54,6 +66,8 @@ export async function getCompanionById(id: string): Promise<Companion | null> {
 export async function createCompanion(args: {
   presetId: CompanionPresetId;
   startingPersonality: string;
+  /** 显式 user_id；不传则回到 SINGLE_USER_ID（dev / E2E 兜底）*/
+  userId?: string;
 }): Promise<Companion> {
   const id = uuid();
   await execute(
@@ -61,7 +75,7 @@ export async function createCompanion(args: {
        values (:id, :uid, :preset_id, :sp)`,
     {
       id,
-      uid: SINGLE_USER_ID,
+      uid: args.userId ?? SINGLE_USER_ID,
       preset_id: args.presetId,
       sp: args.startingPersonality,
     },

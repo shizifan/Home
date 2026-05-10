@@ -428,6 +428,72 @@ export class Day7FailureError extends Error {
   }
 }
 
+// ──────────────────── 多用户软隔离（P6 §27.2）────────────────────
+
+export interface AuthMeResponse {
+  user: { id: string; nickname: string | null; created_at: string } | null;
+}
+
+export async function fetchMe(): Promise<AuthMeResponse> {
+  const r = await fetch('/api/auth/me', { cache: 'no-store' });
+  if (!r.ok) throw new Error(`auth me ${r.status}`);
+  return r.json();
+}
+
+export interface AuthStartResponse {
+  user_id: string;
+  nickname: string;
+  created: boolean;
+  homonym_count: number;
+}
+
+export async function authStart(args: {
+  nickname: string;
+  fingerprint: string;
+}): Promise<AuthStartResponse> {
+  const r = await fetch('/api/auth/start', {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-home-fingerprint': args.fingerprint,
+    },
+    body: JSON.stringify(args),
+  });
+  if (!r.ok) {
+    const body = (await r.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `auth start ${r.status}`);
+  }
+  return r.json();
+}
+
+export interface AuthLookupMatch {
+  user_id: string;
+  nickname: string;
+  created_at: string;
+  last_active_at: string | null;
+}
+
+export async function authLookup(nickname: string): Promise<AuthLookupMatch[]> {
+  const r = await fetch('/api/auth/lookup', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ nickname }),
+  });
+  if (!r.ok) throw new Error(`auth lookup ${r.status}`);
+  const body = (await r.json()) as { matches: AuthLookupMatch[] };
+  return body.matches;
+}
+
+export async function authResume(userId: string): Promise<{ user_id: string; nickname: string | null }> {
+  const r = await fetch('/api/auth/resume', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ user_id: userId }),
+  });
+  if (!r.ok) throw new Error(`auth resume ${r.status}`);
+  return r.json();
+}
+
 // ──────────────────── 行囊（P4）────────────────────
 
 export type ItemCategoryClient = 'knowledge' | 'object' | 'gift' | 'ability';
