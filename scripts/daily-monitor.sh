@@ -70,4 +70,16 @@ $(run_sql "
   where date(created_at) = '$YESTERDAY'
   group by trip_type
 ")
+
+[ 客户端 telemetry · 端到端时长（PRD §28.4：describe_e2e ≤ 15s）]
+$(run_sql "
+  select model as 'event',
+         count(*) as 'samples',
+         round(avg(latency_ms)/1000, 1) as 'avg_s',
+         round(max(latency_ms)/1000, 1) as 'max_s'
+  from llm_call_log
+  where date(created_at) = '$YESTERDAY'
+    and call_type='client_telemetry'
+  group by model
+")
 EOF

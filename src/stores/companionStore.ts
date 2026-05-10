@@ -27,6 +27,9 @@ interface CompanionState {
   /** V0.6.1：是否已经看过权限引导预告（避免重复弹）*/
   micPermissionPreShown: boolean;
 
+  /** P7：减少动效（晕动症友好；PRD §19.11.7）*/
+  reduceMotion: boolean;
+
   setCompanionId: (id: string) => void;
   markIntroCompleted: () => void;
   /** "设置 → 重看引导" 入口：仅清 introCompleted，其他状态保留（PRD §17.3）*/
@@ -35,6 +38,7 @@ interface CompanionState {
   setInputPreference: (p: InputPreference) => void;
   setMicPermission: (p: MicPermission) => void;
   markMicPermissionPreShown: () => void;
+  setReduceMotion: (v: boolean) => void;
   reset: () => void;
 }
 
@@ -47,6 +51,7 @@ export const useCompanionStore = create<CompanionState>()(
       inputPreference: 'voice',
       micPermission: 'prompt',
       micPermissionPreShown: false,
+      reduceMotion: false,
 
       setCompanionId: (id) => set({ companionId: id }),
       markIntroCompleted: () => set({ introCompleted: true }),
@@ -55,6 +60,7 @@ export const useCompanionStore = create<CompanionState>()(
       setInputPreference: (p) => set({ inputPreference: p }),
       setMicPermission: (p) => set({ micPermission: p }),
       markMicPermissionPreShown: () => set({ micPermissionPreShown: true }),
+      setReduceMotion: (v) => set({ reduceMotion: v }),
       reset: () =>
         set({
           introCompleted: false,
@@ -63,6 +69,7 @@ export const useCompanionStore = create<CompanionState>()(
           inputPreference: 'voice',
           micPermission: 'prompt',
           micPermissionPreShown: false,
+          reduceMotion: false,
         }),
     }),
     {

@@ -7,17 +7,37 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Companion } from '@/components/characters/Companion';
 import { Button } from '@/components/ui/Button';
 import type { CompanionPresetId } from '@/components/characters/types';
+// 引 JSON 数据：companions.json 不带 'server-only'，可在 client 用
+import companionsJson from '@prompts/shared/companions.json';
 
-const HINTS_BY_TIME = [
-  { at: 0, text: '让我想想你说的样子……' },
-  { at: 3000, text: '我在用心画……' },
-  { at: 6000, text: '快好了，再等等……' },
-  { at: 12000, text: '马上就好……' },
+interface CompanionMetaLite {
+  preset_id: string;
+  wait_lines?: string[];
+}
+const COMPANIONS_LIST = (companionsJson as { companions: CompanionMetaLite[] }).companions;
+
+const HINT_TIMES = [0, 3000, 6000, 12000];
+// 通用回退（任何伙伴 wait_lines 缺失或不足）
+const GENERIC_HINTS = [
+  '让我想想你说的样子......',
+  '我在用心画......',
+  '快好了，再等等......',
+  '马上就好......',
 ];
+
+function pickWaitLine(presetId: CompanionPresetId | null, idx: number): string {
+  if (!presetId) return GENERIC_HINTS[Math.min(idx, GENERIC_HINTS.length - 1)];
+  const meta = COMPANIONS_LIST.find((c) => c.preset_id === presetId);
+  const lines = meta?.wait_lines;
+  if (!lines || lines.length === 0) {
+    return GENERIC_HINTS[Math.min(idx, GENERIC_HINTS.length - 1)];
+  }
+  return lines[Math.min(idx, lines.length - 1)];
+}
 
 interface Props {
   companionPreset: CompanionPresetId | null;
@@ -34,13 +54,16 @@ export function GeneratingScreen({ companionPreset, error, onBack, onHome }: Pro
 
   useEffect(() => {
     if (error) return;
-    const timers = HINTS_BY_TIME.slice(1).map((h, i) =>
-      setTimeout(() => setHintIdx(i + 1), h.at),
+    const timers = HINT_TIMES.slice(1).map((at, i) =>
+      setTimeout(() => setHintIdx(i + 1), at),
     );
     return () => timers.forEach(clearTimeout);
   }, [error]);
 
-  const hint = HINTS_BY_TIME[hintIdx]?.text ?? '快好了……';
+  const hint = useMemo(
+    () => pickWaitLine(companionPreset, hintIdx),
+    [companionPreset, hintIdx],
+  );
 
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center px-7 pt-6 pb-8 gap-6">

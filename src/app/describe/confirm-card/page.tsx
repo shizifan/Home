@@ -18,7 +18,11 @@ import { MobileShell } from '@/components/ui/MobileShell';
 import { CardConfirm } from '@/components/card/CardConfirm';
 import { StickToWallTransition } from '@/components/card/StickToWallTransition';
 import { useDescribeStore } from '@/stores/describeStore';
-import { confirmDescribe, getCompanionState } from '@/lib/api/client';
+import {
+  confirmDescribe,
+  getCompanionState,
+  reportTelemetry,
+} from '@/lib/api/client';
 import type { ImageGenSource } from '@/lib/api/client';
 
 export default function Page() {
@@ -32,6 +36,8 @@ export default function Page() {
     isFallbackTextCard,
     companionReply,
     finalText,
+    startedAtMs,
+    inputMethod,
     reset,
   } = useDescribeStore();
 
@@ -51,15 +57,30 @@ export default function Page() {
       const s = await getCompanionState();
       if (s.companion) setCompanionName(s.companion.display_name);
     })();
-  }, [cardId, router]);
+
+    // P7 §28.4 端到端时长埋点：从 startTask → 看到卡片确认页
+    if (startedAtMs !== null) {
+      const ms = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startedAtMs;
+      reportTelemetry(
+        'describe_first_card',
+        ms,
+        `describe/${inputMethod}`,
+      );
+    }
+  }, [cardId, router, startedAtMs, inputMethod]);
 
   // 当动画 + API 都完成后 → 跳 home
   useEffect(() => {
     if (animationDone && apiDone) {
+      // P7 §28.4 端到端总时长（从 startTask 到孩子点 "就是这样" 完成）
+      if (startedAtMs !== null) {
+        const ms = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startedAtMs;
+        reportTelemetry('describe_e2e', ms, `describe/${inputMethod}`);
+      }
       reset();
       router.replace('/home');
     }
-  }, [animationDone, apiDone, reset, router]);
+  }, [animationDone, apiDone, reset, router, startedAtMs, inputMethod]);
 
   const handleConfirm = async ({
     autoTimeout,

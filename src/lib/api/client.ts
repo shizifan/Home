@@ -428,6 +428,52 @@ export class Day7FailureError extends Error {
   }
 }
 
+// ──────────────────── Telemetry（P7 §28.4 端到端时长统计）────────────────────
+
+const ALLOWED_TELEMETRY_EVENTS = [
+  'describe_e2e',
+  'describe_first_card',
+  'describe_revise',
+  'voice_record_duration',
+  'asr_duration',
+  'visit_e2e',
+  'school_e2e',
+  'plaza_act_e2e',
+  'day7_view_total',
+] as const;
+
+export type TelemetryEvent = (typeof ALLOWED_TELEMETRY_EVENTS)[number];
+
+/**
+ * Fire-and-forget client telemetry。失败静默；不抛错。
+ * 优先用 navigator.sendBeacon（页面跳转时也能发出），降级到 fetch keepalive。
+ */
+export function reportTelemetry(
+  event: TelemetryEvent,
+  ms: number,
+  source?: string,
+): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const payload = JSON.stringify({ event, ms: Math.round(ms), source });
+    const blob = new Blob([payload], { type: 'application/json' });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/telemetry/event', blob);
+      return;
+    }
+    fetch('/api/telemetry/event', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: payload,
+      keepalive: true,
+    }).catch(() => {
+      /* swallow */
+    });
+  } catch {
+    /* swallow */
+  }
+}
+
 // ──────────────────── 多用户软隔离（P6 §27.2）────────────────────
 
 export interface AuthMeResponse {

@@ -45,6 +45,9 @@ interface DescribeState {
 
   stage: DescribeStage;
 
+  /** P7 §28.4 端到端时长起点：startTask 时记 performance.now() */
+  startedAtMs: number | null;
+
   // setters
   startTask: (args: { taskId: string; taskTitle: string; taskQuestion: string; inputMethod: 'voice' | 'text' }) => void;
   setVoiceResult: (args: { voiceAudioUrl: string; transcription: string }) => void;
@@ -82,6 +85,7 @@ const INITIAL: Omit<DescribeState, 'startTask' | 'setVoiceResult' | 'setFinalTex
   companionReply: '',
   attempt: 1,
   stage: 'idle',
+  startedAtMs: null,
 };
 
 export const useDescribeStore = create<DescribeState>((set) => ({
@@ -95,6 +99,9 @@ export const useDescribeStore = create<DescribeState>((set) => ({
       taskQuestion,
       inputMethod,
       stage: inputMethod === 'voice' ? 'recording' : 'confirming-text',
+      // P7 §28.4 端到端时长起点
+      startedAtMs:
+        typeof performance !== 'undefined' ? performance.now() : Date.now(),
     }),
 
   setVoiceResult: ({ voiceAudioUrl, transcription }) =>

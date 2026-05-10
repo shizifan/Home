@@ -71,7 +71,8 @@ body {
   position: relative;
 }
 
-/* 关键动效可一键关闭：PRD §9.9 性能要求 */
+/* 关键动效可一键关闭：PRD §19.11.7 性能要求 */
+/* 系统级偏好（用户在系统设置里勾"减少动效"）*/
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -80,4 +81,13 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* 应用内开关（设置页 → 减少动效），与系统级独立；root 上挂 .reduce-motion */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }

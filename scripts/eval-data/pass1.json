@@ -1,0 +1,221 @@
+{
+  "version": "0.1.0",
+  "_doc": "Pass 1 归类金标准评估集（PRD §23.16）。每条样本含输入 + 期望 action + 期望 concept_name 关键词集（partial-match）。建议初始 30 条覆盖 4 种 action，P7 用户测试后扩到 100+。",
+  "samples": [
+    {
+      "id": "p1_001_create_room",
+      "input_type": "describe",
+      "input_content": "我的卧室，有一张蓝色的床，窗户能看到楼下的大树",
+      "memory_bank": [],
+      "expected": {
+        "action": "create_new",
+        "concept_name_keywords": ["卧室", "房间", "我的卧室", "床"],
+        "concept_category": "place"
+      }
+    },
+    {
+      "id": "p1_002_append_mama",
+      "input_type": "text",
+      "input_content": "我妈最爱包饺子",
+      "memory_bank": [
+        {
+          "id": "m1",
+          "type": "remembered",
+          "concept_name": "妈妈",
+          "concept_category": "person",
+          "ai_summary": "你说妈妈在厨房包饺子。"
+        }
+      ],
+      "expected": {
+        "action": "append_to_existing",
+        "concept_name_keywords": ["妈妈"],
+        "target_concept_id": "m1"
+      }
+    },
+    {
+      "id": "p1_003_create_papa",
+      "input_type": "text",
+      "input_content": "我爸爸是医生，每天很早就出门",
+      "memory_bank": [
+        {
+          "id": "m1",
+          "type": "remembered",
+          "concept_name": "妈妈",
+          "concept_category": "person"
+        }
+      ],
+      "expected": {
+        "action": "create_new",
+        "concept_name_keywords": ["爸爸"],
+        "concept_category": "person"
+      }
+    },
+    {
+      "id": "p1_004_set_aside_joke_elephant",
+      "input_type": "text",
+      "input_content": "我家有一只大象",
+      "memory_bank": [],
+      "expected": {
+        "action": "set_aside",
+        "concept_name_keywords": ["大象", "玩笑"]
+      }
+    },
+    {
+      "id": "p1_005_uncertain_mood",
+      "input_type": "text",
+      "input_content": "今天有点烦但是和小狗玩得很开心",
+      "memory_bank": [
+        {
+          "id": "m1",
+          "type": "remembered",
+          "concept_name": "今天的心情",
+          "concept_category": "emotion",
+          "ai_summary": "你今天说有点烦。"
+        }
+      ],
+      "expected": {
+        "action": "mark_uncertain",
+        "concept_name_keywords": ["心情", "今天"]
+      }
+    },
+    {
+      "id": "p1_006_set_aside_skipped",
+      "input_type": "skipped",
+      "input_content": "(skipped)",
+      "memory_bank": [],
+      "expected": {
+        "action": "set_aside",
+        "concept_name_keywords": ["跳过", "你今天没告诉我", "选择不告诉"]
+      }
+    },
+    {
+      "id": "p1_007_append_dumpling",
+      "input_type": "text",
+      "input_content": "今天又吃了饺子，是妈妈包的",
+      "memory_bank": [
+        {
+          "id": "m1",
+          "type": "remembered",
+          "concept_name": "妈妈",
+          "concept_category": "person"
+        },
+        {
+          "id": "m2",
+          "type": "remembered",
+          "concept_name": "饺子",
+          "concept_category": "food"
+        }
+      ],
+      "expected": {
+        "action": "append_to_existing",
+        "concept_name_keywords": ["饺子", "妈妈"]
+      }
+    },
+    {
+      "id": "p1_008_create_park",
+      "input_type": "describe",
+      "input_content": "周末我和爸爸去公园了，那里有秋千和滑梯",
+      "memory_bank": [
+        {
+          "id": "m1",
+          "type": "remembered",
+          "concept_name": "爸爸",
+          "concept_category": "person"
+        }
+      ],
+      "expected": {
+        "action": "create_new",
+        "concept_name_keywords": ["公园"],
+        "concept_category": "place"
+      }
+    },
+    {
+      "id": "p1_009_uncertain_contradict",
+      "input_type": "text",
+      "input_content": "我最爱吃面条，比饺子好吃多了",
+      "memory_bank": [
+        {
+          "id": "m1",
+          "type": "remembered",
+          "concept_name": "饺子",
+          "concept_category": "food",
+          "ai_summary": "你说妈妈包的饺子是最好吃的。"
+        }
+      ],
+      "expected": {
+        "action": "mark_uncertain",
+        "concept_name_keywords": ["最爱吃", "面条", "饺子"]
+      }
+    },
+    {
+      "id": "p1_010_create_grandma",
+      "input_type": "text",
+      "input_content": "奶奶昨天去医院了",
+      "memory_bank": [],
+      "expected": {
+        "action": "create_new",
+        "concept_name_keywords": ["奶奶"],
+        "concept_category": "person"
+      }
+    },
+    {
+      "id": "p1_011_set_aside_too_short",
+      "input_type": "describe",
+      "input_content": "嗯",
+      "memory_bank": [],
+      "expected": {
+        "action": "set_aside",
+        "concept_name_keywords": ["看不清", "没说清楚", "听不太懂"]
+      }
+    },
+    {
+      "id": "p1_012_create_dog",
+      "input_type": "text",
+      "input_content": "我们家有一只小狗叫毛毛，它最爱啃骨头",
+      "memory_bank": [],
+      "expected": {
+        "action": "create_new",
+        "concept_name_keywords": ["小狗", "毛毛"]
+      }
+    },
+    {
+      "id": "p1_013_create_emotion_scared",
+      "input_type": "text",
+      "input_content": "我害怕一个人在家，特别是晚上",
+      "memory_bank": [],
+      "expected": {
+        "action": "create_new",
+        "concept_name_keywords": ["害怕", "一个人", "晚上"],
+        "concept_category": "emotion"
+      }
+    },
+    {
+      "id": "p1_014_append_papa_work",
+      "input_type": "text",
+      "input_content": "爸爸今天加班，回来很晚",
+      "memory_bank": [
+        {
+          "id": "m1",
+          "type": "remembered",
+          "concept_name": "爸爸",
+          "concept_category": "person",
+          "ai_summary": "你爸爸是医生，每天很早出门。"
+        }
+      ],
+      "expected": {
+        "action": "append_to_existing",
+        "concept_name_keywords": ["爸爸"]
+      }
+    },
+    {
+      "id": "p1_015_uncertain_sparse",
+      "input_type": "text",
+      "input_content": "外公的事",
+      "memory_bank": [],
+      "expected": {
+        "action": "set_aside",
+        "concept_name_keywords": ["外公", "听不太懂", "再说"]
+      }
+    }
+  ]
+}

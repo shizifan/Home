@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import '@/styles/globals.css';
+import { ReduceMotionApplier } from '@/components/ui/ReduceMotionApplier';
 
 export const metadata: Metadata = {
   title: 'Home · 数字小家',
@@ -17,7 +18,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-CN">
-      <body>{children}</body>
+      <body>
+        <ReduceMotionApplier />
+        {children}
+      </body>
     </html>
   );
 }

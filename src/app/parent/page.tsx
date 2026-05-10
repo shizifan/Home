@@ -517,6 +517,9 @@ function SettingsTab({
   onReset: () => void;
   onReplayIntro: () => void;
 }) {
+  const reduceMotion = useCompanionStore((s) => s.reduceMotion);
+  const setReduceMotion = useCompanionStore((s) => s.setReduceMotion);
+
   return (
     <div className="p-5 flex flex-col gap-4" id="settings">
       <section className="bg-white/60 border border-[rgba(95,94,90,0.12)] rounded-card px-4 py-3">
@@ -526,7 +529,12 @@ function SettingsTab({
           <br />
           AI 调用走 DeepSeek + Qwen-VL，每次只发送当次必要的内容。
           <br />
-          正式上线前会补齐：完整的隐私政策 / 数据保留期 / 一键导出。
+          完整版本见
+          {' '}
+          <a href="/legal/privacy" className="underline" target="_blank" rel="noreferrer">
+            隐私说明
+          </a>
+          。
         </p>
       </section>
 
@@ -538,6 +546,28 @@ function SettingsTab({
         <Button variant="ghost" fullWidth onClick={onReplayIntro}>
           重看引导
         </Button>
+      </section>
+
+      {/* PRD §19.11.7 减少动效 — 适配晕动症儿童 */}
+      <section className="bg-white/60 border border-[rgba(95,94,90,0.12)] rounded-card px-4 py-3">
+        <h3 className="font-title text-h3 text-ink-1 mb-2">显示</h3>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={reduceMotion}
+            onChange={(e) => setReduceMotion(e.target.checked)}
+            className="w-5 h-5 cursor-pointer"
+            aria-describedby="reduce-motion-hint"
+          />
+          <span className="font-title text-body text-ink-1">减少动效</span>
+        </label>
+        <p
+          id="reduce-motion-hint"
+          className="font-title text-small text-ink-3 mt-1.5 leading-relaxed"
+        >
+          关闭呼吸 / 眨眼 / 滑入等装饰动效，画面更稳定。
+          适合对动效敏感的孩子。
+        </p>
       </section>
 
       <section className="bg-white/60 border border-[rgba(95,94,90,0.12)] rounded-card px-4 py-3">

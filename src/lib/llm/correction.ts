@@ -40,11 +40,15 @@ export async function runCorrection(
   input: CorrectionInput,
   companionId?: string,
 ): Promise<string> {
-  // 取该伙伴的预设台词作为 fallback（PRD §11.5.4 + §15.5.4）
+  // 取该伙伴的预设台词作为 fallback（PRD §15.5 / §18.5）
+  // 优先 companions.json 的 correction_responses（V0.2.0 起每伙伴 5 种动作齐全），
+  // 否则回到 prompts/correction/examples.json 的旧映射
+  const { getCorrectionResponse } = await import('@/lib/companionPresets');
   const presetMap = (correctionExamples as CorrectionMap).companions ?? {};
   const presetReply =
-    presetMap[input.companion.preset_id]?.[input.correctionType] ??
-    presetMap[input.companion.preset_id]?.['restore'] ??
+    getCorrectionResponse(input.companion.preset_id, input.correctionType as never) ||
+    presetMap[input.companion.preset_id]?.[input.correctionType] ||
+    presetMap[input.companion.preset_id]?.['restore'] ||
     '...好的，我懂了。';
 
   const personalityExamples = input.companion.personality_examples

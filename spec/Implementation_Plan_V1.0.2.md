@@ -6,7 +6,7 @@
 
 ---
 
-## 0. 现状基线（V0.6.1 + P1‑P5 + P6 多用户软隔离 + Docker 部署就绪）
+## 0. 现状基线（V0.6.1 + P1‑P5 + P6 多用户软隔离 + Docker 部署 + P7 工程闭环）
 
 ### 0.1 已完成
 
@@ -53,6 +53,15 @@
 | LLM | 加 `plaza_act` + `plaza_ending` callType + 5 剧本各 1 条 Few-shot；act 模式 max=500/temp=0.6/12s，ending 模式 max=600/temp=0.5/15s |
 | 道具升级 | rewardEngine 检测 perfect + natural + upgrade_to → 自动把基础版替换升级版（如《治水图》→《治水十策》）|
 | 复玩台词 | 第 2 次"这次试试不一样的道具？"/ 第 3 次"我每次都能想出不同的办法"（PRD §14.5.3）|
+| **P6 多用户软隔离 + Docker** | cookie `home_uid` + 浏览器指纹 + nickname 软隔离；3 档限流（IP create / global daily / per-user LLM，内存默认 + REDIS_URL 自动切 Redis）；Dockerfile 三段构建 + docker-compose（app + mysql:8.0 + redis:7-alpine）；伪 404 跨账号防御 |
+| 数据库（P6） | 迁移 0006：`users.nickname / device_fingerprint / status / last_active_at` + 索引（stored procedure idempotent）|
+| **P7 资产接入点 + Prompt 评估 + 伙伴文案 + 错误回归 + 减少动效 + 总时长埋点** | 见 §3 P7 详细 |
+| Prompt 评估 | `npm run prompt:eval`：pass1 15 样本，按 action / concept_name 关键词比对；阈值参考 PRD §23.16 |
+| 伙伴文案（V0.2.0） | `companions.json` 加 unlock / depart / correction / wait 全字段；`companionPresets.ts` 4 个访问器带兜底 |
+| 错误处理回归 | `spec/Error_Recovery_Audit.md`：PRD §25 全表逐项审计 + 实现位置 + 验证步骤 + ✅/⚠️/⏸ 状态 |
+| 减少动效 | 设置勾选 → `<html class="reduce-motion">` → 全站 `*` 动画 / 过渡降到 0.01ms |
+| 描述总时长埋点 | `reportTelemetry`（sendBeacon + fetch keepalive 兜底）→ `/api/telemetry/event` 白名单写 `llm_call_log` → `daily-monitor.sh` 出 avg / max |
+| 资产接入点文档 | `spec/Asset_Interface_V1.0.md`：立绘 / 风格基准图 / 剧本插画 / 文案 / "看似资产但不要碰"清单 |
 
 ### 0.2 缺口（按 PRD V1.0.2 对照，P1 收口后）
 
@@ -594,53 +603,87 @@
 
 满足 PRD §28 验收指标 + IP 角色替换 + 视觉资产到位。
 
+> **执行说明（2026-05-10）**：用户决定"不考虑 IP 角色替换"，T1 暂缓。
+> T5 用户测试需要真实邀测窗口，不在工程闭环内，留待 Demo 启动后再做。
+> P7 工程侧关闭范围：T2（资产接入点文档）/ T3 / T4 / T6 / T7。
+
 #### P7.2 任务清单
 
-**P7‑T1 · IP 角色替换**
+**P7‑T1 · IP 角色替换**（暂缓）
 - 琳娜贝尔 → 原创角色（保留怯生生气质）
 - 藤藤蛇 → 原创角色（保留警觉害羞气质）
 - 涉及：立绘、`companions.json`、preset 表数据迁移
 - **产物**：迁移 `db/migrations/0006_replace_ip_companions.sql`
 
-**P7‑T2 · 视觉资产收口**
-- 8 伙伴 × 3 姿态（站 / 坐 / 躺）= 24 张立绘
-- 每姿态 5 表情面部局部小图 = 120 张
-- 30 个房间物品图标
-- 4 系统预设伙伴形象
-- 30‑40 张剧本插画
-- 7 个广场角色配饰图层
+**P7‑T2 · 视觉资产接入点文档**（✅ 完成 2026-05-10）
+- 不再做"P7 必须出齐所有资产"——只把"在哪里换" + "怎么换"固化下来，留给设计 / 内容运营按需迭代
+- 立绘 / 风格基准图 / 剧本插画 / 文案 / 上传产物 / 字体 / "看似资产但不要碰"清单
+- **产物**：`spec/Asset_Interface_V1.0.md`
 
-**P7‑T3 · Prompt 调优**（PRD §23.16）
-- Pass 1：50‑100 真实样本回归，准确率 ≥ 85%
-- Pass 2：每伙伴 10 样本人工评估语气一致性 ≥ 85%
-- Day 7：10 样本人工评估"情感到位率" ≥ 80%
-- **产物**：`scripts/prompt-eval.ts` 扩展 + 评估报告 `spec/Prompt_Eval_Report.md`
+**P7‑T3 · Prompt 调优框架**（✅ 完成 2026-05-09）
+- Pass 1：50‑100 真实样本回归，准确率 ≥ 85%（PRD §23.16 阈值）
+- Pass 2：每伙伴 10 样本人工评估语气一致性 ≥ 85%（仍属人工流程，未自动化）
+- Day 7：10 样本人工评估"情感到位率" ≥ 80%（人工流程）
+- **产物**：
+  - `scripts/prompt-eval.ts`（直接调 `runPass1`，对比 action + concept_name 关键词）
+  - `scripts/eval-data/pass1.json`（15 条手工样本，覆盖 4 个 action）
+  - `npm run prompt:eval` 脚本入口
+- **现状**：自动化只覆盖 pass1；pass2/day7 待积累真实样本后再扩展评估
 
-**P7‑T4 · 8 伙伴文案全量回填**
-- 跳过台词 / 解锁台词 / 出发台词 / 纠正反馈 / 等待文案变体
-- **产物**：完整 `prompts/shared/companions.json`
+**P7‑T4 · 8 伙伴文案全量回填**（✅ 完成 2026-05-09）
+- 跳过台词 / 解锁台词 / 出发台词 / 纠正反馈 / 等待文案 4 变体
+- **产物**：
+  - `prompts/shared/companions.json` V0.2.0（unlock_lines / depart_lines / correction_responses / wait_lines）
+  - `src/lib/companionPresets.ts` 加 `getUnlockLine / getDepartLine / getCorrectionResponse / getWaitLine` 访问器（带兜底）
+  - `src/lib/llm/correction.ts` + `src/components/card/GeneratingScreen.tsx` 接入访问器
 
-**P7‑T5 · 用户测试 + 修复**
+**P7‑T5 · 用户测试 + 修复**（暂缓 — 需真实邀测窗口）
 - 5–10 个孩子完整 7 天 + 至少 1 次驿站
 - 按 PRD §28 收集指标
 - Bug 修复 1 轮
 - **产物**：`spec/UAT_Report.md`
 
-**P7‑T6 · 错误处理回归**
-- 按 PRD §25 表格逐项手测一次
-- 形成一份回归 checklist
+**P7‑T6 · 错误处理回归**（✅ 完成 2026-05-09）
+- 按 PRD §25 表格逐项审计一次，标 ✅ / ⚠️ / ⏸ 三档状态
+- 列出每条的实现位置、验证步骤、剩余待做项
+- **产物**：`spec/Error_Recovery_Audit.md`
 
-**P7‑T7 · 性能与体验抛光**
-- 描述卡片总时长中位数 ≤ 15s（按 PRD §28.4）
-- 减少动效开关在设置中可用
-- 移动端 30fps 检查
+**P7‑T7 · 减少动效开关 + 描述卡片总时长埋点**（✅ 完成 2026-05-10）
+- PRD §19.11.7 减少动效（晕动症友好）：设置勾选 → `<html class="reduce-motion">` → 全站 `animation/transition` 改为 0.01ms
+- PRD §28.4 描述卡片总时长中位数 ≤ 15s 埋点：
+  - 客户端 `reportTelemetry()`：`navigator.sendBeacon` 优先 + `fetch keepalive` 兜底
+  - `startTask` 起记 `performance.now()`，`/describe/confirm-card` 出现时埋 `describe_first_card`，孩子点"就是这样" + 动画 / 后端都完成时埋 `describe_e2e`
+  - 服务端 `POST /api/telemetry/event`：白名单事件 → 写 `llm_call_log`（call_type=`client_telemetry`，model=event 名，latency_ms=毫秒）→ `daily-monitor.sh` 按 model 分组 avg / max
+- **产物**：
+  - `src/stores/companionStore.ts`（reduceMotion + setReduceMotion）
+  - `src/styles/globals.css`（`.reduce-motion *` 规则）
+  - `src/components/ui/ReduceMotionApplier.tsx` + 接入 `src/app/layout.tsx`
+  - `src/app/parent/page.tsx`（设置 Tab 加勾选项）
+  - `src/app/api/telemetry/event/route.ts`（事件白名单 + 写库）
+  - `src/lib/api/client.ts::reportTelemetry` + `ALLOWED_TELEMETRY_EVENTS`
+  - `src/stores/describeStore.ts`（startedAtMs）
+  - `src/app/describe/confirm-card/page.tsx`（双埋点）
+  - `scripts/daily-monitor.sh`（client_telemetry 汇总块）
 
-**P7‑T8 · Day 4 语音输入支持（合并 P1‑T3‑fu）**（PRD §5.6 / §7.11）
+**P7‑T8 · Day 4 语音输入支持（合并 P1‑T3‑fu）**（暂缓）
 - TaskOverlay TextZone 加"🎤 改用说话"按钮
 - 复用 `VoiceRecorder` + `/api/voice/upload`（不走图像生成）
 - ASR 文字回填到 textarea，孩子可继续编辑后提交
 - 配套 E2E：spec/08_day4_voice.spec.ts 验证语音/文字两条路径
 - **产物**：改 `src/components/task/TaskOverlay.tsx`（TextZone 嵌 VoiceRecorder mini 控件）
+
+#### P7.4 P7 完成状态汇总（2026-05-10）
+
+| 任务 | 状态 | 备注 |
+|---|---|---|
+| T1 IP 角色替换 | ⏸ 暂缓 | 用户明确不做 |
+| T2 资产接入点文档 | ✅ | `spec/Asset_Interface_V1.0.md` |
+| T3 Prompt 调优框架 | ✅ | pass1 自动化；pass2/day7 留人工 |
+| T4 伙伴文案 | ✅ | companions.json V0.2.0 |
+| T5 用户测试 | ⏸ 暂缓 | 需真实邀测窗口 |
+| T6 错误处理回归 | ✅ | Error_Recovery_Audit.md |
+| T7 减少动效 + 总时长埋点 | ✅ | 含 daily-monitor 汇总 |
+| T8 Day 4 语音输入 | ⏸ 暂缓 | 不阻塞 V1.0 上线 |
 
 #### P7.3 验收标准（参考 PRD §28）
 
