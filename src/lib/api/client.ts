@@ -8,7 +8,8 @@
 import { useCompanionStore } from '@/stores/companionStore';
 
 async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
-  const r = await apiFetch(input, init);
+  // 注意：这里必须是原生 fetch，不能写成 apiFetch（会无限递归 → Maximum call stack size exceeded）
+  const r = await fetch(input, init);
   // 服务端不认这个 cookie（被清 / 失效 / 用户被删）→ 清前端残留 + 硬跳 /start
   // 已经在 /start 的情况下不再跳，避免无限刷新
   if (r.status === 401 && typeof window !== 'undefined') {
