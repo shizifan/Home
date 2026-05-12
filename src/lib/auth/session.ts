@@ -194,11 +194,17 @@ export async function lookupByNickname(
 
 export async function setUserCookie(userId: string): Promise<void> {
   const jar = await cookies();
+  // Secure flag：默认生产环境开（要求 HTTPS）。HTTP 部署阶段必须设 COOKIE_SECURE=0 关闭，
+  // 否则浏览器会丢弃 Set-Cookie，导致所有需鉴权 API 持续 401。
+  const secure =
+    process.env.COOKIE_SECURE === '0'
+      ? false
+      : process.env.NODE_ENV === 'production';
   jar.set(COOKIE_NAME, userId, {
     maxAge: COOKIE_MAX_AGE,
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure,
     path: '/',
   });
 }

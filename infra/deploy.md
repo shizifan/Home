@@ -74,6 +74,10 @@ DASHSCOPE_API_KEY=<...>
 
 ADMIN_KEY=<随机长字符串，至少 32 字符>
 
+# ⚠️ HTTP 部署（还没上 HTTPS）必须设 0，否则浏览器丢弃 Set-Cookie 导致全局 401
+# 上了 HTTPS 后改回 1
+COOKIE_SECURE=0
+
 # 可选：
 RATE_IP_CREATE_USER_LIMIT=5
 RATE_GLOBAL_DAILY_USER_LIMIT=50
