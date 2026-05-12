@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Home V1.0 — 每日监控汇总（PRD §25.7 最小集）
 #
-# 行为：扫 llm_call_log 表统计昨日数据，生成纯文本汇总，写到 /var/log/home-monitor.log。
+# 行为：扫 llm_call_log 表统计昨日数据，生成纯文本汇总，写到 /var/log/game-monitor.log。
 # 用 cron 每天 9:00 跑一次；接邮件 / 飞书 / 企业微信由用户额外接入（脚本只产出文本）。
 #
 # 用法：
-#   0 9 * * * /opt/home/scripts/daily-monitor.sh
+#   0 9 * * * /opt/game/scripts/daily-monitor.sh
 
 set -euo pipefail
 

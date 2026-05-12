@@ -49,7 +49,7 @@ sudo usermod -aG docker $USER
 ### 1.2 拉代码 + 配置环境变量
 
 ```bash
-mkdir -p /opt/home && cd /opt/home
+mkdir -p /opt/game && cd /opt/game
 git clone https://github.com/shizifan/Home.git .
 cp .env.example .env.production
 # 编辑：填好 MYSQL_PASSWORD / DEEPSEEK_API_KEY / DASHSCOPE_API_KEY / ADMIN_KEY 等
@@ -86,7 +86,7 @@ OSS_BUCKET=home-backup
 ### 1.3 起服务
 
 ```bash
-cd /opt/home
+cd /opt/game
 # Docker compose 默认会读取当前目录的 .env，但我们用 .env.production 显式指定
 docker compose --env-file .env.production up -d --build
 
@@ -153,7 +153,7 @@ sudo nginx -t && sudo systemctl reload nginx
 # 给宿主机加 crontab
 crontab -e
 # 添加：
-0 3 * * * /opt/home/scripts/backup.sh >> /var/log/home-backup.log 2>&1
+0 3 * * * /opt/game/scripts/backup.sh >> /var/log/game-backup.log 2>&1
 ```
 
 需要上传到 OSS 时，先在 ECS 上装 [ossutil](https://help.aliyun.com/zh/oss/developer-reference/install-ossutil) 并 `ossutil config` 配好 AK/SK，再在 `.env.production` 设 `OSS_BUCKET=home-backup`。
@@ -162,7 +162,7 @@ crontab -e
 
 ```bash
 # 写到日志文件
-0 9 * * * /opt/home/scripts/daily-monitor.sh >> /var/log/home-monitor.log 2>&1
+0 9 * * * /opt/game/scripts/daily-monitor.sh >> /var/log/game-monitor.log 2>&1
 
 # 想接企业微信 / 飞书机器人，把 daily-monitor.sh 输出 pipe 给 curl 就行
 ```
@@ -194,7 +194,7 @@ curl "https://home.example.com/api/admin/users?key=$ADMIN_KEY" | jq
 ## 4. 升级 / 重启
 
 ```bash
-cd /opt/home
+cd /opt/game
 git pull
 docker compose --env-file .env.production up -d --build app
 # 老应用容器会被无缝替换；MySQL / Redis 不动数据

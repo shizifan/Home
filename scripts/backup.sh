@@ -2,17 +2,17 @@
 # Home V1.0 — MySQL 数据备份（PRD §27.6）
 #
 # 用法（在宿主机 crontab 里加一条）：
-#   0 3 * * * /opt/home/scripts/backup.sh >> /var/log/home-backup.log 2>&1
+#   0 3 * * * /opt/game/scripts/backup.sh >> /var/log/game-backup.log 2>&1
 #
 # 行为：
 #   1. 在容器里执行 mysqldump 导出整个 home 数据库
 #   2. 用 gzip 压缩
-#   3. 写到 BACKUP_DIR（默认 /var/backups/home）+ 上传到 OSS（可选）
+#   3. 写到 BACKUP_DIR（默认 /var/backups/game）+ 上传到 OSS（可选）
 #   4. 自动删除 30 天前的本地备份
 
 set -euo pipefail
 
-BACKUP_DIR="${BACKUP_DIR:-/var/backups/home}"
+BACKUP_DIR="${BACKUP_DIR:-/var/backups/game}"
 KEEP_DAYS="${BACKUP_KEEP_DAYS:-30}"
 DATE_TAG="$(date +%Y%m%d_%H%M%S)"
 FILE="$BACKUP_DIR/home_${DATE_TAG}.sql.gz"

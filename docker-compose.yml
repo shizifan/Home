@@ -12,6 +12,10 @@
 #        "for f in db/migrations/*.sql; do mysql -h mysql -u root -p$MYSQL_PASSWORD $MYSQL_DATABASE < $f; done"
 #   4. 浏览器访问 http://<host>:3000
 
+# 显式锁定 compose project 名为 home，使容器名固定为 home-app-1 / home-mysql-1 / home-redis-1，
+# 不受宿主机部署目录（如 /opt/game）影响 — scripts/backup.sh、daily-monitor.sh 默认按 home- 前缀找容器。
+name: home
+
 services:
   mysql:
     image: mysql:8.0
@@ -80,7 +84,9 @@ services:
       - app_uploads:/app/public/uploads
       - app_uploads_voice:/app/public/uploads_voice
     ports:
-      - '3000:3000'
+      # 仅绑 127.0.0.1：nginx 反代承担公网入口，容器不直接对外
+      # 想改端口或暂时暴露公网时通过 APP_PORT_BIND 覆盖（如 APP_PORT_BIND=0.0.0.0:3000）
+      - '${APP_PORT_BIND:-127.0.0.1:3001}:3000'
 
 volumes:
   mysql_data:
