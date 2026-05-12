@@ -27,7 +27,9 @@ export const runtime = 'nodejs';
 export async function GET() {
   const user = await resolveCurrentUser();
   if (!user) {
-    return NextResponse.json({ companion: null, no_user: true });
+    // 与其他 API 一致返 401，让 apiFetch 自动 reset store + 跳 /start
+    // （之前返 200+{no_user:true} 是历史设计，但没有"匿名探测"调用方依赖它）
+    return NextResponse.json({ error: 'no_user' }, { status: 401 });
   }
   const companion = await findCompanionByUserId(user.id);
   if (!companion) {
