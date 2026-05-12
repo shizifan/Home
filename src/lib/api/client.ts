@@ -1,6 +1,24 @@
 /**
  * 前端 API client — 薄封装 fetch
+ *
+ * 所有调用统一走 apiFetch：401 时清 zustand store + 硬跳 /start。
+ * 这是多用户软隔离的第 3 层防御（PRD §27.2，middleware → API guard → 此处兜底）。
  */
+
+import { useCompanionStore } from '@/stores/companionStore';
+
+async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const r = await apiFetch(input, init);
+  // 服务端不认这个 cookie（被清 / 失效 / 用户被删）→ 清前端残留 + 硬跳 /start
+  // 已经在 /start 的情况下不再跳，避免无限刷新
+  if (r.status === 401 && typeof window !== 'undefined') {
+    if (window.location.pathname !== '/start') {
+      useCompanionStore.getState().reset();
+      window.location.href = '/start';
+    }
+  }
+  return r;
+}
 
 export interface CompanionStateResponse {
   companion: {
@@ -52,7 +70,7 @@ export interface CompanionStateResponse {
 export async function askChat(
   question: string,
 ): Promise<{ reply: string; source: 'free_chat' | 'safety_filter' }> {
-  const r = await fetch('/api/chat/ask', {
+  const r = await apiFetch('/api/chat/ask', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ question }),
@@ -65,7 +83,7 @@ export async function askChat(
 }
 
 export async function deleteCard(cardId: string): Promise<void> {
-  const r = await fetch(`/api/cards/${encodeURIComponent(cardId)}/delete`, {
+  const r = await apiFetch(`/api/cards/${encodeURIComponent(cardId)}/delete`, {
     method: 'POST',
   });
   if (!r.ok) {
@@ -75,7 +93,7 @@ export async function deleteCard(cardId: string): Promise<void> {
 }
 
 export async function advanceDay(): Promise<{ ok: boolean; new_day: number; opening: string | null }> {
-  const r = await fetch('/api/companion/advance', { method: 'POST' });
+  const r = await apiFetch('/api/companion/advance', { method: 'POST' });
   if (!r.ok) {
     const err = (await r.json().catch(() => ({}))) as { error?: string };
     throw new Error(err.error ?? `advance ${r.status}`);
@@ -92,7 +110,7 @@ export interface TaskSubmitResponse {
 }
 
 export async function getCompanionState(): Promise<CompanionStateResponse> {
-  const r = await fetch('/api/companion/state', { cache: 'no-store' });
+  const r = await apiFetch('/api/companion/state', { cache: 'no-store' });
   if (!r.ok) throw new Error(`state ${r.status}`);
   return r.json();
 }
@@ -101,7 +119,7 @@ export async function createCompanion(args: {
   preset_id: string;
   custom_name?: string;
 }): Promise<{ companion: { id: string; preset_id: string; custom_name: string | null; current_day: number } }> {
-  const r = await fetch('/api/companion/create', {
+  const r = await apiFetch('/api/companion/create', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args),
@@ -115,7 +133,7 @@ export async function submitText(args: {
   task_id: string;
   user_text: string;
 }): Promise<TaskSubmitResponse> {
-  const r = await fetch('/api/text/submit', {
+  const r = await apiFetch('/api/text/submit', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args),
@@ -128,7 +146,7 @@ export async function skipTask(args: {
   companion_id: string;
   task_id: string;
 }): Promise<TaskSubmitResponse> {
-  const r = await fetch('/api/task/skip', {
+  const r = await apiFetch('/api/task/skip', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args),
@@ -145,7 +163,7 @@ export async function completeTask(args: {
   companion_id?: string;
   task_id: 'day6_review' | 'day7_worldview';
 }): Promise<{ ok: boolean; action: 'marked_done' | 'noop_already_done' }> {
-  const r = await fetch('/api/task/complete', {
+  const r = await apiFetch('/api/task/complete', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args),
@@ -199,7 +217,7 @@ export interface TimelineResponse {
 }
 
 export async function getTimeline(): Promise<TimelineResponse> {
-  const r = await fetch('/api/conversation/timeline', { cache: 'no-store' });
+  const r = await apiFetch('/api/conversation/timeline', { cache: 'no-store' });
   if (!r.ok) throw new Error(`timeline ${r.status}`);
   return r.json();
 }
@@ -262,7 +280,7 @@ export interface MemoryBankCardData {
 }
 
 export async function getMemoryBank(): Promise<MemoryBankResponse> {
-  const r = await fetch('/api/memory/bank', { cache: 'no-store' });
+  const r = await apiFetch('/api/memory/bank', { cache: 'no-store' });
   if (!r.ok) throw new Error(`memory bank ${r.status}`);
   return r.json();
 }
@@ -289,7 +307,7 @@ export async function correctMemory(args: {
   action: CorrectAction;
   params?: { clarification?: string; newName?: string; targetMemoryId?: string };
 }): Promise<CorrectResponse> {
-  const r = await fetch('/api/memory/correct', {
+  const r = await apiFetch('/api/memory/correct', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args),
@@ -312,13 +330,13 @@ export interface ConceptDetailResponse {
 }
 
 export async function getConceptDetail(id: string): Promise<ConceptDetailResponse> {
-  const r = await fetch(`/api/memory/concept/${id}`, { cache: 'no-store' });
+  const r = await apiFetch(`/api/memory/concept/${id}`, { cache: 'no-store' });
   if (!r.ok) throw new Error(`concept ${r.status}`);
   return r.json();
 }
 
 export async function listJpgFiles(): Promise<{ files: Array<{ name: string; size: number }> }> {
-  const r = await fetch('/api/dev/jpg-list', { cache: 'no-store' });
+  const r = await apiFetch('/api/dev/jpg-list', { cache: 'no-store' });
   if (!r.ok) return { files: [] };
   return r.json();
 }
@@ -367,7 +385,7 @@ export interface MonitorResponse {
 }
 
 export async function getMonitor(): Promise<MonitorResponse> {
-  const r = await fetch('/api/parent/monitor', { cache: 'no-store' });
+  const r = await apiFetch('/api/parent/monitor', { cache: 'no-store' });
   if (!r.ok) throw new Error(`monitor ${r.status}`);
   return r.json();
 }
@@ -393,7 +411,7 @@ export async function generateWorldview(): Promise<{
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 90_000);
   try {
-    const r = await fetch('/api/day7/generate', {
+    const r = await apiFetch('/api/day7/generate', {
       method: 'POST',
       signal: ctrl.signal,
     });
@@ -414,7 +432,7 @@ export async function generateWorldview(): Promise<{
 }
 
 export async function getWorldview(): Promise<WorldviewData | null> {
-  const r = await fetch('/api/day7/generate', { cache: 'no-store' });
+  const r = await apiFetch('/api/day7/generate', { cache: 'no-store' });
   if (r.status === 404) return null;
   if (!r.ok) throw new Error(`day7 get ${r.status}`);
   const j = (await r.json()) as { worldview: WorldviewData };
@@ -481,7 +499,7 @@ export interface AuthMeResponse {
 }
 
 export async function fetchMe(): Promise<AuthMeResponse> {
-  const r = await fetch('/api/auth/me', { cache: 'no-store' });
+  const r = await apiFetch('/api/auth/me', { cache: 'no-store' });
   if (!r.ok) throw new Error(`auth me ${r.status}`);
   return r.json();
 }
@@ -497,7 +515,7 @@ export async function authStart(args: {
   nickname: string;
   fingerprint: string;
 }): Promise<AuthStartResponse> {
-  const r = await fetch('/api/auth/start', {
+  const r = await apiFetch('/api/auth/start', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -520,7 +538,7 @@ export interface AuthLookupMatch {
 }
 
 export async function authLookup(nickname: string): Promise<AuthLookupMatch[]> {
-  const r = await fetch('/api/auth/lookup', {
+  const r = await apiFetch('/api/auth/lookup', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ nickname }),
@@ -531,7 +549,7 @@ export async function authLookup(nickname: string): Promise<AuthLookupMatch[]> {
 }
 
 export async function authResume(userId: string): Promise<{ user_id: string; nickname: string | null }> {
-  const r = await fetch('/api/auth/resume', {
+  const r = await apiFetch('/api/auth/resume', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ user_id: userId }),
@@ -571,13 +589,13 @@ export interface InventoryResponse {
 }
 
 export async function getInventory(): Promise<InventoryResponse> {
-  const r = await fetch('/api/inventory', { cache: 'no-store' });
+  const r = await apiFetch('/api/inventory', { cache: 'no-store' });
   if (!r.ok) throw new Error(`inventory ${r.status}`);
   return r.json();
 }
 
 export async function getInventoryItem(id: string) {
-  const r = await fetch(`/api/inventory/${encodeURIComponent(id)}`, {
+  const r = await apiFetch(`/api/inventory/${encodeURIComponent(id)}`, {
     cache: 'no-store',
   });
   if (!r.ok) throw new Error(`inventory item ${r.status}`);
@@ -635,7 +653,7 @@ export async function startPlazaPlay(args: {
   scenario_id: string;
   item_row_ids: [string, string, string];
 }): Promise<PlazaStartResponse> {
-  const r = await fetch('/api/station/plaza/play', {
+  const r = await apiFetch('/api/station/plaza/play', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ action: 'start', ...args }),
@@ -668,7 +686,7 @@ export async function runPlazaAct(args: {
   act_number: 1 | 2 | 3;
   item_row_id: string | null;
 }): Promise<PlazaActResponse> {
-  const r = await fetch('/api/station/plaza/play', {
+  const r = await apiFetch('/api/station/plaza/play', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ action: 'act', ...args }),
@@ -703,7 +721,7 @@ export interface PlazaEndingResponse {
 }
 
 export async function finishPlazaPlay(playId: string): Promise<PlazaEndingResponse> {
-  const r = await fetch('/api/station/plaza/play', {
+  const r = await apiFetch('/api/station/plaza/play', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ action: 'finish', play_id: playId }),
@@ -737,7 +755,7 @@ export interface PlazaPlayStateResponse {
 export async function getPlazaPlayState(
   playId: string,
 ): Promise<PlazaPlayStateResponse> {
-  const r = await fetch(
+  const r = await apiFetch(
     `/api/station/plaza/play?play_id=${encodeURIComponent(playId)}`,
     { cache: 'no-store' },
   );
@@ -746,7 +764,7 @@ export async function getPlazaPlayState(
 }
 
 export async function getPlazaPrepare(): Promise<PlazaPrepareResponse> {
-  const r = await fetch('/api/station/plaza/prepare', { cache: 'no-store' });
+  const r = await apiFetch('/api/station/plaza/prepare', { cache: 'no-store' });
   if (!r.ok) {
     const body = (await r.json().catch(() => ({}))) as {
       error?: string;
@@ -775,7 +793,7 @@ export interface StationStatusResponse {
 }
 
 export async function getStationStatus(): Promise<StationStatusResponse> {
-  const r = await fetch('/api/station/status', { cache: 'no-store' });
+  const r = await apiFetch('/api/station/status', { cache: 'no-store' });
   if (!r.ok) throw new Error(`station status ${r.status}`);
   return r.json();
 }
@@ -829,7 +847,7 @@ export async function depart(args: DepartSchoolArgs): Promise<DepartSchoolRespon
 export async function depart(
   args: DepartVisitArgs | DepartSchoolArgs,
 ): Promise<DepartVisitResponse | DepartSchoolResponse> {
-  const r = await fetch('/api/station/depart', {
+  const r = await apiFetch('/api/station/depart', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args),
@@ -848,7 +866,7 @@ export async function depart(
 export type DepartResponse = DepartVisitResponse;
 
 export async function getTrip(tripId: string) {
-  const r = await fetch(`/api/station/trip/${encodeURIComponent(tripId)}`, {
+  const r = await apiFetch(`/api/station/trip/${encodeURIComponent(tripId)}`, {
     cache: 'no-store',
   });
   if (!r.ok) throw new Error(`trip ${r.status}`);
@@ -856,7 +874,7 @@ export async function getTrip(tripId: string) {
 }
 
 export async function importTripMemory(tripId: string) {
-  const r = await fetch('/api/station/memory/import', {
+  const r = await apiFetch('/api/station/memory/import', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ trip_id: tripId }),
@@ -884,7 +902,7 @@ interface Day5Response {
 }
 
 export async function getDay5Q1(): Promise<Day5Response> {
-  const r = await fetch('/api/task/day5-questions', { cache: 'no-store' });
+  const r = await apiFetch('/api/task/day5-questions', { cache: 'no-store' });
   if (!r.ok) throw new Error(`day5 q1 ${r.status}`);
   return r.json();
 }
@@ -893,7 +911,7 @@ export async function getDay5Q2(args: {
   q1: string;
   a1: string;
 }): Promise<Day5Response> {
-  const r = await fetch('/api/task/day5-questions', {
+  const r = await apiFetch('/api/task/day5-questions', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args),
@@ -930,7 +948,7 @@ export async function uploadVoice(args: {
   fd.append('companion_id', args.companionId);
   const ext = args.ext ?? (args.blob.type.includes('mp4') ? 'mp4' : 'webm');
   fd.append('audio', args.blob, `voice.${ext}`);
-  const r = await fetch('/api/voice/upload', { method: 'POST', body: fd });
+  const r = await apiFetch('/api/voice/upload', { method: 'POST', body: fd });
   const body = (await r.json().catch(() => ({}))) as {
     error?: VoiceUploadError['reason'];
     message?: string;
@@ -976,7 +994,7 @@ export async function submitDescribe(args: {
   asr_transcription?: string;
   edited_text?: string;
 }): Promise<DescribeSubmitResponse> {
-  const r = await fetch('/api/describe/submit', {
+  const r = await apiFetch('/api/describe/submit', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args),
@@ -1006,7 +1024,7 @@ export async function reviseDescribe(args: {
   revision_type: 'color' | 'missing' | 'complete_redo';
   revision_text: string;
 }): Promise<DescribeReviseResponse> {
-  const r = await fetch('/api/describe/revise', {
+  const r = await apiFetch('/api/describe/revise', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args),
@@ -1023,7 +1041,7 @@ export async function confirmDescribe(args: {
   auto_timeout?: boolean;
   chosen_source?: ImageGenSource;
 }): Promise<{ companion_final_response: string; memory_bank_updated: boolean; already_confirmed?: boolean }> {
-  const r = await fetch('/api/describe/confirm', {
+  const r = await apiFetch('/api/describe/confirm', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args),

@@ -5,6 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db/client';
+import { guardWithCompanion, guardErrorResponse } from '@/lib/auth/apiGuard';
 
 export const runtime = 'nodejs';
 
@@ -34,6 +35,13 @@ interface RecentRow {
 }
 
 export async function GET() {
+  // 鉴权：仅查当前用户 own companion 的调用日志（其他用户的不可见）
+  // llm_call_log.companion_id 是 nullable（telemetry 失败时可能写空）— 用 = 筛选不会匹配 null，
+  // 正好把"无主"日志也过滤掉
+  const g = await guardWithCompanion();
+  if (!g.ok) return guardErrorResponse(g.code);
+  const cid = g.companion.id;
+
   // MySQL 8 不支持 PERCENTILE_CONT；用 row_number/count 算近似 p95
   const aggregates = await query<AggRow>(
     `select
@@ -48,16 +56,20 @@ export async function GET() {
        sum(input_tokens) as sum_in_tok,
        sum(output_tokens) as sum_out_tok
      from llm_call_log
+     where companion_id = :cid
      group by call_type
      order by total desc`,
+    { cid },
   );
 
   const recent = await query<RecentRow>(
     `select id, call_type, model, success, fail_reason, latency_ms,
             input_tokens, output_tokens, created_at
        from llm_call_log
+       where companion_id = :cid
        order by id desc
        limit 30`,
+    { cid },
   );
 
   // DeepSeek + DashScope 大致价格（人民币 / 1M tokens）
@@ -85,7 +97,8 @@ export async function GET() {
     calls: number;
   }>(
     `select model, sum(input_tokens) as sum_in, sum(output_tokens) as sum_out, count(*) as calls
-       from llm_call_log group by model`,
+       from llm_call_log where companion_id = :cid group by model`,
+    { cid },
   );
 
   const costByModel = byModel.map((m) => ({

@@ -12,6 +12,8 @@
 import { NextResponse } from 'next/server';
 
 import { getTripById, upsertMemoryBankEntry } from '@/lib/db/repos';
+import { guardUserOnly, guardErrorResponse } from '@/lib/auth/apiGuard';
+import { assertCompanionOwnedByUser, NotFoundOrForbiddenError } from '@/lib/auth/ownership';
 import type { ConceptCategory } from '@/types';
 
 export const runtime = 'nodejs';
@@ -31,6 +33,9 @@ interface ReportData {
 }
 
 export async function POST(req: Request) {
+  const g = await guardUserOnly();
+  if (!g.ok) return guardErrorResponse(g.code);
+
   let body: { trip_id?: string };
   try {
     body = await req.json();
@@ -44,6 +49,14 @@ export async function POST(req: Request) {
   const trip = await getTripById(body.trip_id);
   if (!trip) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  }
+  try {
+    await assertCompanionOwnedByUser(trip.companion_id, g.user.id);
+  } catch (e) {
+    if (e instanceof NotFoundOrForbiddenError) {
+      return NextResponse.json({ error: 'not_found' }, { status: 404 });
+    }
+    throw e;
   }
   if (trip.status !== 'returned') {
     return NextResponse.json({ error: 'trip_not_returned' }, { status: 400 });

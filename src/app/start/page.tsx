@@ -22,6 +22,7 @@ import {
   type AuthLookupMatch,
 } from '@/lib/api/client';
 import { getDeviceFingerprint } from '@/lib/auth/clientFingerprint';
+import { useCompanionStore } from '@/stores/companionStore';
 
 type Mode = 'enter' | 'resume_pick';
 
@@ -62,6 +63,9 @@ export default function StartPage() {
     try {
       const fp = await getDeviceFingerprint();
       const r = await authStart({ nickname: n, fingerprint: fp });
+      // 同设备换账户场景：清掉上一个用户在 localStorage 残留的 companionId / introCompleted，
+      // 否则跳 / 后会按旧 store 走错路径（如直奔 /home 但新用户没 companion → API 401 死循环）
+      useCompanionStore.getState().reset();
       if (!r.created && r.homonym_count > 1) {
         setHint(`欢迎回来，${r.nickname}。`);
       } else if (r.created && r.homonym_count > 1) {
@@ -110,6 +114,8 @@ export default function StartPage() {
     setSubmitting(true);
     try {
       await authResume(userId);
+      // 同上：清残留 store 避免新身份用旧路径
+      useCompanionStore.getState().reset();
       router.replace('/');
     } catch {
       setError('回来失败，再试？');
