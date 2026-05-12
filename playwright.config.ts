@@ -55,7 +55,10 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_NO_WEBSERVER
     ? undefined
     : {
-        command: `TEST_LLM_MODE=mock next dev -p ${PORT}`,
+        // 用 turbopack 替代 webpack：Node ≥25 上 next dev (webpack 持久缓存)
+        // 会触发 V8 abort "Lazy deopt after a fast API call"，导致 dev overlay
+        // 罩住整页拦截点击。turbopack 不走 webpack serializer，避开该崩溃。
+        command: `TEST_LLM_MODE=mock next dev --turbopack -p ${PORT}`,
         url: BASE_URL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,

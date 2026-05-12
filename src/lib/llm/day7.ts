@@ -120,15 +120,11 @@ export async function runDay7(input: Day7Input, companionId?: string) {
       const data = parseJsonStrict(raw, Day7Schema);
       if (!data) return null;
       // 第 5 题必须命中 unknown 列表（PRD §15.6.4）
+      // 注：Day7Schema 已 transform 兜底，data.unknown_thing 一定是 string。
+      // 兜底文案不会含 unknownNames 任一项，hit=false → 重试，符合预期。
       if (unknownNames.length > 0) {
         const hit = unknownNames.some((n) => data.unknown_thing.includes(n));
-        if (!hit) {
-          // LLM 没逐字引用任何 unknown 概念。两种处理：
-          //   1. 第一次失败 → 返回 null 让上层重试，希望它读到提示后改正
-          //   2. 仍然失败 → 由上层 attempt 计数兜底（见下）
-          // 这里仍然返回 null 触发重试，但兜底由 callLLM 之外的 fallback 实现。
-          return null;
-        }
+        if (!hit) return null;
       }
       return data;
     },

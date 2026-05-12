@@ -41,8 +41,20 @@ export const Day7Schema = z.object({
   most_important_person: z.string().min(1).max(60),
   most_fun_thing: z.string().min(1).max(60),
   most_delicious_thing: z.string().min(1).max(60),
-  most_scary_thing: z.string().min(1).max(60),
-  unknown_thing: z.string().min(1).max(60),
+  // memory_bank 没足够素材时 LLM 会输出 null（合理行为）—— transform 在 zod 层兜底。
+  // 下游（upsertWorldview / worldview 页面）拿到的就是非空字符串。
+  most_scary_thing: z
+    .string()
+    .min(1)
+    .max(60)
+    .nullable()
+    .transform((v) => v ?? '我好像没怕过什么。'),
+  unknown_thing: z
+    .string()
+    .min(1)
+    .max(60)
+    .nullable()
+    .transform((v) => v ?? '这一周里你没提过我陌生的事。'),
   almost_forgot_thing: z.string().nullable(),
 });
 export type Day7Output = z.infer<typeof Day7Schema>;
@@ -70,7 +82,10 @@ export type StyleAuditOutput = z.infer<typeof StyleAuditSchema>;
  * 兜底解析：先尝试整体 JSON.parse，失败再用宽松的"代码块抽取"。
  * 用 zod 做最终校验 + 钳制（confidence 0..1）。
  */
-export function parseJsonStrict<T>(raw: string, schema: z.ZodType<T>): T | null {
+export function parseJsonStrict<T extends z.ZodTypeAny>(
+  raw: string,
+  schema: T,
+): z.output<T> | null {
   if (!raw) return null;
   let attempt = raw.trim();
   // 去掉 ```json 包围

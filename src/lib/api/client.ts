@@ -77,8 +77,9 @@ export async function askChat(
     body: JSON.stringify({ question }),
   });
   if (!r.ok) {
-    const err = (await r.json().catch(() => ({}))) as { error?: string };
-    throw new Error(err.error ?? `chat ask ${r.status}`);
+    const err = (await r.json().catch(() => ({}))) as { error?: string; message?: string };
+    // 后端限流等场景把 reason 码放在 error，友好文案放在 message — 优先显示 message
+    throw new Error(err.message ?? err.error ?? `chat ask ${r.status}`);
   }
   return r.json();
 }
@@ -1001,8 +1002,8 @@ export async function submitDescribe(args: {
     body: JSON.stringify(args),
   });
   if (!r.ok) {
-    const err = (await r.json().catch(() => ({}))) as { error?: string };
-    throw new Error(err.error ?? `submit describe ${r.status}`);
+    const err = (await r.json().catch(() => ({}))) as { error?: string; message?: string };
+    throw new Error(err.message ?? err.error ?? `submit describe ${r.status}`);
   }
   return r.json();
 }

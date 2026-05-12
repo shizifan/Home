@@ -38,6 +38,8 @@ yarn-error.log*
 
 # 用户上传图片（P2 阶段本地存储）
 /public/uploads
+# V0.6.1 语音上传（runtime artifact）
+/public/uploads_voice
 
 # typescript
 *.tsbuildinfo

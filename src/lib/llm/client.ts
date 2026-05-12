@@ -59,7 +59,10 @@ const PARAMS: Record<LLMCallType, ParamSet> = {
   pass2: { model: '', max_tokens: 200, temperature: 0.7, timeoutMs: 8000 },
   concept_detail: { model: '', max_tokens: 400, temperature: 0.5, timeoutMs: 10000 },
   correction: { model: '', max_tokens: 100, temperature: 0.6, timeoutMs: 3000 },
-  day7: { model: '', max_tokens: 500, temperature: 0.5, timeoutMs: 15000 },
+  // day7 走 deepseek-reasoner（R1）：reasoning_tokens 与 answer 共享 max_tokens 配额，
+  // 500 完全被 reasoning 吃光导致 content 为空。R1 上限 8192，给 4000 兜余。
+  // timeout 同步放宽到 45s（R1 reasoning 通常 15-30s）。
+  day7: { model: '', max_tokens: 4000, temperature: 0.5, timeoutMs: 45000 },
   keyword_extract: { model: '', max_tokens: 400, temperature: 0.2, timeoutMs: 6000 },
   free_chat: { model: '', max_tokens: 120, temperature: 0.6, timeoutMs: 8000 },
   visit: { model: '', max_tokens: 600, temperature: 0.7, timeoutMs: 12000 },
